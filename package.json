@@ -1,0 +1,23 @@
+{
+  "name": "@8gi-foundation/8gentjr",
+  "version": "0.1.0",
+  "private": true,
+  "description": "8gent Jr - Personalised AI OS for neurodivergent children",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^6.37.4",
+    "next": "^15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "typescript": "^5.7.0"
+  }
+}
