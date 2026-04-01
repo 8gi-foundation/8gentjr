@@ -175,11 +175,13 @@ function speak(text: string) {
 interface SentenceStripProps {
   words: CoreWord[];
   onSpeakAll: () => void;
+  onMagicSpeak: () => void;
+  isMagicLoading: boolean;
   onClear: () => void;
   onRemoveWord: (index: number) => void;
 }
 
-function SentenceStrip({ words, onSpeakAll, onClear, onRemoveWord }: SentenceStripProps) {
+function SentenceStrip({ words, onSpeakAll, onMagicSpeak, isMagicLoading, onClear, onRemoveWord }: SentenceStripProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -190,7 +192,7 @@ function SentenceStrip({ words, onSpeakAll, onClear, onRemoveWord }: SentenceStr
 
   return (
     <div className="flex items-center gap-2 px-3 py-2 min-h-[64px] bg-gray-700 rounded-xl mx-2 mt-2">
-      {/* Speak All */}
+      {/* Speak All (exact words) */}
       <button
         onClick={onSpeakAll}
         disabled={words.length === 0}
@@ -202,6 +204,21 @@ function SentenceStrip({ words, onSpeakAll, onClear, onRemoveWord }: SentenceStr
         aria-label="Speak sentence"
       >
         &#9654;
+      </button>
+
+      {/* Magic sparkle button — sends to Groq for grammar improvement */}
+      <button
+        onClick={onMagicSpeak}
+        disabled={words.length < 2 || isMagicLoading}
+        className={`shrink-0 w-12 h-12 rounded-xl border-none text-white flex items-center justify-center text-lg font-bold transition-all ${
+          words.length >= 2 && !isMagicLoading
+            ? 'bg-purple-500 cursor-pointer hover:bg-purple-400 active:scale-90'
+            : 'bg-gray-500 cursor-not-allowed'
+        } ${isMagicLoading ? 'animate-pulse' : ''}`}
+        aria-label="Improve and speak sentence"
+        title="Magic: improve my sentence"
+      >
+        &#10024;
       </button>
 
       {/* Word chips */}
@@ -286,6 +303,7 @@ export interface SupercoreGridProps {
 export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const [sentence, setSentence] = useState<CoreWord[]>([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [isMagicLoading, setIsMagicLoading] = useState(false);
 
   // Detect mobile for responsive grid
   useEffect(() => {
@@ -308,6 +326,31 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const handleSpeakAll = useCallback(() => {
     if (sentence.length === 0) return;
     speakText(sentence.map(w => w.label).join(' '));
+  }, [sentence, speakText]);
+
+  const handleMagicSpeak = useCallback(async () => {
+    if (sentence.length < 2) return;
+    setIsMagicLoading(true);
+    try {
+      const words = sentence.map(w => w.label);
+      const res = await fetch('/api/improve-sentence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ words }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const improved = data.improved || data.sentence || words.join(' ');
+        speakText(improved);
+      } else {
+        // Fallback: just speak the raw words
+        speakText(sentence.map(w => w.label).join(' '));
+      }
+    } catch {
+      speakText(sentence.map(w => w.label).join(' '));
+    } finally {
+      setIsMagicLoading(false);
+    }
   }, [sentence, speakText]);
 
   const handleClear = useCallback(() => {
@@ -336,6 +379,8 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
       <SentenceStrip
         words={sentence}
         onSpeakAll={handleSpeakAll}
+        onMagicSpeak={handleMagicSpeak}
+        isMagicLoading={isMagicLoading}
         onClear={handleClear}
         onRemoveWord={handleRemoveWord}
       />
