@@ -53,6 +53,30 @@ const CATEGORY_STYLES = {
   game: { bg: "bg-cyan-400", text: "text-white", label: "GAME" },
 } as const;
 
+/** Gradient backgrounds per topic — matches NickOS vibrant card style */
+const TOPIC_GRADIENTS: Record<string, string> = {
+  numbers: "linear-gradient(135deg, #FF6B6B, #FFE66D)",
+  letters: "linear-gradient(135deg, #4ECDC4, #556270)",
+  colors: "linear-gradient(135deg, #F093FB, #F5576C)",
+  shapes: "linear-gradient(135deg, #4FACFE, #00F2FE)",
+  patterns: "linear-gradient(135deg, #43E97B, #38F9D7)",
+  sensory: "linear-gradient(135deg, #FA709A, #FEE140)",
+  speech: "linear-gradient(135deg, #A18CD1, #FBC2EB)",
+  feelings: "linear-gradient(135deg, #FCCB90, #D57EEB)",
+  animals: "linear-gradient(135deg, #84FAB0, #8FD3F4)",
+  nature: "linear-gradient(135deg, #667EEA, #764BA2)",
+  movement: "linear-gradient(135deg, #FF9A9E, #FECFEF)",
+  music: "linear-gradient(135deg, #A1C4FD, #C2E9FB)",
+  default: "linear-gradient(135deg, #E0C3FC, #8EC5FC)",
+};
+
+function getGradient(topics: string[]): string {
+  for (const t of topics) {
+    if (TOPIC_GRADIENTS[t]) return TOPIC_GRADIENTS[t];
+  }
+  return TOPIC_GRADIENTS.default;
+}
+
 export default function ReelCard({ reel }: { reel: Reel }) {
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -77,15 +101,10 @@ export default function ReelCard({ reel }: { reel: Reel }) {
         onClick={handleClick}
         className="relative overflow-hidden rounded-2xl shadow-md group cursor-pointer transition-all hover:ring-2 hover:ring-cyan-400 active:scale-[0.97] w-full text-left"
       >
-        <div className="aspect-[3/4] relative bg-gray-100">
-          {/* Thumbnail */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={reel.thumbnail || "/placeholder.svg"}
-            alt={reel.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-          />
+        <div
+          className="aspect-[3/4] relative"
+          style={{ background: getGradient(reel.topics) }}
+        >
 
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
