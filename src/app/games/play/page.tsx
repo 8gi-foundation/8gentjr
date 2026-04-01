@@ -34,6 +34,8 @@ import MarbleRun from "@/components/games/sensory/MarbleRun";
 import IceCreamBuilder from "@/components/games/sensory/IceCreamBuilder";
 import ShapeTower from "@/components/games/sensory/ShapeTower";
 import BallRain from "@/components/games/sensory/BallRain";
+import BottleFill from "@/components/games/sensory/BottleFill";
+import WaterPour from "@/components/games/sensory/WaterPour";
 
 // Sensory 3D games
 import Starfield from "@/components/games/sensory-3d/Starfield";
@@ -94,7 +96,7 @@ const games: GameDef[] = [
   { id: "color-mix", category: "maths", emoji: "\u{1F3A8}", title: "Color Mix", description: "Guess what color you get!", color: "#FFB347", component: ColorMix },
   { id: "bubble-pop-numbers", category: "maths", emoji: "\u{1FAE7}", title: "Bubble Pop", description: "Pop bubbles in order!", color: "#4ECDC4", component: BubblePopNumbers },
 
-  // Sensory (8)
+  // Sensory (10)
   { id: "breathing-sphere", category: "sensory", emoji: "\u{1F4AB}", title: "Breathing Sphere", description: "Breathe in and out slowly!", color: "#87CEEB", component: BreathingSphere },
   { id: "bubble-wrap", category: "sensory", emoji: "\u{1FAE7}", title: "Bubble Wrap", description: "Pop all the bubbles!", color: "#95E1D3", component: BubbleWrap },
   { id: "rainbow-paint", category: "sensory", emoji: "\u{1F308}", title: "Rainbow Paint", description: "Paint with rainbow colors!", color: "#FF6B6B", component: RainbowPaint },
@@ -103,6 +105,8 @@ const games: GameDef[] = [
   { id: "ice-cream-builder", category: "sensory", emoji: "\u{1F366}", title: "Ice Cream Builder", description: "Build a delicious ice cream!", color: "#FFB6C1", component: IceCreamBuilder },
   { id: "shape-tower", category: "sensory", emoji: "\u{1F3D7}\uFE0F", title: "Shape Tower", description: "Stack shapes to the sky!", color: "#A855F7", component: ShapeTower },
   { id: "ball-rain", category: "sensory", emoji: "\u{1F327}\uFE0F", title: "Ball Rain", description: "Collect colorful raining balls!", color: "#38BDF8", component: BallRain },
+  { id: "bottle-fill", category: "sensory", emoji: "\u{1F9F4}", title: "Bottle Fill", description: "Fill bottles with matching colors!", color: "#A855F7", component: BottleFill },
+  { id: "water-pour", category: "sensory", emoji: "\u{1FAB4}", title: "Water Pour", description: "Pour water to the target line!", color: "#06B6D4", component: WaterPour },
 
   // Sensory 3D (11)
   { id: "starfield", category: "sensory-3d", emoji: "\u2B50", title: "Starfield", description: "Drift through the galaxy!", color: "#818CF8", component: Starfield },
