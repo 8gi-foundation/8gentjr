@@ -47,7 +47,7 @@ export default function ReelsFeed() {
   })();
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col pb-24">
       <DailyActivityBanner onStartActivity={handleStartActivity} />
 
       <div className="px-4 mb-2">
@@ -72,7 +72,7 @@ export default function ReelsFeed() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto">
+      <div>
         <div className="grid grid-cols-2 gap-3 p-4 md:grid-cols-3 lg:grid-cols-4">
           {filteredReels.map((reel) => (
             <ReelCard key={reel.id} reel={reel} />
