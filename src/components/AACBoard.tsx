@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { GENERAL_PHRASES, FEELINGS_PHRASES, ACTIONS_PHRASES } from "@/lib/vocabulary";
 
 // ---------------------------------------------------------------------------
 // Grid density presets — progressive from accessible to advanced
@@ -11,22 +12,17 @@ export type GridDensity = (typeof GRID_DENSITY_OPTIONS)[number];
 const DEFAULT_COLUMNS: GridDensity = 4;
 
 // ---------------------------------------------------------------------------
-// Sample AAC symbols (placeholder set — will be replaced by real symbol bank)
+// AAC symbols from vocabulary system (replaces hardcoded SAMPLE_SYMBOLS)
 // ---------------------------------------------------------------------------
-const SAMPLE_SYMBOLS = [
-  { id: "want", label: "I want", emoji: "\u{1F44B}" },
-  { id: "eat", label: "Eat", emoji: "\u{1F37D}\uFE0F" },
-  { id: "drink", label: "Drink", emoji: "\u{1F964}" },
-  { id: "play", label: "Play", emoji: "\u{1F3AE}" },
-  { id: "help", label: "Help", emoji: "\u{1F198}" },
-  { id: "more", label: "More", emoji: "\u2795" },
-  { id: "stop", label: "Stop", emoji: "\u{1F6D1}" },
-  { id: "yes", label: "Yes", emoji: "\u2705" },
-  { id: "no", label: "No", emoji: "\u274C" },
-  { id: "happy", label: "Happy", emoji: "\u{1F60A}" },
-  { id: "sad", label: "Sad", emoji: "\u{1F622}" },
-  { id: "tired", label: "Tired", emoji: "\u{1F634}" },
-];
+const AAC_SYMBOLS = [
+  ...GENERAL_PHRASES,
+  ...FEELINGS_PHRASES,
+  ...ACTIONS_PHRASES,
+].map((phrase) => ({
+  id: phrase.id,
+  label: phrase.text,
+  imageUrl: phrase.imageUrl,
+}));
 
 // ---------------------------------------------------------------------------
 // Props

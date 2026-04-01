@@ -3,21 +3,15 @@
 import PhraseBoard from "../components/PhraseBoard";
 import Dock from "../components/Dock";
 import AACBoard from "@/components/AACBoard";
+import { GENERAL_PHRASES } from "@/lib/vocabulary";
+import { FITZGERALD_COLORS } from "@/lib/fitzgerald-key";
 
-const DEMO_CARDS = [
-  { label: "I want", bgColor: "#E8F5E9" },
-  { label: "More", bgColor: "#E3F2FD" },
-  { label: "Help", bgColor: "#FFF3E0" },
-  { label: "Yes", bgColor: "#E8F5E9" },
-  { label: "No", bgColor: "#FFEBEE" },
-  { label: "Drink", bgColor: "#E3F2FD" },
-  { label: "Food", bgColor: "#FFF3E0" },
-  { label: "Play", bgColor: "#F3E5F5" },
-  { label: "Stop", bgColor: "#FFEBEE" },
-  { label: "Bathroom", bgColor: "#E3F2FD" },
-  { label: "Happy", bgColor: "#E8F5E9" },
-  { label: "Sad", bgColor: "#FFEBEE" },
-];
+/** PhraseBoard cards built from the vocabulary system's General phrases */
+const PHRASE_CARDS = GENERAL_PHRASES.map((phrase) => ({
+  label: phrase.text,
+  symbolUrl: phrase.imageUrl,
+  bgColor: FITZGERALD_COLORS.verb.bg,
+}));
 
 export default function Home() {
   return (
@@ -40,7 +34,7 @@ export default function Home() {
         </p>
 
         <PhraseBoard
-          cards={DEMO_CARDS}
+          cards={PHRASE_CARDS}
           onCardTap={(label) => {
             console.log("tapped:", label);
           }}
