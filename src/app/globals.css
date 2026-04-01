@@ -1,0 +1,177 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 8gent Jr Design System Variables */
+:root {
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, serif;
+
+  /* Brand colors — warm palette */
+  --brand-accent: #E8610A;
+  --brand-accent-hover: #D15709;
+  --brand-bg: #FFFDF9;
+  --brand-bg-warm: #FFF8F0;
+  --brand-bg-accent: #FFF3E8;
+  --brand-text: #1A1612;
+  --brand-text-soft: #5C544A;
+  --brand-text-muted: #9A9088;
+  --brand-border: #E8E0D6;
+
+  /* Light mode — warm palette, proper contrast */
+  --background: 30 33% 95%;
+  --foreground: 24 14% 9%;
+  --card: 30 50% 99%;
+  --card-foreground: 24 14% 9%;
+  --primary: 24 91% 47%;
+  --primary-foreground: 40 100% 99%;
+  --secondary: 30 30% 95%;
+  --secondary-foreground: 24 14% 11%;
+  --muted: 30 20% 93%;
+  --muted-foreground: 24 12% 44%;
+  --accent: 30 30% 95%;
+  --accent-foreground: 24 14% 11%;
+  --border: 30 20% 88%;
+  --input: 30 20% 88%;
+  --ring: 24 91% 47%;
+  --radius: 1rem;
+
+  /* Warm gray scale */
+  --warm-bg-subtle: #FAF7F4;
+  --warm-bg-page: #F5F0EB;
+  --warm-bg-card: #FDFCFA;
+  --warm-border: #E8E0D6;
+  --warm-border-light: #F0EAE3;
+  --warm-text: #1A1614;
+  --warm-text-secondary: #5C544A;
+  --warm-text-muted: #9A9088;
+  --warm-text-placeholder: #B5ADA4;
+
+  /* Fitzgerald Key Colors — AAC clinical standard */
+  --fitzgerald-yellow: #FFF59D;
+  --fitzgerald-green: #A5D6A7;
+  --fitzgerald-blue: #90CAF9;
+  --fitzgerald-purple: #CE93D8;
+  --fitzgerald-orange: #FFCC80;
+  --fitzgerald-brown: #BCAAA4;
+  --fitzgerald-red: #EF9A9A;
+  --fitzgerald-pink: #F8BBD9;
+  --fitzgerald-white: #F5F5F5;
+  --fitzgerald-gray: #CFD8DC;
+
+  /* Safety colors */
+  --safety-stop: #D50000;
+  --safety-help: #FF8A80;
+}
+
+.dark {
+  --background: 24 14% 6%;
+  --foreground: 40 20% 96%;
+  --card: 24 14% 10%;
+  --card-foreground: 40 20% 96%;
+  --primary: 24 91% 52%;
+  --primary-foreground: 24 14% 11%;
+  --secondary: 24 20% 17%;
+  --secondary-foreground: 40 20% 96%;
+  --muted: 24 20% 17%;
+  --muted-foreground: 24 15% 60%;
+  --accent: 24 20% 17%;
+  --accent-foreground: 40 20% 96%;
+  --border: 24 20% 17%;
+  --input: 24 20% 22%;
+  --ring: 24 91% 52%;
+
+  --warm-bg-subtle: #1E1A17;
+  --warm-bg-page: #15120F;
+  --warm-bg-card: #1E1A17;
+  --warm-border: #2E2820;
+  --warm-border-light: #252018;
+  --warm-text: #F0EAE3;
+  --warm-text-secondary: #B5ADA4;
+  --warm-text-muted: #7A7068;
+  --warm-text-placeholder: #5C544A;
+}
+
+/* Global styles */
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  touch-action: manipulation;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--brand-bg-warm);
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Safe area support for notched devices */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.safe-area-inset {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+/* Extra bottom padding for dock */
+.pb-safe-dock {
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+}
+
+/* AAC Card specific styles */
+.aac-card {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Prevent text selection during AAC interaction */
+.aac-board {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Large touch targets (44x44 minimum per iOS HIG) */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus visible for keyboard navigation */
+:focus-visible {
+  outline: 3px solid hsl(var(--primary));
+  outline-offset: 2px;
+}
+
+/* Hide focus ring for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
