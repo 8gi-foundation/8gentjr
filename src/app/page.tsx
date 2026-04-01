@@ -2,6 +2,7 @@
 
 import PhraseBoard from "../components/PhraseBoard";
 import Dock from "../components/Dock";
+import AACBoard from "@/components/AACBoard";
 
 const DEMO_CARDS = [
   { label: "I want", bgColor: "#E8F5E9" },
@@ -73,10 +74,25 @@ export default function Home() {
         <PhraseBoard
           cards={DEMO_CARDS}
           onCardTap={(label) => {
-            /* future: append to sentence strip */
             console.log("tapped:", label);
           }}
         />
+
+        <h2
+          style={{
+            fontSize: "1.25rem",
+            color: "#333",
+            marginTop: "2.5rem",
+            marginBottom: "0.5rem",
+          }}
+        >
+          AAC Board
+        </h2>
+        <p style={{ fontSize: "0.95rem", color: "#777", marginBottom: "1rem" }}>
+          Grid density selector — default 4 columns for motor targeting
+        </p>
+
+        <AACBoard columns={4} showDensitySelector />
 
         <p style={{ marginTop: "2rem", fontSize: "0.9rem", color: "#999" }}>
           Coming soon from the{" "}
