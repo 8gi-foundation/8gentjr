@@ -9,7 +9,7 @@ import { useState, useCallback, type ReactNode } from 'react';
  *
  * Routes:
  *   Talk     → /talk/core
- *   Music    → /music/instruments
+ *   Music    → /music
  *   Games    → /games
  *   Speech   → /speech
  *   More     → overlay with remaining routes
@@ -129,7 +129,7 @@ const MORE_ITEMS: MoreItem[] = [
 
 const DOCK_ITEMS: DockItem[] = [
   { id: 'talk', label: 'Talk', icon: IconSpeechBubble, href: '/talk/core' },
-  { id: 'music', label: 'Music', icon: IconMusic, href: '/music/instruments' },
+  { id: 'music', label: 'Music', icon: IconMusic, href: '/music' },
   { id: 'games', label: 'Games', icon: IconGamepad, href: '/games' },
   { id: 'speech', label: 'Speech', icon: IconWaveform, href: '/speech' },
 ];
