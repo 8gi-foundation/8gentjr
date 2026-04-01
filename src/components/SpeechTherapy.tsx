@@ -1,16 +1,6 @@
 "use client";
 
-import { CSSProperties, useState, useCallback, useMemo } from "react";
-import {
-  colors,
-  borderRadius,
-  shadows,
-  fonts,
-  spacing,
-  touchTarget,
-  animation,
-  transition,
-} from "@/styles/theme";
+import { useState, useCallback, useMemo } from "react";
 
 /* ──────────────────────────────────────────────
    Phoneme Data — 20 phonemes: 5 vowels, 10 consonants, 5 blends
@@ -66,9 +56,9 @@ const TAB_LABELS: { key: TabFilter; label: string }[] = [
 ];
 
 const CATEGORY_COLORS: Record<Category, string> = {
-  vowel: colors.cardPink,
-  consonant: colors.cardBlue,
-  blend: colors.cardPurple,
+  vowel: "#FCE4EC",
+  consonant: "#E3F2FD",
+  blend: "#F3E5F5",
 };
 
 const CATEGORY_ACCENT: Record<Category, string> = {
@@ -90,7 +80,7 @@ function MouthVisual({ phoneme }: { phoneme: Phoneme }) {
       width={80}
       height={80}
       aria-label={`Mouth position for ${phoneme.symbol}`}
-      style={{ display: "block", margin: "0 auto" }}
+      className="block mx-auto"
     >
       {/* Face circle */}
       <circle cx={50} cy={50} r={46} fill="#FFE0B2" stroke="#FFAB91" strokeWidth={2} />
@@ -145,146 +135,21 @@ export default function SpeechTherapy() {
     [speak],
   );
 
-  /* ── Styles ── */
-
-  const container: CSSProperties = {
-    maxWidth: 800,
-    margin: "0 auto",
-    padding: spacing.lg,
-    fontFamily: fonts.family,
-    color: colors.text,
-  };
-
-  const heading: CSSProperties = {
-    fontSize: 28,
-    fontWeight: fonts.weightExtrabold,
-    textAlign: "center",
-    marginBottom: spacing.sm,
-  };
-
-  const subtitle: CSSProperties = {
-    fontSize: fonts.sizeBody,
-    color: colors.textMuted,
-    textAlign: "center",
-    marginBottom: spacing.lg,
-  };
-
-  const tabRow: CSSProperties = {
-    display: "flex",
-    gap: spacing.sm,
-    justifyContent: "center",
-    marginBottom: spacing.lg,
-    flexWrap: "wrap",
-  };
-
-  const tabStyle = (active: boolean): CSSProperties => ({
-    padding: `${spacing.sm}px ${spacing.md}px`,
-    borderRadius: borderRadius.pill,
-    border: "none",
-    cursor: "pointer",
-    fontSize: fonts.sizeBody,
-    fontWeight: active ? fonts.weightSemibold : fonts.weightNormal,
-    background: active ? colors.primary : colors.surface,
-    color: active ? "#fff" : colors.text,
-    transition: transition("background", "color"),
-    minHeight: touchTarget.min,
-    minWidth: touchTarget.min,
-  });
-
-  const progressContainer: CSSProperties = {
-    marginBottom: spacing.lg,
-    textAlign: "center",
-  };
-
-  const progressLabel: CSSProperties = {
-    fontSize: fonts.sizeSmall,
-    color: colors.textMuted,
-    marginBottom: spacing.xs,
-  };
-
-  const progressBar: CSSProperties = {
-    width: "100%",
-    height: 12,
-    borderRadius: borderRadius.pill,
-    background: colors.surface,
-    overflow: "hidden",
-    border: `1px solid ${colors.border}`,
-  };
-
-  const progressFill: CSSProperties = {
-    height: "100%",
-    width: `${progress * 100}%`,
-    background: `linear-gradient(90deg, ${colors.primary}, #F59E0B)`,
-    borderRadius: borderRadius.pill,
-    transition: transition("width"),
-  };
-
-  const grid: CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))",
-    gap: spacing.md,
-  };
-
-  const cardStyle = (phoneme: Phoneme, isActive: boolean): CSSProperties => ({
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: borderRadius.default,
-    background: practiced.has(phoneme.id) ? CATEGORY_COLORS[phoneme.category] : colors.surface,
-    border: `2px solid ${isActive ? CATEGORY_ACCENT[phoneme.category] : colors.border}`,
-    boxShadow: isActive ? shadows.glow : shadows.card,
-    cursor: "pointer",
-    transition: transition("transform", "box-shadow", "border-color"),
-    transform: isActive ? "scale(0.95)" : "scale(1)",
-    minHeight: touchTarget.comfortable,
-    WebkitTapHighlightColor: "transparent",
-    userSelect: "none",
-  });
-
-  const symbolBadge = (phoneme: Phoneme): CSSProperties => ({
-    fontSize: 24,
-    fontWeight: fonts.weightBold,
-    color: CATEGORY_ACCENT[phoneme.category],
-    background: "#fff",
-    borderRadius: borderRadius.pill,
-    padding: `${spacing.xs}px ${spacing.sm + 4}px`,
-    letterSpacing: 1,
-    textTransform: "lowercase",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
-  });
-
-  const exampleStyle: CSSProperties = {
-    fontSize: fonts.sizeBody,
-    fontWeight: fonts.weightSemibold,
-    color: colors.text,
-  };
-
-  const mouthDesc: CSSProperties = {
-    fontSize: fonts.sizeSmall,
-    color: colors.textMuted,
-    textAlign: "center",
-    lineHeight: 1.3,
-  };
-
-  const checkMark: CSSProperties = {
-    fontSize: 18,
-    color: colors.success,
-    fontWeight: fonts.weightBold,
-  };
-
   return (
-    <div style={container}>
-      <h1 style={heading}>Speech Therapy</h1>
-      <p style={subtitle}>Tap a sound to hear it and see the mouth position</p>
+    <div className="max-w-[800px] mx-auto p-6 font-sans text-[#1a1a2e]">
+      <h1 className="text-[28px] font-extrabold text-center mb-2">Speech Therapy</h1>
+      <p className="text-base text-gray-500 text-center mb-6">Tap a sound to hear it and see the mouth position</p>
 
       {/* ── Category Tabs ── */}
-      <div style={tabRow}>
+      <div className="flex gap-2 justify-center mb-6 flex-wrap">
         {TAB_LABELS.map((tab) => (
           <button
             key={tab.key}
-            style={tabStyle(activeTab === tab.key)}
+            className={`px-4 py-2 rounded-full border-none cursor-pointer text-base min-h-[48px] min-w-[48px] transition-colors ${
+              activeTab === tab.key
+                ? "bg-[#E8610A] text-white font-semibold"
+                : "bg-[#FFF1E6] text-[#1a1a2e] font-normal"
+            }`}
             onClick={() => setActiveTab(tab.key)}
             aria-pressed={activeTab === tab.key}
           >
@@ -294,31 +159,46 @@ export default function SpeechTherapy() {
       </div>
 
       {/* ── Progress Bar ── */}
-      <div style={progressContainer}>
-        <div style={progressLabel}>
+      <div className="mb-6 text-center">
+        <div className="text-[13px] text-gray-500 mb-1">
           {practicedCount} / {totalCount} practiced
         </div>
-        <div style={progressBar}>
-          <div style={progressFill} />
+        <div className="w-full h-3 rounded-full bg-[#FFF1E6] overflow-hidden border border-[#F0DECA]">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[#E8610A] to-[#F59E0B] transition-[width] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
+            style={{ width: `${progress * 100}%` }}
+          />
         </div>
       </div>
 
       {/* ── Phoneme Cards ── */}
-      <div style={grid}>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-4">
         {filtered.map((phoneme) => {
           const isActive = activeId === phoneme.id;
           return (
             <button
               key={phoneme.id}
-              style={cardStyle(phoneme, isActive)}
+              className={`flex flex-col items-center gap-2 p-4 rounded-2xl cursor-pointer min-h-[56px] select-none transition-all duration-200 ${
+                isActive ? "scale-95 shadow-[0_0_0_3px_rgba(232,97,10,0.2)]" : "scale-100 shadow-[0_2px_12px_rgba(232,97,10,0.08)]"
+              }`}
+              style={{
+                background: practiced.has(phoneme.id) ? CATEGORY_COLORS[phoneme.category] : "#FFF1E6",
+                border: `2px solid ${isActive ? CATEGORY_ACCENT[phoneme.category] : "#F0DECA"}`,
+                WebkitTapHighlightColor: "transparent",
+              }}
               onClick={() => handleTap(phoneme)}
               aria-label={`${phoneme.symbol} as in ${phoneme.example}`}
             >
-              <span style={symbolBadge(phoneme)}>/{phoneme.symbol}/</span>
+              <span
+                className="text-2xl font-bold bg-white rounded-full px-3 py-1 tracking-wide lowercase shadow-sm"
+                style={{ color: CATEGORY_ACCENT[phoneme.category] }}
+              >
+                /{phoneme.symbol}/
+              </span>
               <MouthVisual phoneme={phoneme} />
-              <span style={exampleStyle}>&ldquo;{phoneme.example}&rdquo;</span>
-              <span style={mouthDesc}>{phoneme.mouth}</span>
-              {practiced.has(phoneme.id) && <span style={checkMark}>&#10003;</span>}
+              <span className="text-base font-semibold text-[#1a1a2e]">&ldquo;{phoneme.example}&rdquo;</span>
+              <span className="text-[13px] text-gray-500 text-center leading-tight">{phoneme.mouth}</span>
+              {practiced.has(phoneme.id) && <span className="text-lg text-emerald-600 font-bold">&#10003;</span>}
             </button>
           );
         })}

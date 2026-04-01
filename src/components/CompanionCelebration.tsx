@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -16,7 +16,7 @@ export interface CompanionCelebrationProps {
 }
 
 // ---------------------------------------------------------------------------
-// Keyframes
+// Keyframes (kept as CSS — complex animations not expressible in Tailwind)
 // ---------------------------------------------------------------------------
 
 const CELEBRATION_KEYFRAMES = `
@@ -112,45 +112,6 @@ const sparkles: Sparkle[] = Array.from({ length: 8 }, (_, i) => ({
 }));
 
 // ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-const overlayStyle: CSSProperties = {
-  position: "fixed",
-  inset: 0,
-  zIndex: 200,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  pointerEvents: "none",
-};
-
-const messageBoxStyle: CSSProperties = {
-  background: "rgba(255, 255, 255, 0.95)",
-  borderRadius: 24,
-  padding: "24px 36px",
-  boxShadow: "0 12px 40px rgba(0, 0, 0, 0.15)",
-  animation: "celebration-pop 0.4s ease-out",
-  textAlign: "center",
-  maxWidth: "80vw",
-  pointerEvents: "auto",
-};
-
-const messageTextStyle: CSSProperties = {
-  fontSize: 22,
-  fontWeight: 700,
-  color: "#1a1a2e",
-  lineHeight: 1.3,
-  margin: 0,
-};
-
-const starStyle: CSSProperties = {
-  fontSize: 32,
-  display: "block",
-  marginBottom: 8,
-};
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -181,8 +142,8 @@ export default function CompanionCelebration({
     <>
       <style>{CELEBRATION_KEYFRAMES}</style>
       <div
+        className="fixed inset-0 z-[200] flex items-center justify-center pointer-events-none"
         style={{
-          ...overlayStyle,
           animation: fading
             ? "celebration-fade-out 0.4s ease forwards"
             : "celebration-fade-in 0.3s ease",
@@ -194,16 +155,14 @@ export default function CompanionCelebration({
         {confettiPieces.map((p) => (
           <div
             key={p.id}
+            className="absolute top-0 pointer-events-none"
             style={{
-              position: "absolute",
-              top: 0,
               left: p.left,
               width: p.size,
               height: p.size,
               borderRadius: p.id % 3 === 0 ? "50%" : 2,
               background: p.color,
               animation: `${p.animation} ${p.duration} ease-out ${p.delay} forwards`,
-              pointerEvents: "none",
             }}
           />
         ))}
@@ -212,13 +171,12 @@ export default function CompanionCelebration({
         {sparkles.map((s) => (
           <div
             key={s.id}
+            className="absolute pointer-events-none"
             style={{
-              position: "absolute",
               top: s.top,
               left: s.left,
               width: s.size,
               height: s.size,
-              pointerEvents: "none",
               animation: `sparkle-pulse 0.6s ease infinite ${s.delay}`,
             }}
           >
@@ -232,11 +190,16 @@ export default function CompanionCelebration({
         ))}
 
         {/* Message card */}
-        <div style={messageBoxStyle}>
-          <span style={starStyle} aria-hidden="true">
+        <div
+          className="bg-white/95 rounded-3xl px-9 py-6 shadow-[0_12px_40px_rgba(0,0,0,0.15)] text-center max-w-[80vw] pointer-events-auto"
+          style={{ animation: "celebration-pop 0.4s ease-out" }}
+        >
+          <span className="text-[32px] block mb-2" aria-hidden="true">
             *
           </span>
-          <p style={messageTextStyle}>{message}</p>
+          <p className="text-[22px] font-bold text-[#1a1a2e] leading-tight m-0">
+            {message}
+          </p>
         </div>
       </div>
     </>

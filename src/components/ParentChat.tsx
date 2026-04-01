@@ -29,7 +29,6 @@ interface DetectedIntent {
 function detectIntent(input: string): DetectedIntent {
   const lower = input.toLowerCase().trim();
 
-  // "add card X to Y grid" / "add X to Y"
   const addMatch = lower.match(
     /add\s+(?:card\s+)?["']?(.+?)["']?\s+(?:to\s+)?(?:the\s+)?["']?(.+?)["']?\s*(?:grid|board|page)?$/
   );
@@ -37,7 +36,6 @@ function detectIntent(input: string): DetectedIntent {
     return { type: "add_card", params: { card: addMatch[1], grid: addMatch[2] } };
   }
 
-  // "remove card X" / "delete X card"
   const removeMatch = lower.match(
     /(?:remove|delete)\s+(?:card\s+)?["']?(.+?)["']?\s*(?:card)?$/
   );
@@ -45,7 +43,6 @@ function detectIntent(input: string): DetectedIntent {
     return { type: "remove_card", params: { card: removeMatch[1] } };
   }
 
-  // "make grid N columns" / "set columns to N" / "N columns"
   const colMatch = lower.match(
     /(?:make|set|change)?\s*(?:the\s+)?(?:grid\s+)?(?:to\s+)?(\d+)\s*columns?/
   );
@@ -53,7 +50,6 @@ function detectIntent(input: string): DetectedIntent {
     return { type: "set_columns", params: { columns: colMatch[1] } };
   }
 
-  // "find symbol for X" / "search symbol X"
   const symbolMatch = lower.match(
     /(?:find|search|look\s+up|get)\s+(?:a\s+)?(?:symbol|icon|image)\s+(?:for\s+)?["']?(.+?)["']?$/
   );
@@ -117,141 +113,6 @@ function generateResponse(intent: DetectedIntent): {
 }
 
 // ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-const styles = {
-  container: {
-    display: "flex",
-    flexDirection: "column" as const,
-    height: "100vh",
-    minHeight: "100dvh",
-    background: "#FAFAF8",
-    fontFamily: "Inter, system-ui, sans-serif",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    padding: "12px 16px",
-    borderBottom: "1px solid #E5E7EB",
-    background: "#fff",
-  },
-  headerTitle: {
-    fontSize: "1.1rem",
-    fontWeight: 700 as const,
-    color: "#1F2937",
-  },
-  headerSub: {
-    fontSize: "0.75rem",
-    color: "#9CA3AF",
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    border: "2px solid #E5E7EB",
-    background: "#fff",
-    fontSize: 18,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  messages: {
-    flex: 1,
-    overflowY: "auto" as const,
-    padding: "16px",
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 12,
-  },
-  bubble: (isUser: boolean) => ({
-    maxWidth: "85%",
-    alignSelf: isUser ? ("flex-end" as const) : ("flex-start" as const),
-    background: isUser ? "#E8610A" : "#fff",
-    color: isUser ? "#fff" : "#1F2937",
-    borderRadius: 16,
-    borderBottomRightRadius: isUser ? 4 : 16,
-    borderBottomLeftRadius: isUser ? 16 : 4,
-    padding: "10px 14px",
-    fontSize: "0.9rem",
-    lineHeight: 1.5,
-    boxShadow: isUser ? "none" : "0 1px 4px rgba(0,0,0,0.08)",
-    border: isUser ? "none" : "1px solid #E5E7EB",
-    whiteSpace: "pre-wrap" as const,
-  }),
-  inputRow: {
-    display: "flex",
-    gap: 8,
-    padding: "12px 16px",
-    borderTop: "1px solid #E5E7EB",
-    background: "#fff",
-    paddingBottom: "calc(12px + env(safe-area-inset-bottom))",
-  },
-  input: {
-    flex: 1,
-    fontSize: "1rem",
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "2px solid #E5E7EB",
-    outline: "none",
-    fontFamily: "inherit",
-    background: "#FAFAF8",
-  },
-  sendBtn: {
-    width: 48,
-    height: 48,
-    minWidth: 48,
-    borderRadius: 12,
-    border: "none",
-    background: "#E8610A",
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: 700 as const,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    transition: "transform 0.1s",
-  },
-  emptyState: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    gap: 12,
-    padding: 32,
-    color: "#9CA3AF",
-  },
-  emptyTitle: {
-    fontSize: "1.25rem",
-    fontWeight: 700 as const,
-    color: "#374151",
-  },
-  emptyHint: {
-    fontSize: "0.85rem",
-    color: "#9CA3AF",
-    textAlign: "center" as const,
-    lineHeight: 1.6,
-    maxWidth: 340,
-  },
-  suggestionChip: {
-    display: "inline-block",
-    padding: "6px 14px",
-    borderRadius: 20,
-    border: "2px solid #FDBA74",
-    background: "#FFF8F0",
-    color: "#92400E",
-    fontSize: "0.8rem",
-    fontWeight: 600 as const,
-    cursor: "pointer",
-    transition: "background 0.1s",
-  },
-};
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -265,7 +126,6 @@ export default function ParentChat() {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -331,46 +191,41 @@ export default function ParentChat() {
   ];
 
   return (
-    <div style={styles.container}>
+    <div className="flex flex-col h-screen min-h-[100dvh] bg-[#FAFAF8] font-sans">
       {/* Header */}
-      <div style={styles.header}>
-        <a href="/" style={{ textDecoration: "none" }}>
-          <button style={styles.backBtn} aria-label="Back to home">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-white">
+        <a href="/">
+          <button
+            className="w-10 h-10 rounded-[10px] border-2 border-gray-200 bg-white text-lg cursor-pointer flex items-center justify-center"
+            aria-label="Back to home"
+          >
             &larr;
           </button>
         </a>
         <div>
-          <div style={styles.headerTitle}>Parent Chat</div>
-          <div style={styles.headerSub}>
+          <div className="text-[1.1rem] font-bold text-gray-800">Parent Chat</div>
+          <div className="text-xs text-gray-400">
             Customise your child&apos;s board with words
           </div>
         </div>
       </div>
 
       {/* Messages area */}
-      <div style={styles.messages}>
+      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
         {messages.length === 0 ? (
-          <div style={styles.emptyState}>
-            <div style={{ fontSize: 48 }}>&#x1F4AC;</div>
-            <div style={styles.emptyTitle}>Hi there!</div>
-            <div style={styles.emptyHint}>
+          <div className="flex-1 flex flex-col items-center justify-center gap-3 p-8 text-gray-400">
+            <div className="text-5xl">&#x1F4AC;</div>
+            <div className="text-xl font-bold text-gray-700">Hi there!</div>
+            <div className="text-sm text-gray-400 text-center leading-relaxed max-w-[340px]">
               Tell me what you want to change on your child&apos;s board. I
               understand things like adding cards, changing grid size, and
               removing cards.
             </div>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 8,
-                justifyContent: "center",
-                marginTop: 8,
-              }}
-            >
+            <div className="flex flex-wrap gap-2 justify-center mt-2">
               {suggestions.map((s) => (
                 <button
                   key={s}
-                  style={styles.suggestionChip}
+                  className="inline-block px-3.5 py-1.5 rounded-full border-2 border-orange-300 bg-[#FFF8F0] text-amber-800 text-xs font-semibold cursor-pointer transition-colors hover:bg-orange-100"
                   onClick={() => sendMessage(s)}
                 >
                   {s}
@@ -381,7 +236,15 @@ export default function ParentChat() {
         ) : (
           messages.map((msg) => (
             <div key={msg.id}>
-              <div style={styles.bubble(msg.role === "user")}>{msg.text}</div>
+              <div
+                className={
+                  msg.role === "user"
+                    ? "max-w-[85%] self-end bg-[#E8610A] text-white rounded-2xl rounded-br-sm px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap"
+                    : "max-w-[85%] self-start bg-white text-gray-800 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-sm leading-relaxed shadow-sm border border-gray-200 whitespace-pre-wrap"
+                }
+              >
+                {msg.text}
+              </div>
               {msg.change && msg.change.status === "pending" && (
                 <ChangePreview
                   change={msg.change}
@@ -390,34 +253,12 @@ export default function ParentChat() {
                 />
               )}
               {msg.change && msg.change.status === "confirmed" && (
-                <div
-                  style={{
-                    fontSize: "0.8rem",
-                    color: "#059669",
-                    fontWeight: 600,
-                    marginTop: 6,
-                    padding: "4px 10px",
-                    background: "#D1FAE5",
-                    borderRadius: 8,
-                    display: "inline-block",
-                  }}
-                >
+                <div className="text-xs text-emerald-600 font-semibold mt-1.5 px-2.5 py-1 bg-emerald-100 rounded-lg inline-block">
                   &#10003; Change applied
                 </div>
               )}
               {msg.change && msg.change.status === "undone" && (
-                <div
-                  style={{
-                    fontSize: "0.8rem",
-                    color: "#DC2626",
-                    fontWeight: 600,
-                    marginTop: 6,
-                    padding: "4px 10px",
-                    background: "#FEE2E2",
-                    borderRadius: 8,
-                    display: "inline-block",
-                  }}
-                >
+                <div className="text-xs text-red-600 font-semibold mt-1.5 px-2.5 py-1 bg-red-100 rounded-lg inline-block">
                   &#10005; Change reverted
                 </div>
               )}
@@ -428,21 +269,18 @@ export default function ParentChat() {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} style={styles.inputRow}>
+      <form onSubmit={handleSubmit} className="flex gap-2 px-4 py-3 border-t border-gray-200 bg-white pb-[calc(12px+env(safe-area-inset-bottom))]">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Tell me what to change..."
-          style={styles.input}
+          className="flex-1 text-base px-3.5 py-2.5 rounded-xl border-2 border-gray-200 outline-none font-[inherit] bg-[#FAFAF8] focus:border-[#E8610A] transition-colors"
           aria-label="Chat message input"
         />
         <button
           type="submit"
-          style={{
-            ...styles.sendBtn,
-            opacity: input.trim() ? 1 : 0.5,
-          }}
+          className="w-12 h-12 min-w-[48px] rounded-xl border-none bg-[#E8610A] text-white text-xl font-bold cursor-pointer flex items-center justify-center transition-transform active:scale-95 disabled:opacity-50"
           disabled={!input.trim()}
           aria-label="Send message"
         >

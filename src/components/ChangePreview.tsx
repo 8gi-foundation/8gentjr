@@ -26,100 +26,6 @@ export interface ChangePreviewProps {
 }
 
 // ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-const styles = {
-  container: {
-    background: "#FFF8F0",
-    border: "2px solid #FDBA74",
-    borderRadius: 16,
-    padding: "12px 16px",
-    marginTop: 8,
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 8,
-  },
-  description: {
-    fontSize: "0.9rem",
-    fontWeight: 600 as const,
-    color: "#92400E",
-  },
-  diffRow: {
-    display: "flex",
-    gap: 12,
-    fontSize: "0.85rem",
-    alignItems: "center" as const,
-    flexWrap: "wrap" as const,
-  },
-  beforeBadge: {
-    background: "#FEE2E2",
-    color: "#991B1B",
-    borderRadius: 8,
-    padding: "4px 10px",
-    fontWeight: 600 as const,
-    fontSize: "0.8rem",
-    textDecoration: "line-through" as const,
-  },
-  afterBadge: {
-    background: "#D1FAE5",
-    color: "#065F46",
-    borderRadius: 8,
-    padding: "4px 10px",
-    fontWeight: 600 as const,
-    fontSize: "0.8rem",
-  },
-  arrow: {
-    fontSize: "1rem",
-    color: "#9CA3AF",
-  },
-  actions: {
-    display: "flex",
-    gap: 10,
-    alignItems: "center" as const,
-  },
-  confirmBtn: {
-    width: 48,
-    height: 48,
-    minWidth: 48,
-    minHeight: 48,
-    borderRadius: 14,
-    border: "3px solid #10B981",
-    background: "#D1FAE5",
-    color: "#065F46",
-    fontSize: 24,
-    fontWeight: 700 as const,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    transition: "transform 0.1s",
-  },
-  undoBtn: {
-    width: 48,
-    height: 48,
-    minWidth: 48,
-    minHeight: 48,
-    borderRadius: 14,
-    border: "3px solid #EF4444",
-    background: "#FEE2E2",
-    color: "#991B1B",
-    fontSize: 24,
-    fontWeight: 700 as const,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    transition: "transform 0.1s",
-  },
-  timer: {
-    fontSize: "0.75rem",
-    color: "#9CA3AF",
-    marginLeft: 4,
-  },
-};
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -163,29 +69,33 @@ export default function ChangePreview({
   };
 
   return (
-    <div style={styles.container}>
-      <div style={styles.description}>{change.description}</div>
-      <div style={styles.diffRow}>
-        <span style={styles.beforeBadge}>{change.before}</span>
-        <span style={styles.arrow}>&rarr;</span>
-        <span style={styles.afterBadge}>{change.after}</span>
+    <div className="bg-[#FFF8F0] border-2 border-orange-300 rounded-2xl px-4 py-3 mt-2 flex flex-col gap-2">
+      <div className="text-sm font-semibold text-amber-800">{change.description}</div>
+      <div className="flex gap-3 text-sm items-center flex-wrap">
+        <span className="bg-red-100 text-red-900 rounded-lg px-2.5 py-1 font-semibold text-xs line-through">
+          {change.before}
+        </span>
+        <span className="text-base text-gray-400">&rarr;</span>
+        <span className="bg-emerald-100 text-emerald-800 rounded-lg px-2.5 py-1 font-semibold text-xs">
+          {change.after}
+        </span>
       </div>
-      <div style={styles.actions}>
+      <div className="flex gap-2.5 items-center">
         <button
           onClick={handleConfirm}
-          style={styles.confirmBtn}
+          className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-[14px] border-[3px] border-emerald-500 bg-emerald-100 text-emerald-800 text-2xl font-bold cursor-pointer flex items-center justify-center transition-transform active:scale-95"
           aria-label="Confirm change"
         >
           &#10003;
         </button>
         <button
           onClick={handleUndo}
-          style={styles.undoBtn}
+          className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-[14px] border-[3px] border-red-500 bg-red-100 text-red-900 text-2xl font-bold cursor-pointer flex items-center justify-center transition-transform active:scale-95"
           aria-label="Undo change"
         >
           &#10005;
         </button>
-        <span style={styles.timer}>
+        <span className="text-xs text-gray-400 ml-1">
           Auto-accepts in {secondsLeft}s
         </span>
       </div>

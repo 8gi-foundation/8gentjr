@@ -32,61 +32,6 @@ function MicIcon({ active }: { active: boolean }) {
 }
 
 // ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-const buttonBase: React.CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minWidth: 48,
-  minHeight: 48,
-  borderRadius: "50%",
-  border: "none",
-  cursor: "pointer",
-  transition: "background-color 0.2s, box-shadow 0.2s, transform 0.15s",
-  position: "relative",
-};
-
-const buttonIdle: React.CSSProperties = {
-  ...buttonBase,
-  backgroundColor: "#e5e7eb",
-  color: "#374151",
-};
-
-const buttonActive: React.CSSProperties = {
-  ...buttonBase,
-  backgroundColor: "#ef4444",
-  color: "#fff",
-  boxShadow: "0 0 0 0 rgba(239,68,68,0.5)",
-  animation: "voice-pulse 1.4s ease-in-out infinite",
-};
-
-const transcriptStyle: React.CSSProperties = {
-  marginTop: 8,
-  fontSize: 14,
-  color: "#374151",
-  maxWidth: 280,
-  wordBreak: "break-word",
-  minHeight: 20,
-};
-
-const errorStyle: React.CSSProperties = {
-  marginTop: 4,
-  fontSize: 12,
-  color: "#dc2626",
-};
-
-// Keyframes injected once via <style> tag
-const pulseKeyframes = `
-@keyframes voice-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
-  70%  { box-shadow: 0 0 0 12px rgba(239,68,68,0); }
-  100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
-}
-`;
-
-// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -128,25 +73,31 @@ export function VoiceButton({
   };
 
   return (
-    <div
-      className={className}
-      style={{ display: "inline-flex", flexDirection: "column", alignItems: "center" }}
-    >
-      {/* Inject pulse keyframes */}
-      <style>{pulseKeyframes}</style>
-
+    <div className={`inline-flex flex-col items-center ${className ?? ""}`}>
       <button
         type="button"
         onClick={toggle}
         aria-label={isListening ? "Stop listening" : "Start voice input"}
         aria-pressed={isListening}
-        style={isListening ? buttonActive : buttonIdle}
+        className={
+          isListening
+            ? "inline-flex items-center justify-center min-w-[48px] min-h-[48px] rounded-full border-none cursor-pointer bg-red-500 text-white shadow-[0_0_0_0_rgba(239,68,68,0.5)] animate-pulse transition-colors"
+            : "inline-flex items-center justify-center min-w-[48px] min-h-[48px] rounded-full border-none cursor-pointer bg-gray-200 text-gray-700 transition-colors"
+        }
       >
         <MicIcon active={isListening} />
       </button>
 
-      {transcript && <div style={transcriptStyle}>{transcript}</div>}
-      {error && <div role="alert" style={errorStyle}>{error}</div>}
+      {transcript && (
+        <div className="mt-2 text-sm text-gray-700 max-w-[280px] break-words min-h-[20px]">
+          {transcript}
+        </div>
+      )}
+      {error && (
+        <div role="alert" className="mt-1 text-xs text-red-600">
+          {error}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { CSSProperties, useRef, useCallback, useEffect, useState } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import type { CompanionState, PointDirection } from "../hooks/useCompanion";
 
 // ---------------------------------------------------------------------------
@@ -122,7 +122,7 @@ function CreatureSVG({
       viewBox="0 0 64 64"
       width={SIZE}
       height={SIZE}
-      style={{ display: "block" }}
+      className="block"
       aria-hidden="true"
     >
       {/* Body — rounded blob */}
@@ -232,7 +232,7 @@ function MiniEyes({ colorHue }: { colorHue: number }) {
       viewBox="0 0 24 12"
       width={MINI_SIZE}
       height={MINI_SIZE / 2}
-      style={{ display: "block" }}
+      className="block"
       aria-hidden="true"
     >
       <rect
@@ -337,25 +337,19 @@ export default function Companion({
 
   // ── Render ───────────────────────────────────────────────────
 
-  const containerStyle: CSSProperties = {
-    position: "fixed",
-    right: pos.x,
-    bottom: pos.y,
-    zIndex: 90,
-    cursor: "pointer",
-    touchAction: "none",
-    userSelect: "none",
-    WebkitTapHighlightColor: "transparent",
-    animation: minimized ? "none" : getAnimation(state, direction),
-    transition: "width 0.2s ease, height 0.2s ease",
-  };
-
   return (
     <>
       <style>{KEYFRAMES}</style>
       <div
         ref={containerRef}
-        style={containerStyle}
+        className="fixed z-[90] cursor-pointer select-none transition-[width,height] duration-200"
+        style={{
+          right: pos.x,
+          bottom: pos.y,
+          touchAction: "none",
+          WebkitTapHighlightColor: "transparent",
+          animation: minimized ? "none" : getAnimation(state, direction),
+        }}
         role="button"
         aria-label={minimized ? "Show companion" : "Companion"}
         tabIndex={0}
