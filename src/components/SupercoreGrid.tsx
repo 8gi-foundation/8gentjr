@@ -24,8 +24,8 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import Image from 'next/image';
 import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
+import { logWord } from '@/lib/session-logger';
 
 // =============================================================================
 // Fitzgerald Key Color Definitions (mapped from shared vocabulary system)
@@ -100,7 +100,7 @@ const SUPERCORE_50: CoreWord[] = [
   { id: 'w03', label: 'want',      category: 'verbs',       arasaacId: 5441 },
   { id: 'w04', label: 'need',      category: 'verbs',       arasaacId: 37160 },
   { id: 'w05', label: 'like',      category: 'verbs',       arasaacId: 37826 },
-  { id: 'w06', label: "don't",     category: 'negation',    arasaacId: 34021 },
+  { id: 'w06', label: "don't",     category: 'negation',    arasaacId: 5525 },
   { id: 'w07', label: 'help',      category: 'social',      arasaacId: 32648 },
   { id: 'w08', label: 'more',      category: 'determiners', arasaacId: 5508 },
   { id: 'w09', label: 'stop',      category: 'negation',    arasaacId: 7196 },
@@ -321,6 +321,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const handleWordTap = useCallback((word: CoreWord) => {
     speakText(word.label);
     setSentence(prev => [...prev, word]);
+    logWord(word.label);
   }, [speakText]);
 
   const handleSpeakAll = useCallback(() => {

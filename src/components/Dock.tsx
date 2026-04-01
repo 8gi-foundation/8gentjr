@@ -192,7 +192,7 @@ const MORE_ITEMS: MoreItem[] = [
 ];
 
 const DOCK_ITEMS: DockItem[] = [
-  { id: 'talk', label: 'Talk', icon: IconSpeechBubble, href: '/talk/core' },
+  { id: 'talk', label: 'Talk', icon: IconSpeechBubble, href: '/talk' },
   { id: 'music', label: 'Music', icon: IconMusic, href: '/music' },
   { id: 'games', label: 'Games', icon: IconGamepad, href: '/games' },
   { id: 'speech', label: 'Speech', icon: IconWaveform, href: '/speech' },
