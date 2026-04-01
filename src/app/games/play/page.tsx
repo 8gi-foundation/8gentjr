@@ -121,7 +121,7 @@ const games: GameDef[] = [
   { id: "memory-match", category: "memory", emoji: "\u{1F0CF}", title: "Memory Match", description: "Find all matching pairs!", color: "#4ECDC4", component: MemoryMatch },
 ];
 
-export default function GamesPage() {
+export default function GamesPlayPage() {
   const [tab, setTab] = useState<Category>("speech");
   const [activeGame, setActiveGame] = useState<string | null>(null);
 
@@ -136,9 +136,7 @@ export default function GamesPage() {
             className="border-none bg-transparent text-xl cursor-pointer px-2 py-1 text-[#E8610A] font-bold">
             &larr; Back
           </button>
-          <span className="font-bold text-base text-gray-800 ml-2">
-            {game.title}
-          </span>
+          <span className="font-bold text-base text-gray-800 ml-2">{game.title}</span>
         </div>
         <div className="h-[calc(100vh-60px)]">
           <GameComponent />
@@ -152,10 +150,10 @@ export default function GamesPage() {
   return (
     <div className="min-h-screen bg-[#FFF8F0] px-4 pt-6 pb-24">
       <h1 className="text-[32px] font-extrabold text-[#E8610A] text-center mb-1">
-        SchoolTube Games
+        Game Hub
       </h1>
       <p className="text-center text-gray-400 text-sm mb-5">
-        {games.length} games &middot; Learn through play!
+        {games.length} games across {categories.length} categories
       </p>
 
       {/* Category tabs */}
