@@ -16,7 +16,7 @@ const CORE_ITEMS: DockItem[] = [
   { id: "aac",      label: "Talk",     icon: "💬" },
   { id: "music",    label: "Music",    icon: "🎵" },
   { id: "games",    label: "Games",    icon: "🎮" },
-  { id: "settings", label: "Settings", icon: "⚙️" },
+  { id: "settings", label: "My Stuff", icon: "⚙️" },
 ];
 
 const MORE_ITEMS: DockItem[] = [
@@ -40,8 +40,8 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-around",
-    background: "rgba(255,255,255,0.95)",
-    borderTop: "1px solid #e0e0e0",
+    background: "rgba(255,248,240,0.95)",
+    borderTop: "1px solid #F0DECA",
     backdropFilter: "blur(12px)",
     WebkitBackdropFilter: "blur(12px)",
     zIndex: 100,
@@ -92,9 +92,9 @@ const styles = {
     position: "fixed" as const,
     bottom: DOCK_HEIGHT + 8,
     right: 12,
-    background: "#fff",
+    background: "#FFF8F0",
     borderRadius: 16,
-    boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+    boxShadow: "0 8px 32px rgba(232, 97, 10, 0.12)",
     padding: 8,
     display: "flex",
     flexDirection: "column" as const,
