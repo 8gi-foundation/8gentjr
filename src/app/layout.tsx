@@ -4,6 +4,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { OfflineBanner } from '../components/OfflineBanner';
 import Dock from '../components/Dock';
+import { LockScreenGate } from '../components/LockScreenGate';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -51,9 +52,11 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${fraunces.variable}`} data-theme="light">
       <body className="antialiased">
         <Providers>
-          <OfflineBanner />
-          <main className="pb-safe-dock">{children}</main>
-          <Dock />
+          <LockScreenGate>
+            <OfflineBanner />
+            <main className="pb-safe-dock">{children}</main>
+            <Dock />
+          </LockScreenGate>
         </Providers>
       </body>
     </html>
