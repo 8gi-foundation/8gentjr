@@ -56,7 +56,6 @@ function playDrumSound(ctx: AudioContext, padId: PadId) {
       filt.connect(nGain);
       nGain.connect(ctx.destination);
       noise.start(now);
-      // Tonal body
       const osc = ctx.createOscillator();
       const oGain = ctx.createGain();
       osc.connect(oGain);
@@ -210,12 +209,10 @@ export function DrumPads() {
         if (ctx.state === "suspended") await ctx.resume();
         playDrumSound(ctx, pad.id);
 
-        // Haptic feedback
         if (typeof navigator !== "undefined" && navigator.vibrate) {
           navigator.vibrate(30);
         }
 
-        // Visual flash
         setActivePads((prev) => new Set(prev).add(pad.id));
         setTimeout(() => {
           setActivePads((prev) => {
@@ -232,18 +229,7 @@ export function DrumPads() {
   );
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
-        gap: 10,
-        padding: 10,
-        width: "100%",
-        maxWidth: 400,
-        margin: "0 auto",
-        touchAction: "none",
-      }}
-    >
+    <div className="grid grid-cols-4 gap-2.5 p-2.5 w-full max-w-[400px] mx-auto touch-none">
       {PADS.map((pad) => {
         const active = activePads.has(pad.id);
         return (
@@ -254,28 +240,15 @@ export function DrumPads() {
               e.preventDefault();
               hitPad(pad);
             }}
+            className="min-w-[60px] min-h-[60px] aspect-square border-none rounded-[14px] cursor-pointer flex items-center justify-center font-bold text-[13px] text-white select-none transition-transform duration-75 ease-out"
             style={{
-              minWidth: 60,
-              minHeight: 60,
-              aspectRatio: "1",
-              border: "none",
-              borderRadius: 14,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 700,
-              fontSize: 13,
-              color: "#fff",
-              textShadow: "0 1px 2px rgba(0,0,0,0.3)",
-              userSelect: "none",
-              WebkitTapHighlightColor: "transparent",
               backgroundColor: pad.color,
+              textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+              WebkitTapHighlightColor: "transparent",
               transform: active ? "scale(0.9)" : "scale(1)",
               boxShadow: active
                 ? `0 0 20px ${pad.color}, 0 0 40px ${pad.color}80, inset 0 0 20px rgba(255,255,255,0.3)`
                 : `0 4px 12px ${pad.color}40, inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.15)`,
-              transition: "transform 0.08s ease, box-shadow 0.08s ease",
             }}
           >
             {pad.label}

@@ -19,8 +19,6 @@ const NOTES = [
 
 function playXylophoneNote(ctx: AudioContext, freq: number) {
   const now = ctx.currentTime;
-
-  // Main tone — triangle wave for bell-like timbre
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.connect(gain);
@@ -32,7 +30,6 @@ function playXylophoneNote(ctx: AudioContext, freq: number) {
   osc.start(now);
   osc.stop(now + 0.8);
 
-  // 3rd harmonic overtone for metallic ring
   const osc2 = ctx.createOscillator();
   const gain2 = ctx.createGain();
   osc2.connect(gain2);
@@ -74,16 +71,13 @@ export function XylophoneKeys() {
     async (index: number) => {
       if (lastPlayedRef.current === index) return;
       lastPlayedRef.current = index;
-
       try {
         const ctx = getCtx();
         if (ctx.state === "suspended") await ctx.resume();
         playXylophoneNote(ctx, NOTES[index].freq);
-
         if (typeof navigator !== "undefined" && navigator.vibrate) {
           navigator.vibrate(15);
         }
-
         setActiveIndex(index);
         setTimeout(() => setActiveIndex((prev) => (prev === index ? null : prev)), 200);
       } catch (err) {
@@ -111,7 +105,6 @@ export function XylophoneKeys() {
     lastPlayedRef.current = null;
   }, []);
 
-  // Keys get shorter as pitch rises (like a real xylophone)
   const maxH = 180;
   const minH = 100;
 
@@ -119,17 +112,7 @@ export function XylophoneKeys() {
     <div
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      style={{
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "center",
-        gap: 6,
-        padding: "16px 8px",
-        width: "100%",
-        maxWidth: 440,
-        margin: "0 auto",
-        touchAction: "none",
-      }}
+      className="flex items-end justify-center gap-1.5 px-2 py-4 w-full max-w-[440px] mx-auto touch-none"
     >
       {NOTES.map((note, i) => {
         const active = activeIndex === i;
@@ -142,30 +125,16 @@ export function XylophoneKeys() {
               e.preventDefault();
               playNote(i);
             }}
+            className="flex-1 min-w-[48px] border-none rounded-xl cursor-pointer flex flex-col items-center justify-end pb-2.5 font-bold text-sm text-white select-none transition-transform duration-75 ease-out"
             style={{
-              flex: 1,
-              minWidth: 48,
               height: h,
-              border: "none",
-              borderRadius: 12,
-              cursor: "pointer",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "flex-end",
-              paddingBottom: 10,
-              fontWeight: 700,
-              fontSize: 14,
-              color: "#fff",
-              textShadow: "0 1px 2px rgba(0,0,0,0.3)",
-              userSelect: "none",
-              WebkitTapHighlightColor: "transparent",
               backgroundColor: note.color,
+              textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+              WebkitTapHighlightColor: "transparent",
               transform: active ? "scaleY(0.93)" : "scaleY(1)",
               boxShadow: active
                 ? `0 0 20px ${note.color}, 0 0 40px ${note.color}60`
                 : `0 4px 12px ${note.color}30, inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.15)`,
-              transition: "transform 0.08s ease, box-shadow 0.08s ease",
             }}
           >
             {note.note}

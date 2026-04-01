@@ -63,35 +63,24 @@ export default function BubbleWrap() {
   const allPopped = bubbles.every((b) => b.popped);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: 16 }}>
-      <h2 style={{ margin: 0, fontSize: 22, color: "#555" }}>Bubble Wrap</h2>
-      <p style={{ margin: 0, fontSize: 14, color: "#888" }}>Tap to pop!</p>
+    <div className="flex flex-col items-center gap-4 p-4">
+      <h2 className="m-0 text-[22px] text-gray-600">Bubble Wrap</h2>
+      <p className="m-0 text-sm text-gray-400">Tap to pop!</p>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-          gap: 8,
-          maxWidth: 320,
-        }}
-      >
+      <div className="grid grid-cols-5 gap-2 max-w-[320px]">
         {bubbles.map((b) => (
           <button
             key={b.id}
             onClick={() => !b.popped && pop(b.id)}
             aria-label={b.popped ? "Popped bubble" : "Pop this bubble"}
+            className="w-14 h-14 rounded-full border-none transition-all duration-150 ease-out"
             style={{
-              width: 56,
-              height: 56,
-              borderRadius: "50%",
-              border: "none",
               cursor: b.popped ? "default" : "pointer",
               background: b.popped ? "#e0e0e0" : PASTEL[b.id % PASTEL.length],
               boxShadow: b.popped
                 ? "inset 0 2px 6px rgba(0,0,0,0.15)"
                 : "0 3px 8px rgba(0,0,0,0.12), inset 0 -2px 4px rgba(255,255,255,0.6)",
               transform: b.popped ? "scale(0.85)" : "scale(1)",
-              transition: "transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease",
               opacity: b.popped ? 0.5 : 1,
             }}
           />
@@ -101,16 +90,7 @@ export default function BubbleWrap() {
       {allPopped && (
         <button
           onClick={reset}
-          style={{
-            marginTop: 8,
-            padding: "10px 28px",
-            borderRadius: 20,
-            border: "none",
-            background: "#7C4DFF",
-            color: "#fff",
-            fontSize: 16,
-            cursor: "pointer",
-          }}
+          className="mt-2 px-7 py-2.5 rounded-[20px] border-none bg-[#7C4DFF] text-white text-base cursor-pointer"
         >
           New Sheet
         </button>

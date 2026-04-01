@@ -78,16 +78,14 @@ export default function BreathingSphere() {
   const scale = running ? SCALE[phase.name] : 0.5;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24, padding: 24 }}>
-      <h2 style={{ margin: 0, fontSize: 22, color: "#555" }}>Breathing Sphere</h2>
+    <div className="flex flex-col items-center gap-6 p-6">
+      <h2 className="m-0 text-[22px] text-gray-600">Breathing Sphere</h2>
 
       <div
         role="img"
         aria-label={running ? phase.label : "Breathing sphere paused"}
+        className="w-[180px] h-[180px] rounded-full"
         style={{
-          width: 180,
-          height: 180,
-          borderRadius: "50%",
           background: `radial-gradient(circle at 40% 40%, ${phase.color}, ${phase.color}88)`,
           transform: `scale(${scale})`,
           transition: `transform ${phase.duration}ms ease-in-out, background ${phase.duration}ms ease`,
@@ -95,29 +93,15 @@ export default function BreathingSphere() {
         }}
       />
 
-      <p
-        style={{
-          fontSize: 20,
-          color: "#666",
-          minHeight: 28,
-          margin: 0,
-          fontWeight: 500,
-        }}
-      >
+      <p className="text-xl text-gray-500 min-h-[28px] m-0 font-medium">
         {running ? phase.label : "Tap to start"}
       </p>
 
       <button
         onClick={toggle}
-        style={{
-          padding: "10px 32px",
-          borderRadius: 20,
-          border: "none",
-          background: running ? "#EF5350" : "#66BB6A",
-          color: "#fff",
-          fontSize: 16,
-          cursor: "pointer",
-        }}
+        className={`px-8 py-2.5 rounded-[20px] border-none text-white text-base cursor-pointer ${
+          running ? "bg-red-500" : "bg-green-500"
+        }`}
       >
         {running ? "Stop" : "Start"}
       </button>

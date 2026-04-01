@@ -99,8 +99,8 @@ export default function RainbowPaint() {
   }, []);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: 16 }}>
-      <h2 style={{ margin: 0, fontSize: 22, color: "#555" }}>Rainbow Paint</h2>
+    <div className="flex flex-col items-center gap-3 p-4">
+      <h2 className="m-0 text-[22px] text-gray-600">Rainbow Paint</h2>
 
       <canvas
         ref={canvasRef}
@@ -111,64 +111,41 @@ export default function RainbowPaint() {
         onTouchStart={onStart}
         onTouchMove={onMove}
         onTouchEnd={onEnd}
-        style={{
-          width: "100%",
-          maxWidth: 360,
-          height: 320,
-          borderRadius: 16,
-          border: "2px solid #e0e0e0",
-          touchAction: "none",
-          cursor: "crosshair",
-        }}
+        className="w-full max-w-[360px] h-[320px] rounded-2xl border-2 border-gray-300 touch-none cursor-crosshair"
       />
 
       {/* Color picker */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", maxWidth: 360 }}>
+      <div className="flex flex-wrap gap-1.5 justify-center max-w-[360px]">
         {COLORS.map((c) => (
           <button
             key={c}
             onClick={() => setColor(c)}
             aria-label={`Color ${c}`}
+            className="w-7 h-7 rounded-full cursor-pointer p-0"
             style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              border: color === c ? "3px solid #333" : "2px solid #ccc",
               background: c,
-              cursor: "pointer",
-              padding: 0,
+              border: color === c ? "3px solid #333" : "2px solid #ccc",
             }}
           />
         ))}
       </div>
 
       {/* Size picker */}
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div className="flex gap-2 items-center">
         {SIZES.map((s) => (
           <button
             key={s}
             onClick={() => setSize(s)}
             aria-label={`Brush size ${s}`}
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: "50%",
-              border: size === s ? "2px solid #333" : "2px solid #ccc",
-              background: "#fff",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: 0,
-            }}
+            className="w-8 h-8 rounded-full bg-white cursor-pointer flex items-center justify-center p-0"
+            style={{ border: size === s ? "2px solid #333" : "2px solid #ccc" }}
           >
             <span
+              className="block rounded-full"
               style={{
                 width: s,
                 height: s,
-                borderRadius: "50%",
                 background: color,
-                display: "block",
               }}
             />
           </button>
@@ -177,15 +154,7 @@ export default function RainbowPaint() {
 
       <button
         onClick={clear}
-        style={{
-          padding: "8px 24px",
-          borderRadius: 20,
-          border: "none",
-          background: "#78909C",
-          color: "#fff",
-          fontSize: 14,
-          cursor: "pointer",
-        }}
+        className="px-6 py-2 rounded-[20px] border-none bg-[#78909C] text-white text-sm cursor-pointer"
       >
         Clear
       </button>

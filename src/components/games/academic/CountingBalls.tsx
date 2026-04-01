@@ -2,13 +2,10 @@
 
 import { useState, useCallback } from "react";
 
-/* ── Counting Balls ─────────────────────────────────────── */
-/* Tap the balls to count them. Score a point per correct answer. */
-
-const BALL_EMOJIS = ["🔴", "🔵", "🟢", "🟡", "🟣", "🟠"];
+const BALL_EMOJIS = ["\u{1F534}", "\u{1F535}", "\u{1F7E2}", "\u{1F7E1}", "\u{1F7E3}", "\u{1F7E0}"];
 
 function generateRound() {
-  const count = Math.floor(Math.random() * 5) + 1; // 1-5 balls
+  const count = Math.floor(Math.random() * 5) + 1;
   const emoji = BALL_EMOJIS[Math.floor(Math.random() * BALL_EMOJIS.length)];
   return { count, emoji };
 }
@@ -48,39 +45,28 @@ export default function CountingBalls() {
   const choices = Array.from({ length: 5 }, (_, i) => i + 1);
 
   return (
-    <div style={{ textAlign: "center", padding: 24, fontFamily: "system-ui, sans-serif" }}>
-      <h2 style={{ fontSize: 28, margin: "0 0 8px" }}>🧮 Counting Balls</h2>
-      <p style={{ color: "#666", margin: "0 0 16px" }}>
-        Tap each ball, then pick the right number!
-      </p>
+    <div className="text-center p-6 font-sans">
+      <h2 className="text-[28px] mb-2">{"\u{1F9EE}"} Counting Balls</h2>
+      <p className="text-gray-500 mb-4">Tap each ball, then pick the right number!</p>
 
-      <div style={{ fontSize: 14, marginBottom: 16, color: "#888" }}>
-        Score: <strong style={{ color: "#4CAF50" }}>{score}</strong> / {total}
+      <div className="text-sm mb-4 text-gray-400">
+        Score: <strong className="text-green-600">{score}</strong> / {total}
       </div>
 
-      {celebration && (
-        <div style={{ fontSize: 48, marginBottom: 16, animation: "none" }}>
-          🎉 Correct! 🎉
-        </div>
-      )}
+      {celebration && <div className="text-5xl mb-4">{"\u{1F389}"} Correct! {"\u{1F389}"}</div>}
 
       <div
-        style={{
-          display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap",
-          marginBottom: 24, minHeight: 80,
-          transform: shake ? "translateX(8px)" : "none",
-          transition: "transform 0.1s",
-        }}
+        className="flex gap-4 justify-center flex-wrap mb-6 min-h-[80px] transition-transform duration-100"
+        style={{ transform: shake ? "translateX(8px)" : "none" }}
       >
         {Array.from({ length: round.count }, (_, i) => (
           <button
             key={i}
             onClick={() => handleTap(i)}
+            className="text-5xl bg-transparent border-none cursor-pointer transition-all duration-200"
             style={{
-              fontSize: 48, background: "none", border: "none", cursor: "pointer",
               opacity: i < tapped ? 0.4 : 1,
               transform: i < tapped ? "scale(0.8)" : "scale(1)",
-              transition: "all 0.2s",
               filter: i < tapped ? "grayscale(0.5)" : "none",
             }}
             aria-label={`Ball ${i + 1}`}
@@ -90,18 +76,12 @@ export default function CountingBalls() {
         ))}
       </div>
 
-      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+      <div className="flex gap-3 justify-center flex-wrap">
         {choices.map((n) => (
           <button
             key={n}
             onClick={() => handleAnswer(n)}
-            style={{
-              width: 56, height: 56, borderRadius: "50%", fontSize: 24, fontWeight: 700,
-              border: "3px solid #2196F3", background: "#E3F2FD", color: "#1565C0",
-              cursor: "pointer", transition: "transform 0.15s",
-            }}
-            onPointerDown={(e) => ((e.target as HTMLElement).style.transform = "scale(0.9)")}
-            onPointerUp={(e) => ((e.target as HTMLElement).style.transform = "scale(1)")}
+            className="w-14 h-14 rounded-full text-2xl font-bold border-[3px] border-blue-500 bg-blue-50 text-blue-800 cursor-pointer transition-transform duration-150 active:scale-90"
           >
             {n}
           </button>

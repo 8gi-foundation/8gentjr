@@ -37,13 +37,13 @@ export default function GamesPage() {
   if (activeGame) {
     const GameComponent = gameComponents[activeGame];
     return (
-      <div style={{ minHeight: "100vh", background: "#FFF8F0" }}>
-        <div style={{ display: "flex", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #F0DECA" }}>
+      <div className="min-h-screen bg-[#FFF8F0]">
+        <div className="flex items-center px-4 py-3 border-b border-[#F0DECA]">
           <button onClick={() => setActiveGame(null)}
-            style={{ border: "none", background: "none", fontSize: 20, cursor: "pointer", padding: "4px 8px", color: "#E8610A", fontWeight: 700 }}>
+            className="border-none bg-transparent text-xl cursor-pointer px-2 py-1 text-[#E8610A] font-bold">
             &larr; Back
           </button>
-          <span style={{ fontWeight: 700, fontSize: 16, color: "#333", marginLeft: 8 }}>
+          <span className="font-bold text-base text-gray-800 ml-2">
             {games.find((g) => g.id === activeGame)?.title}
           </span>
         </div>
@@ -55,22 +55,21 @@ export default function GamesPage() {
   const filtered = games.filter((g) => g.category === tab);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FFF8F0", padding: "24px 16px 100px" }}>
-      <h1 style={{ fontSize: 32, fontWeight: 800, color: "#E8610A", textAlign: "center", margin: "0 0 4px" }}>
+    <div className="min-h-screen bg-[#FFF8F0] px-4 pt-6 pb-24">
+      <h1 className="text-[32px] font-extrabold text-[#E8610A] text-center mb-1">
         SchoolTube Games
       </h1>
-      <p style={{ textAlign: "center", color: "#888", fontSize: 14, margin: "0 0 20px" }}>Learn through play!</p>
+      <p className="text-center text-gray-400 text-sm mb-5">Learn through play!</p>
 
       {/* Category tabs */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 24 }}>
+      <div className="flex justify-center gap-2 mb-6">
         {categories.map((c) => (
           <button key={c.id} onClick={() => setTab(c.id)}
-            style={{
-              padding: "8px 20px", borderRadius: 20, border: "none", fontWeight: 700, fontSize: 14, cursor: "pointer",
-              background: tab === c.id ? "#E8610A" : "#F0DECA",
-              color: tab === c.id ? "#fff" : "#888",
-              transition: "all 0.15s",
-            }}>
+            className={`px-5 py-2 rounded-[20px] border-none font-bold text-sm cursor-pointer transition-all duration-150 ${
+              tab === c.id
+                ? "bg-[#E8610A] text-white"
+                : "bg-[#F0DECA] text-gray-400"
+            }`}>
             {c.emoji} {c.label}
           </button>
         ))}
@@ -78,16 +77,16 @@ export default function GamesPage() {
 
       {/* Game grid */}
       {filtered.length > 0 ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, maxWidth: 400, margin: "0 auto" }}>
+        <div className="grid grid-cols-2 gap-3.5 max-w-[400px] mx-auto">
           {filtered.map((g) => (
             <GameCard key={g.id} emoji={g.emoji} title={g.title} description={g.description} color={g.color}
               onClick={() => setActiveGame(g.id)} />
           ))}
         </div>
       ) : (
-        <div style={{ textAlign: "center", padding: "48px 16px", color: "#bbb" }}>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>&#x1F6A7;</div>
-          <p style={{ fontWeight: 600 }}>Coming soon!</p>
+        <div className="text-center px-4 py-12 text-gray-300">
+          <div className="text-5xl mb-2">&#x1F6A7;</div>
+          <p className="font-semibold">Coming soon!</p>
         </div>
       )}
     </div>

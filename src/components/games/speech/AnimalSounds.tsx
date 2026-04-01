@@ -47,14 +47,14 @@ export default function AnimalSounds() {
 
   if (done) {
     return (
-      <div style={{ textAlign: "center", padding: 32 }}>
-        <div style={{ fontSize: 64 }}>&#x1F3C6;</div>
-        <h2 style={{ fontSize: 28, fontWeight: 800, color: "#E8610A", margin: "16px 0 8px" }}>
+      <div className="text-center p-8">
+        <div className="text-6xl">&#x1F3C6;</div>
+        <h2 className="text-[28px] font-extrabold text-[#E8610A] mt-4 mb-2">
           All Done! {score}/{animals.length}
         </h2>
-        <p style={{ color: "#777" }}>You learned all the animal sounds!</p>
+        <p className="text-gray-500">You learned all the animal sounds!</p>
         <button onClick={() => { setIndex(0); setScore(0); setPhase("learn"); }}
-          style={{ marginTop: 16, padding: "12px 32px", borderRadius: 16, border: "none", background: "#E8610A", color: "#fff", fontWeight: 700, fontSize: 18, cursor: "pointer" }}>
+          className="mt-4 px-8 py-3 rounded-2xl border-none bg-[#E8610A] text-white font-bold text-lg cursor-pointer">
           Play Again
         </button>
       </div>
@@ -62,44 +62,48 @@ export default function AnimalSounds() {
   }
 
   return (
-    <div style={{ textAlign: "center", padding: 24 }}>
-      <div style={{ fontSize: 12, color: "#999", marginBottom: 8 }}>{index + 1} / {animals.length}</div>
-      <div style={{ height: 6, background: "#eee", borderRadius: 3, marginBottom: 20 }}>
-        <div style={{ height: 6, borderRadius: 3, background: `linear-gradient(90deg, #E8610A, #FFB347)`, width: `${(index / animals.length) * 100}%`, transition: "width 0.3s" }} />
+    <div className="text-center p-6">
+      <div className="text-xs text-gray-400 mb-2">{index + 1} / {animals.length}</div>
+      <div className="h-1.5 bg-gray-200 rounded-sm mb-5">
+        <div className="h-1.5 rounded-sm bg-gradient-to-r from-[#E8610A] to-[#FFB347] transition-[width] duration-300" style={{ width: `${(index / animals.length) * 100}%` }} />
       </div>
 
       {phase === "learn" ? (
         <>
-          <div style={{ fontSize: 80, marginBottom: 8 }}>{animal.emoji}</div>
-          <h3 style={{ fontSize: 32, fontWeight: 800, color: animal.color, margin: "0 0 4px" }}>{animal.name}</h3>
-          <div style={{ display: "inline-block", padding: "8px 20px", borderRadius: 16, border: `2px solid ${animal.color}`, background: `${animal.color}15`, fontSize: 20, fontWeight: 700, color: "#444", marginBottom: 16 }}>
+          <div className="text-[80px] mb-2">{animal.emoji}</div>
+          <h3 className="text-[32px] font-extrabold mb-1" style={{ color: animal.color }}>{animal.name}</h3>
+          <div className="inline-block px-5 py-2 rounded-2xl text-xl font-bold text-gray-600 mb-4" style={{ border: `2px solid ${animal.color}`, background: `${animal.color}15` }}>
             &ldquo;{animal.sound}&rdquo;
           </div>
           <br />
           <button onClick={() => { try { speechSynthesis.speak(new SpeechSynthesisUtterance(`The ${animal.name} says ${animal.sound}`)); } catch {} }}
-            style={{ padding: "10px 24px", borderRadius: 14, border: "none", background: animal.color, color: "#fff", fontWeight: 700, fontSize: 16, cursor: "pointer", marginRight: 8 }}>
+            className="px-6 py-2.5 rounded-[14px] border-none text-white font-bold text-base cursor-pointer mr-2" style={{ background: animal.color }}>
             Hear It
           </button>
           <button onClick={startQuiz}
-            style={{ padding: "10px 24px", borderRadius: 14, border: "none", background: "#4ECDC4", color: "#fff", fontWeight: 700, fontSize: 16, cursor: "pointer" }}>
+            className="px-6 py-2.5 rounded-[14px] border-none bg-[#4ECDC4] text-white font-bold text-base cursor-pointer">
             Quiz Me!
           </button>
         </>
       ) : (
         <>
-          <div style={{ padding: "12px 20px", borderRadius: 16, background: "#FFF8E1", border: "2px solid #FFD54F", display: "inline-block", marginBottom: 16 }}>
-            <span style={{ fontWeight: 800, color: "#F57F17", fontSize: 18 }}>Which animal says &ldquo;{animal.sound}&rdquo;?</span>
+          <div className="inline-block px-5 py-3 rounded-2xl bg-[#FFF8E1] border-2 border-[#FFD54F] mb-4">
+            <span className="font-extrabold text-[#F57F17] text-lg">Which animal says &ldquo;{animal.sound}&rdquo;?</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, maxWidth: 280, margin: "0 auto" }}>
+          <div className="grid grid-cols-2 gap-3 max-w-[280px] mx-auto">
             {options.map((o) => {
               const isThis = picked === o.name;
               const right = isThis && o.name === animal.name;
               const wrong = isThis && o.name !== animal.name;
               return (
                 <button key={o.name} onClick={() => answer(o.name)}
-                  style={{ padding: 16, borderRadius: 16, border: right ? "3px solid #4CAF50" : wrong ? "3px solid #EF5350" : "2px solid #ddd", background: right ? "#C8E6C9" : wrong ? "#FFCDD2" : "#fff", cursor: "pointer", textAlign: "center", transition: "all 0.15s" }}>
-                  <div style={{ fontSize: 40 }}>{o.emoji}</div>
-                  <div style={{ fontWeight: 700, fontSize: 14, marginTop: 4 }}>{o.name}</div>
+                  className="p-4 rounded-2xl cursor-pointer text-center transition-all duration-150"
+                  style={{
+                    border: right ? "3px solid #4CAF50" : wrong ? "3px solid #EF5350" : "2px solid #ddd",
+                    background: right ? "#C8E6C9" : wrong ? "#FFCDD2" : "#fff",
+                  }}>
+                  <div className="text-[40px]">{o.emoji}</div>
+                  <div className="font-bold text-sm mt-1">{o.name}</div>
                 </button>
               );
             })}
