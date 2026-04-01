@@ -10,11 +10,12 @@
  * Issue: #22
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   suggestNextWord,
   improveSentence,
   getWordColor,
+  getAllWords,
 } from '@/lib/sentence-engine';
 import { useApp } from '@/context/AppContext';
 
@@ -40,8 +41,49 @@ export default function SentenceBuilder() {
   const [encouragement, setEncouragement] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [improvedPreview, setImprovedPreview] = useState<string | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const suggestions = suggestNextWord(selectedWords);
+  // Local suggestions as baseline (always available)
+  const localSuggestions = suggestNextWord(selectedWords);
+  // Use AI suggestions if available, otherwise local
+  const suggestions = aiSuggestions ?? localSuggestions;
+
+  // Fetch AI autocomplete suggestions (with debounce + local fallback)
+  useEffect(() => {
+    // Reset AI suggestions when words change — local kicks in immediately
+    setAiSuggestions(null);
+
+    if (selectedWords.length === 0) return;
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const lastWord = selectedWords[selectedWords.length - 1];
+        const res = await fetch('/api/autocomplete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            input: lastWord,
+            existingWords: getAllWords(),
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.suggestions?.length > 0) {
+            setAiSuggestions(data.suggestions);
+          }
+        }
+      } catch {
+        // Silently fall back to local suggestions
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [selectedWords]);
 
   // Show encouragement on milestones
   useEffect(() => {
@@ -53,7 +95,7 @@ export default function SentenceBuilder() {
     }
   }, [selectedWords.length]);
 
-  // Update improved preview when words change
+  // Update improved preview when words change (local, instant)
   useEffect(() => {
     if (selectedWords.length >= 2) {
       setImprovedPreview(improveSentence(selectedWords));
