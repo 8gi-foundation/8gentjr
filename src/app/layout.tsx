@@ -1,17 +1,60 @@
-import type { Metadata } from "next";
-import { OfflineBanner } from "../components/OfflineBanner";
+import type { Metadata, Viewport } from 'next';
+import { Inter, Fraunces } from 'next/font/google';
+import './globals.css';
+import { Providers } from './providers';
+import { OfflineBanner } from '../components/OfflineBanner';
+import Dock from '../components/Dock';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  variable: '--font-fraunces',
+  weight: ['400', '700', '800'],
+});
 
 export const metadata: Metadata = {
-  title: "8gent Jr - AI for Every Child",
-  description: "Personalised AI OS for neurodivergent children. Free forever. Built with love by the 8GI Foundation.",
+  title: {
+    default: '8gent Jr - No more gatekeeping. A voice for every kid.',
+    template: '%s | 8gent Jr',
+  },
+  description:
+    'Personalised AI OS for neurodivergent children. AAC communication, AI-generated symbols, personalized voice. Free forever.',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: '8gent Jr',
+  },
+  category: 'Education',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FFFDF9' },
+    { media: '(prefers-color-scheme: dark)', color: '#1A1612' },
+  ],
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
-      <body style={{ margin: 0, fontFamily: "Inter, system-ui, -apple-system, sans-serif", background: "#FFF8F0", color: "#1a1a2e" }}>
-        <OfflineBanner />
-        {children}
+    <html lang="en" className={`${inter.variable} ${fraunces.variable}`} data-theme="light">
+      <body className="antialiased">
+        <Providers>
+          <OfflineBanner />
+          <main className="pb-safe-dock">{children}</main>
+          <Dock />
+        </Providers>
       </body>
     </html>
   );
