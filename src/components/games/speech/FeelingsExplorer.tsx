@@ -45,15 +45,15 @@ export default function FeelingsExplorer() {
 
   if (done) {
     return (
-      <div style={{ textAlign: "center", padding: 32 }}>
-        <div style={{ fontSize: 64 }}>&#x1F308;</div>
-        <h2 style={{ fontSize: 28, fontWeight: 800, color: "#9B59B6", margin: "16px 0 8px" }}>Feelings Expert!</h2>
-        <p style={{ color: "#777" }}>You scored {score}/{feelings.length}!</p>
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, margin: "12px 0" }}>
-          {feelings.map((fl) => <span key={fl.name} style={{ fontSize: 32 }}>{fl.emoji}</span>)}
+      <div className="text-center p-8">
+        <div className="text-6xl">&#x1F308;</div>
+        <h2 className="text-[28px] font-extrabold text-[#9B59B6] mt-4 mb-2">Feelings Expert!</h2>
+        <p className="text-gray-500">You scored {score}/{feelings.length}!</p>
+        <div className="flex justify-center gap-2 my-3">
+          {feelings.map((fl) => <span key={fl.name} className="text-[32px]">{fl.emoji}</span>)}
         </div>
         <button onClick={() => { setIndex(0); setScore(0); setPhase("learn"); setPicked(null); }}
-          style={{ marginTop: 12, padding: "12px 32px", borderRadius: 16, border: "none", background: "#9B59B6", color: "#fff", fontWeight: 700, fontSize: 18, cursor: "pointer" }}>
+          className="mt-3 px-8 py-3 rounded-2xl border-none bg-[#9B59B6] text-white font-bold text-lg cursor-pointer">
           Play Again
         </button>
       </div>
@@ -61,24 +61,24 @@ export default function FeelingsExplorer() {
   }
 
   return (
-    <div style={{ textAlign: "center", padding: 24 }}>
-      <div style={{ fontSize: 12, color: "#999", marginBottom: 8 }}>{index + 1} / {feelings.length}</div>
-      <div style={{ height: 6, background: "#eee", borderRadius: 3, marginBottom: 20 }}>
-        <div style={{ height: 6, borderRadius: 3, background: `linear-gradient(90deg, #FFD93D, #FF6B6B)`, width: `${(index / feelings.length) * 100}%`, transition: "width 0.3s" }} />
+    <div className="text-center p-6">
+      <div className="text-xs text-gray-400 mb-2">{index + 1} / {feelings.length}</div>
+      <div className="h-1.5 bg-gray-200 rounded-sm mb-5">
+        <div className="h-1.5 rounded-sm bg-gradient-to-r from-[#FFD93D] to-[#FF6B6B] transition-[width] duration-300" style={{ width: `${(index / feelings.length) * 100}%` }} />
       </div>
 
-      <div style={{ fontSize: 72, marginBottom: 4 }}>{f.emoji}</div>
-      <h3 style={{ fontSize: 32, fontWeight: 800, color: f.color, margin: "0 0 4px" }}>{f.name}</h3>
+      <div className="text-7xl mb-1">{f.emoji}</div>
+      <h3 className="text-[32px] font-extrabold mb-1" style={{ color: f.color }}>{f.name}</h3>
 
       {phase === "learn" && (
         <>
-          <div style={{ display: "inline-block", padding: "10px 20px", borderRadius: 16, border: `2px solid ${f.color}`, background: `${f.color}15`, marginBottom: 8 }}>
-            <p style={{ margin: 0, fontWeight: 700, color: "#444", fontSize: 16 }}>{f.desc}</p>
-            <p style={{ margin: "4px 0 0", color: "#999", fontSize: 13 }}>{f.body}</p>
+          <div className="inline-block px-5 py-2.5 rounded-2xl mb-2" style={{ border: `2px solid ${f.color}`, background: `${f.color}15` }}>
+            <p className="m-0 font-bold text-gray-600 text-base">{f.desc}</p>
+            <p className="mt-1 mb-0 text-gray-400 text-[13px]">{f.body}</p>
           </div>
           <br />
           <button onClick={() => setPhase("quiz")}
-            style={{ marginTop: 12, padding: "12px 28px", borderRadius: 14, border: "none", background: "#4ECDC4", color: "#fff", fontWeight: 700, fontSize: 16, cursor: "pointer" }}>
+            className="mt-3 px-7 py-3 rounded-[14px] border-none bg-[#4ECDC4] text-white font-bold text-base cursor-pointer">
             Quiz Me!
           </button>
         </>
@@ -86,16 +86,19 @@ export default function FeelingsExplorer() {
 
       {phase === "quiz" && (
         <>
-          <p style={{ fontWeight: 700, color: f.color, fontSize: 16, margin: "8px 0 12px" }}>When do you feel {f.name}?</p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 320, margin: "0 auto" }}>
+          <p className="font-bold text-base my-2 mb-3" style={{ color: f.color }}>When do you feel {f.name}?</p>
+          <div className="flex flex-col gap-2.5 max-w-[320px] mx-auto">
             {f.options.map((opt, i) => {
               const sel = picked === i;
               const right = sel && i === f.answer;
               const wrong = sel && i !== f.answer;
               return (
                 <button key={opt} onClick={() => tryAnswer(i)}
-                  style={{ padding: "14px 18px", borderRadius: 14, border: right ? "3px solid #4CAF50" : wrong ? "3px solid #EF5350" : "2px solid #ddd",
-                    background: right ? "#C8E6C9" : wrong ? "#FFCDD2" : "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}>
+                  className="px-4 py-3.5 rounded-[14px] font-bold text-[15px] cursor-pointer text-left transition-all duration-150"
+                  style={{
+                    border: right ? "3px solid #4CAF50" : wrong ? "3px solid #EF5350" : "2px solid #ddd",
+                    background: right ? "#C8E6C9" : wrong ? "#FFCDD2" : "#fff",
+                  }}>
                   {opt}
                 </button>
               );
@@ -106,10 +109,10 @@ export default function FeelingsExplorer() {
 
       {phase === "result" && (
         <>
-          <div style={{ fontSize: 48, margin: "8px 0" }}>&#x1F31F;</div>
-          <p style={{ color: "#555", fontSize: 16 }}>We feel <strong>{f.name}</strong> when &ldquo;{f.options[f.answer]}&rdquo;</p>
+          <div className="text-5xl my-2">&#x1F31F;</div>
+          <p className="text-gray-600 text-base">We feel <strong>{f.name}</strong> when &ldquo;{f.options[f.answer]}&rdquo;</p>
           <button onClick={next}
-            style={{ marginTop: 12, padding: "12px 28px", borderRadius: 14, border: "none", background: "#4ECDC4", color: "#fff", fontWeight: 700, fontSize: 16, cursor: "pointer" }}>
+            className="mt-3 px-7 py-3 rounded-[14px] border-none bg-[#4ECDC4] text-white font-bold text-base cursor-pointer">
             Next Feeling
           </button>
         </>

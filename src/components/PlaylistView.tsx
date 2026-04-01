@@ -17,93 +17,54 @@ export default function PlaylistView({ mood, onBack }: PlaylistViewProps) {
   }
 
   return (
-    <div style={{ padding: "0 16px 24px" }}>
+    <div className="px-4 pb-6">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px 0" }}>
+      <div className="flex items-center gap-3 py-4">
         <button
           onClick={onBack}
-          style={{
-            background: "none",
-            border: "2px solid #ccc",
-            borderRadius: 12,
-            padding: "8px 14px",
-            fontSize: 16,
-            cursor: "pointer",
-            color: "#1a1a2e",
-            fontWeight: 600,
-          }}
+          className="bg-transparent border-2 border-gray-300 rounded-xl px-3.5 py-2 text-base cursor-pointer text-[#1a1a2e] font-semibold"
           aria-label="Back to mood selector"
         >
           &larr; Back
         </button>
-        <div style={{ flex: 1, textAlign: "center" }}>
-          <span style={{ fontSize: 32 }}>{playlist.emoji}</span>
-          <h2 style={{ margin: "4px 0 0", fontSize: 22 }}>{playlist.name}</h2>
-          <p style={{ margin: 0, fontSize: 14, color: "#666" }}>{playlist.description}</p>
+        <div className="flex-1 text-center">
+          <span className="text-[32px]">{playlist.emoji}</span>
+          <h2 className="mt-1 mb-0 text-[22px]">{playlist.name}</h2>
+          <p className="m-0 text-sm text-gray-500">{playlist.description}</p>
         </div>
-        {/* Spacer to center the title */}
-        <div style={{ width: 70 }} />
+        <div className="w-[70px]" />
       </div>
 
       {/* Track list */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className="flex flex-col gap-2">
         {playlist.tracks.map((track, i) => {
           const isPlaying = playingIndex === i;
           return (
             <div
               key={i}
+              className="flex items-center gap-3 rounded-[14px] px-4 py-3 transition-all duration-150 ease-out"
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
                 background: isPlaying ? playlist.color + "33" : "#fff",
                 border: `2px solid ${isPlaying ? playlist.color : "#e0e0e0"}`,
-                borderRadius: 14,
-                padding: "12px 16px",
-                transition: "all 0.15s ease",
               }}
             >
-              {/* Play/Pause button */}
               <button
                 onClick={() => togglePlay(i)}
-                style={{
-                  width: 44,
-                  height: 44,
-                  minWidth: 44,
-                  borderRadius: "50%",
-                  border: "none",
-                  background: playlist.color,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 18,
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
-                }}
+                className="w-11 h-11 min-w-[44px] rounded-full border-none cursor-pointer flex items-center justify-center text-lg shadow-sm"
+                style={{ background: playlist.color }}
                 aria-label={isPlaying ? `Pause ${track.title}` : `Play ${track.title}`}
               >
                 {isPlaying ? "\u23F8\uFE0F" : "\u25B6\uFE0F"}
               </button>
 
-              {/* Track info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div
-                  style={{
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: "#1a1a2e",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] font-semibold text-[#1a1a2e] whitespace-nowrap overflow-hidden text-ellipsis">
                   {track.title}
                 </div>
-                <div style={{ fontSize: 13, color: "#888", marginTop: 2 }}>{track.artist}</div>
+                <div className="text-[13px] text-gray-400 mt-0.5">{track.artist}</div>
               </div>
 
-              {/* Duration */}
-              <span style={{ fontSize: 13, color: "#999", fontVariantNumeric: "tabular-nums" }}>
+              <span className="text-[13px] text-gray-400 tabular-nums">
                 {track.duration}
               </span>
             </div>
@@ -111,8 +72,7 @@ export default function PlaylistView({ mood, onBack }: PlaylistViewProps) {
         })}
       </div>
 
-      {/* Placeholder note */}
-      <p style={{ textAlign: "center", fontSize: 12, color: "#aaa", marginTop: 16 }}>
+      <p className="text-center text-xs text-gray-400 mt-4">
         Audio playback coming in a future update
       </p>
     </div>

@@ -34,11 +34,6 @@ export default function RhymeTime() {
   const ch = challenges[ci];
   const done = ci >= challenges.length;
 
-  const options = useState(() => shuffle([
-    ...challenges[0].rhymes.map((r) => ({ ...r, rhyme: true })),
-    ...challenges[0].fakes.map((f) => ({ ...f, rhyme: false })),
-  ]))[0];
-
   const [opts, setOpts] = useState(() => shuffle([
     ...ch.rhymes.map((r) => ({ ...r, rhyme: true })),
     ...ch.fakes.map((f) => ({ ...f, rhyme: false })),
@@ -69,12 +64,12 @@ export default function RhymeTime() {
 
   if (done) {
     return (
-      <div style={{ textAlign: "center", padding: 32 }}>
-        <div style={{ fontSize: 64 }}>&#x1F3B5;</div>
-        <h2 style={{ fontSize: 28, fontWeight: 800, color: "#6C5CE7", margin: "16px 0 8px" }}>Rhyme Champion!</h2>
-        <p style={{ color: "#777" }}>You found all the rhymes!</p>
+      <div className="text-center p-8">
+        <div className="text-6xl">&#x1F3B5;</div>
+        <h2 className="text-[28px] font-extrabold text-[#6C5CE7] mt-4 mb-2">Rhyme Champion!</h2>
+        <p className="text-gray-500">You found all the rhymes!</p>
         <button onClick={() => { setCi(0); setFound([]); setAllFound(false); const c = challenges[0]; setOpts(shuffle([...c.rhymes.map((r) => ({ ...r, rhyme: true })), ...c.fakes.map((f) => ({ ...f, rhyme: false }))])); }}
-          style={{ marginTop: 16, padding: "12px 32px", borderRadius: 16, border: "none", background: "#6C5CE7", color: "#fff", fontWeight: 700, fontSize: 18, cursor: "pointer" }}>
+          className="mt-4 px-8 py-3 rounded-2xl border-none bg-[#6C5CE7] text-white font-bold text-lg cursor-pointer">
           Play Again
         </button>
       </div>
@@ -82,43 +77,47 @@ export default function RhymeTime() {
   }
 
   return (
-    <div style={{ textAlign: "center", padding: 24 }}>
-      <div style={{ fontSize: 12, color: "#999", marginBottom: 8 }}>Round {ci + 1} / {challenges.length}</div>
-      <div style={{ height: 6, background: "#eee", borderRadius: 3, marginBottom: 16 }}>
-        <div style={{ height: 6, borderRadius: 3, background: `linear-gradient(90deg, #6C5CE7, #A29BFE)`, width: `${(ci / challenges.length) * 100}%`, transition: "width 0.3s" }} />
+    <div className="text-center p-6">
+      <div className="text-xs text-gray-400 mb-2">Round {ci + 1} / {challenges.length}</div>
+      <div className="h-1.5 bg-gray-200 rounded-sm mb-4">
+        <div className="h-1.5 rounded-sm bg-gradient-to-r from-[#6C5CE7] to-[#A29BFE] transition-[width] duration-300" style={{ width: `${(ci / challenges.length) * 100}%` }} />
       </div>
 
-      <p style={{ color: "#888", fontSize: 13, margin: "0 0 6px" }}>Find words that rhyme with:</p>
-      <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", padding: 16, borderRadius: 20, background: `${ch.color}18`, marginBottom: 8 }}>
-        <span style={{ fontSize: 48 }}>{ch.emoji}</span>
-        <span style={{ fontSize: 24, fontWeight: 800, color: ch.color }}>{ch.target}</span>
+      <p className="text-gray-400 text-[13px] mb-1.5">Find words that rhyme with:</p>
+      <div className="inline-flex flex-col items-center p-4 rounded-[20px] mb-2" style={{ background: `${ch.color}18` }}>
+        <span className="text-5xl">{ch.emoji}</span>
+        <span className="text-2xl font-extrabold" style={{ color: ch.color }}>{ch.target}</span>
       </div>
-      <div style={{ display: "inline-block", padding: "4px 14px", borderRadius: 12, background: ch.color, color: "#fff", fontWeight: 800, fontSize: 13, marginBottom: 16 }}>
+      <div className="inline-block px-3.5 py-1 rounded-xl text-white font-extrabold text-[13px] mb-4" style={{ background: ch.color }}>
         ends in {ch.ending}
       </div>
 
       {!allFound ? (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, maxWidth: 260, margin: "0 auto" }}>
+        <div className="grid grid-cols-2 gap-2.5 max-w-[260px] mx-auto">
           {opts.map((o) => {
             const isFound = found.includes(o.w);
             const isWrong = wrong === o.w;
             return (
               <button key={o.w} onClick={() => tap(o.w, o.rhyme)}
-                style={{ padding: 14, borderRadius: 16, border: isFound ? "3px solid #4CAF50" : isWrong ? "3px solid #EF5350" : "2px solid #ddd",
-                  background: isFound ? "#C8E6C9" : isWrong ? "#FFCDD2" : "#fff", cursor: "pointer", textAlign: "center", transition: "all 0.15s", opacity: isFound ? 0.7 : 1 }}>
-                <div style={{ fontSize: 32 }}>{o.e}</div>
-                <div style={{ fontWeight: 700, fontSize: 13, marginTop: 2 }}>{o.w}</div>
-                {isFound && <div style={{ fontSize: 10, color: "#4CAF50", fontWeight: 700 }}>rhymes!</div>}
+                className="p-3.5 rounded-2xl cursor-pointer text-center transition-all duration-150"
+                style={{
+                  border: isFound ? "3px solid #4CAF50" : isWrong ? "3px solid #EF5350" : "2px solid #ddd",
+                  background: isFound ? "#C8E6C9" : isWrong ? "#FFCDD2" : "#fff",
+                  opacity: isFound ? 0.7 : 1,
+                }}>
+                <div className="text-[32px]">{o.e}</div>
+                <div className="font-bold text-[13px] mt-0.5">{o.w}</div>
+                {isFound && <div className="text-[10px] text-green-600 font-bold">rhymes!</div>}
               </button>
             );
           })}
         </div>
       ) : (
         <div>
-          <div style={{ fontSize: 48, marginBottom: 8 }}>&#x2728;</div>
-          <p style={{ fontWeight: 800, color: "#4CAF50", fontSize: 20 }}>All Found!</p>
+          <div className="text-5xl mb-2">&#x2728;</div>
+          <p className="font-extrabold text-green-600 text-xl">All Found!</p>
           <button onClick={next}
-            style={{ marginTop: 12, padding: "12px 32px", borderRadius: 16, border: "none", background: "#6C5CE7", color: "#fff", fontWeight: 700, fontSize: 18, cursor: "pointer" }}>
+            className="mt-3 px-8 py-3 rounded-2xl border-none bg-[#6C5CE7] text-white font-bold text-lg cursor-pointer">
             {ci + 1 >= challenges.length ? "Finish!" : "Next Rhymes"}
           </button>
         </div>

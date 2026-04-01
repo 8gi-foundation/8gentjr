@@ -2,16 +2,13 @@
 
 import { useState, useCallback } from "react";
 
-/* ── Shape Match ────────────────────────────────────────── */
-/* Match shapes to their outlines. Drag/tap the shape that fits. */
-
 const SHAPES = [
-  { name: "Circle",   solid: "🔴", outline: "⭕" },
-  { name: "Square",   solid: "🟦", outline: "⬜" },
-  { name: "Triangle", solid: "🔺", outline: "△" },
-  { name: "Diamond",  solid: "🔷", outline: "◇" },
-  { name: "Star",     solid: "⭐", outline: "☆" },
-  { name: "Heart",    solid: "❤️", outline: "♡" },
+  { name: "Circle",   solid: "\u{1F534}", outline: "\u2B55" },
+  { name: "Square",   solid: "\u{1F7E6}", outline: "\u2B1C" },
+  { name: "Triangle", solid: "\u{1F53A}", outline: "\u25B3" },
+  { name: "Diamond",  solid: "\u{1F537}", outline: "\u25C7" },
+  { name: "Star",     solid: "\u2B50", outline: "\u2606" },
+  { name: "Heart",    solid: "\u2764\uFE0F", outline: "\u2661" },
 ];
 
 function pickRound() {
@@ -45,42 +42,31 @@ export default function ShapeMatch() {
   }, [round, celebration]);
 
   return (
-    <div style={{ textAlign: "center", padding: 24, fontFamily: "system-ui, sans-serif" }}>
-      <h2 style={{ fontSize: 28, margin: "0 0 8px" }}>🔷 Shape Match</h2>
-      <p style={{ color: "#666", margin: "0 0 16px" }}>
-        Find the shape that matches the outline!
-      </p>
+    <div className="text-center p-6 font-sans">
+      <h2 className="text-[28px] mb-2">{"\u{1F537}"} Shape Match</h2>
+      <p className="text-gray-500 mb-4">Find the shape that matches the outline!</p>
 
-      <div style={{ fontSize: 14, marginBottom: 16, color: "#888" }}>
-        Score: <strong style={{ color: "#4CAF50" }}>{score}</strong> / {total}
+      <div className="text-sm mb-4 text-gray-400">
+        Score: <strong className="text-green-600">{score}</strong> / {total}
       </div>
 
-      {celebration && (
-        <div style={{ fontSize: 48, marginBottom: 12 }}>🎉 Great match! 🎉</div>
-      )}
+      {celebration && <div className="text-5xl mb-3">{"\u{1F389}"} Great match! {"\u{1F389}"}</div>}
 
-      <div style={{
-        fontSize: 80, marginBottom: 24, padding: 24,
-        background: "#F5F5F5", borderRadius: 20, display: "inline-block",
-        border: "3px dashed #BDBDBD",
-      }}>
+      <div className="text-[80px] mb-6 p-6 bg-gray-100 rounded-[20px] inline-block border-[3px] border-dashed border-gray-400">
         {round.target.outline}
       </div>
 
-      <p style={{ color: "#999", fontSize: 14, marginBottom: 12 }}>
-        Which shape fits? Tap it!
-      </p>
+      <p className="text-gray-400 text-sm mb-3">Which shape fits? Tap it!</p>
 
-      <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+      <div className="flex gap-4 justify-center flex-wrap">
         {round.options.map((s) => (
           <button
             key={s.name}
             onClick={() => handlePick(s)}
+            className="text-[52px] px-4 py-3 rounded-2xl cursor-pointer transition-all duration-200"
             style={{
-              fontSize: 52, padding: "12px 16px", borderRadius: 16,
               border: wrongId === s.name ? "3px solid #F44336" : "3px solid #E0E0E0",
               background: wrongId === s.name ? "#FFEBEE" : "#FFF",
-              cursor: "pointer", transition: "all 0.2s",
               transform: wrongId === s.name ? "scale(0.9)" : "scale(1)",
             }}
             aria-label={s.name}

@@ -118,15 +118,8 @@ export default function SpinFidget() {
     return (
       <div
         key={i}
+        className="absolute top-1/2 left-1/2 w-[60px] h-5 -mt-2.5 ml-0 rounded-[10px]"
         style={{
-          position: "absolute",
-          top: "50%",
-          left: "50%",
-          width: 60,
-          height: 20,
-          marginTop: -10,
-          marginLeft: 0,
-          borderRadius: 10,
           background: ARM_COLORS[i],
           transformOrigin: "0% 50%",
           transform: `rotate(${rot}deg)`,
@@ -136,9 +129,9 @@ export default function SpinFidget() {
   });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: 24 }}>
-      <h2 style={{ margin: 0, fontSize: 22, color: "#555" }}>Spin Fidget</h2>
-      <p style={{ margin: 0, fontSize: 14, color: "#888" }}>Drag to spin!</p>
+    <div className="flex flex-col items-center gap-5 p-6">
+      <h2 className="m-0 text-[22px] text-gray-600">Spin Fidget</h2>
+      <p className="m-0 text-sm text-gray-400">Drag to spin!</p>
 
       <div
         ref={containerRef}
@@ -151,36 +144,15 @@ export default function SpinFidget() {
         onTouchEnd={onEnd}
         role="img"
         aria-label="Fidget spinner"
-        style={{
-          width: 200,
-          height: 200,
-          position: "relative",
-          cursor: "grab",
-          touchAction: "none",
-          transform: `rotate(${angle}deg)`,
-          userSelect: "none",
-        }}
+        className="w-[200px] h-[200px] relative cursor-grab touch-none select-none"
+        style={{ transform: `rotate(${angle}deg)` }}
       >
         {arms}
         {/* Center circle */}
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            width: 36,
-            height: 36,
-            marginTop: -18,
-            marginLeft: -18,
-            borderRadius: "50%",
-            background: "#fff",
-            border: "4px solid #bdbdbd",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-          }}
-        />
+        <div className="absolute top-1/2 left-1/2 w-9 h-9 -mt-[18px] -ml-[18px] rounded-full bg-white border-4 border-gray-400 shadow-md" />
       </div>
 
-      <p style={{ margin: 0, fontSize: 13, color: "#aaa" }}>
+      <p className="m-0 text-[13px] text-gray-400">
         {Math.abs(velocityRef.current) > 1 ? "Wheeee!" : "Give it a spin"}
       </p>
     </div>

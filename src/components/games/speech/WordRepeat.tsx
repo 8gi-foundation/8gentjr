@@ -50,15 +50,15 @@ export default function WordRepeat() {
 
   if (done) {
     return (
-      <div style={{ textAlign: "center", padding: 32 }}>
-        <div style={{ fontSize: 64 }}>&#x1F3A4;</div>
-        <h2 style={{ fontSize: 28, fontWeight: 800, color: "#9B59B6", margin: "16px 0 8px" }}>Word Master!</h2>
-        <p style={{ color: "#777" }}>You practised {TOTAL} words!</p>
-        <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap", margin: "12px 0" }}>
-          {pool.map((w) => <span key={w.word} style={{ fontSize: 32 }}>{w.emoji}</span>)}
+      <div className="text-center p-8">
+        <div className="text-6xl">&#x1F3A4;</div>
+        <h2 className="text-[28px] font-extrabold text-[#9B59B6] mt-4 mb-2">Word Master!</h2>
+        <p className="text-gray-500">You practised {TOTAL} words!</p>
+        <div className="flex justify-center gap-2 flex-wrap my-3">
+          {pool.map((w) => <span key={w.word} className="text-[32px]">{w.emoji}</span>)}
         </div>
         <button onClick={() => { setIndex(0); setReps(0); }}
-          style={{ marginTop: 12, padding: "12px 32px", borderRadius: 16, border: "none", background: "#9B59B6", color: "#fff", fontWeight: 700, fontSize: 18, cursor: "pointer" }}>
+          className="mt-3 px-8 py-3 rounded-2xl border-none bg-[#9B59B6] text-white font-bold text-lg cursor-pointer">
           Play Again
         </button>
       </div>
@@ -66,36 +66,33 @@ export default function WordRepeat() {
   }
 
   return (
-    <div style={{ textAlign: "center", padding: 24 }}>
-      <div style={{ fontSize: 12, color: "#999", marginBottom: 8 }}>{index + 1} / {TOTAL}</div>
-      <div style={{ height: 6, background: "#eee", borderRadius: 3, marginBottom: 20 }}>
-        <div style={{ height: 6, borderRadius: 3, background: "linear-gradient(90deg, #9B59B6, #E91E9B)", width: `${(index / TOTAL) * 100}%`, transition: "width 0.3s" }} />
+    <div className="text-center p-6">
+      <div className="text-xs text-gray-400 mb-2">{index + 1} / {TOTAL}</div>
+      <div className="h-1.5 bg-gray-200 rounded-sm mb-5">
+        <div className="h-1.5 rounded-sm bg-gradient-to-r from-[#9B59B6] to-[#E91E9B] transition-[width] duration-300" style={{ width: `${(index / TOTAL) * 100}%` }} />
       </div>
 
-      <div style={{ fontSize: 80, marginBottom: 8, animation: speaking ? "pulse 0.5s infinite" : "none" }}>{current.emoji}</div>
-      <h3 style={{ fontSize: 36, fontWeight: 800, color: "#9B59B6", margin: "0 0 4px" }}>{current.word}</h3>
-      <p style={{ color: "#aaa", fontSize: 14, letterSpacing: 2, margin: "0 0 16px" }}>{current.syllables}</p>
+      <div className={`text-[80px] mb-2 ${speaking ? "animate-pulse" : ""}`}>{current.emoji}</div>
+      <h3 className="text-4xl font-extrabold text-[#9B59B6] mb-1">{current.word}</h3>
+      <p className="text-gray-400 text-sm tracking-widest mb-4">{current.syllables}</p>
 
-      <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 16 }}>
+      <div className="flex justify-center gap-2.5 mb-4">
         {Array.from({ length: REPEATS }).map((_, i) => (
-          <div key={i} style={{
-            width: 36, height: 36, borderRadius: 18, display: "flex", alignItems: "center", justifyContent: "center",
-            background: i < reps ? "#4ECDC4" : "#eee", color: i < reps ? "#fff" : "#bbb", fontWeight: 800, fontSize: 14, transition: "all 0.2s",
-          }}>{i < reps ? "\u2713" : i + 1}</div>
+          <div key={i} className={`w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-sm transition-all duration-200 ${
+            i < reps ? "bg-[#4ECDC4] text-white" : "bg-gray-200 text-gray-300"
+          }`}>{i < reps ? "\u2713" : i + 1}</div>
         ))}
       </div>
-      <p style={{ color: "#888", fontSize: 14, marginBottom: 16 }}>Say it <strong>{REPEATS - reps}</strong> more {REPEATS - reps === 1 ? "time" : "times"}!</p>
+      <p className="text-gray-400 text-sm mb-4">Say it <strong>{REPEATS - reps}</strong> more {REPEATS - reps === 1 ? "time" : "times"}!</p>
 
       <button onClick={() => speak(current.word)} disabled={speaking}
-        style={{ padding: "10px 24px", borderRadius: 14, border: "none", background: "#FFD54F", color: "#333", fontWeight: 700, fontSize: 16, cursor: "pointer", marginRight: 8, opacity: speaking ? 0.5 : 1 }}>
+        className="px-6 py-2.5 rounded-[14px] border-none bg-[#FFD54F] text-gray-800 font-bold text-base cursor-pointer mr-2 disabled:opacity-50">
         Hear It
       </button>
       <button onClick={saidIt}
-        style={{ padding: "10px 24px", borderRadius: 14, border: "none", background: "#9B59B6", color: "#fff", fontWeight: 700, fontSize: 16, cursor: "pointer" }}>
+        className="px-6 py-2.5 rounded-[14px] border-none bg-[#9B59B6] text-white font-bold text-base cursor-pointer">
         I Said It!
       </button>
-
-      <style>{`@keyframes pulse { 0%,100% { transform: scale(1) } 50% { transform: scale(1.08) } }`}</style>
     </div>
   );
 }
