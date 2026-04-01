@@ -120,11 +120,65 @@ function IconFlask({ color }: { color: string }) {
   );
 }
 
+function IconTimer({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 9v4l2 2" />
+      <path d="M5 3L2 6" />
+      <path d="M22 6l-3-3" />
+      <path d="M12 5V3" />
+      <path d="M10 3h4" />
+    </svg>
+  );
+}
+
+function IconToolshed({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+    </svg>
+  );
+}
+
+function IconBrain({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 2a7 7 0 0 0-7 7c0 3 2 5.5 5 7v4h4v-4c3-1.5 5-4 5-7a7 7 0 0 0-7-7z" />
+    </svg>
+  );
+}
+
+function IconImage({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <polyline points="21 15 16 10 5 21" />
+    </svg>
+  );
+}
+
+function IconPlus({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
 const MORE_ITEMS: MoreItem[] = [
   { id: 'draw', label: 'Draw', icon: IconPalette, href: '/draw' },
   { id: 'schedule', label: 'Schedule', icon: IconClock, href: '/schedule' },
   { id: 'stories', label: 'Stories', icon: IconBook, href: '/stories' },
   { id: 'science', label: 'Science', icon: IconFlask, href: '/science' },
+  { id: 'timer', label: 'Timer', icon: IconTimer, href: '/timer' },
+  { id: 'toolshed', label: 'Toolshed', icon: IconToolshed, href: '/toolshed' },
+  { id: 'intuition', label: 'Intuition', icon: IconBrain, href: '/intuition' },
+  { id: 'vsd', label: 'Scenes', icon: IconImage, href: '/vsd' },
+  { id: 'add', label: 'Add Card', icon: IconPlus, href: '/add' },
 ];
 
 const DOCK_ITEMS: DockItem[] = [
