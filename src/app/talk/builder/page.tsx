@@ -12,5 +12,9 @@
 import SentenceBuilder from '@/components/SentenceBuilder';
 
 export default function SentenceBuilderPage() {
-  return <SentenceBuilder />;
+  return (
+    <div className="min-h-screen bg-[var(--brand-bg-warm)]">
+      <SentenceBuilder />
+    </div>
+  );
 }

@@ -13,5 +13,9 @@
 import { SupercoreGrid } from '@/components/SupercoreGrid';
 
 export default function SupercoreCorePage() {
-  return <SupercoreGrid />;
+  return (
+    <div className="h-screen bg-[var(--brand-bg-warm)]">
+      <SupercoreGrid />
+    </div>
+  );
 }

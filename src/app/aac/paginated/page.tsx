@@ -81,78 +81,43 @@ export default function PaginatedAACPage() {
   }, [sentence]);
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#FFF8F0',
-      fontFamily: 'Inter, system-ui, sans-serif',
-    }}>
+    <div className="min-h-screen bg-[var(--brand-bg-warm)] font-sans">
       {/* Header */}
-      <header style={{
-        padding: '16px',
-        textAlign: 'center',
-        borderBottom: '1px solid #eee',
-      }}>
-        <h1 style={{ margin: 0, fontSize: '20px', color: '#1a1a2e' }}>
+      <header className="p-4 text-center border-b border-[var(--warm-border-light)]">
+        <h1 className="m-0 text-xl text-[var(--warm-text)]">
           Paginated AAC Grid
         </h1>
-        <p style={{ margin: '4px 0 0', fontSize: '14px', color: '#666' }}>
+        <p className="mt-1 mb-0 text-sm text-[var(--warm-text-secondary)]">
           Swipe between pages of symbols
         </p>
       </header>
 
       {/* Sentence strip */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        minHeight: '56px',
-        padding: '8px 12px',
-        margin: '12px',
-        background: '#374151',
-        borderRadius: '12px',
-      }}>
+      <div className="flex items-center gap-2 min-h-[56px] px-3 py-2 m-3 bg-gray-700 rounded-xl">
         <button
           onClick={handleSpeakAll}
           disabled={sentence.length === 0}
-          style={{
-            flexShrink: 0,
-            width: '44px',
-            height: '44px',
-            borderRadius: '10px',
-            border: 'none',
-            background: sentence.length > 0 ? '#10B981' : '#6B7280',
-            color: '#fff',
-            cursor: sentence.length > 0 ? 'pointer' : 'not-allowed',
-            fontSize: '18px',
-            fontWeight: 700,
-          }}
+          className={`shrink-0 w-11 h-11 rounded-[10px] border-none text-white text-lg font-bold ${
+            sentence.length > 0
+              ? 'bg-emerald-500 cursor-pointer'
+              : 'bg-gray-500 cursor-not-allowed'
+          }`}
           aria-label="Speak sentence"
         >
           &#9654;
         </button>
 
-        <div style={{
-          flex: 1,
-          display: 'flex',
-          gap: '6px',
-          overflowX: 'auto',
-          alignItems: 'center',
-        }}>
+        <div className="flex-1 flex gap-1.5 overflow-x-auto items-center">
           {sentence.length === 0 ? (
-            <span style={{ color: '#9CA3AF', fontSize: '15px', padding: '0 8px' }}>
+            <span className="text-gray-400 text-[15px] px-2">
               Tap symbols to build a sentence...
             </span>
           ) : (
             sentence.map((word, i) => (
-              <span key={`${word}-${i}`} style={{
-                flexShrink: 0,
-                padding: '6px 12px',
-                borderRadius: '8px',
-                background: '#E8610A',
-                color: '#fff',
-                fontWeight: 600,
-                fontSize: '14px',
-              }}>
+              <span
+                key={`${word}-${i}`}
+                className="shrink-0 px-3 py-1.5 rounded-lg bg-[var(--brand-accent)] text-white font-semibold text-sm"
+              >
                 {word}
               </span>
             ))
@@ -162,18 +127,7 @@ export default function PaginatedAACPage() {
         {sentence.length > 0 && (
           <button
             onClick={handleClear}
-            style={{
-              flexShrink: 0,
-              width: '44px',
-              height: '44px',
-              borderRadius: '10px',
-              border: 'none',
-              background: '#EF4444',
-              color: '#fff',
-              cursor: 'pointer',
-              fontSize: '18px',
-              fontWeight: 700,
-            }}
+            className="shrink-0 w-11 h-11 rounded-[10px] border-none bg-red-500 text-white cursor-pointer text-lg font-bold"
             aria-label="Clear sentence"
           >
             &#10005;
@@ -182,7 +136,7 @@ export default function PaginatedAACPage() {
       </div>
 
       {/* Paginated grid */}
-      <div style={{ padding: '0 4px' }}>
+      <div className="px-1">
         <PaginatedGrid
           cards={DEMO_CARDS}
           itemsPerPage={8}

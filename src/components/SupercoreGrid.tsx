@@ -39,15 +39,19 @@ type FitzgeraldCategory =
   | 'determiners'
   | 'negation';
 
-const FITZGERALD_COLORS: Record<FitzgeraldCategory, { bg: string; text: string; border: string }> = {
-  people:       { bg: '#FDE68A', text: '#78350F', border: '#F59E0B' },
-  verbs:        { bg: '#6EE7B7', text: '#064E3B', border: '#10B981' },
-  descriptors:  { bg: '#93C5FD', text: '#1E3A5F', border: '#3B82F6' },
-  prepositions: { bg: '#C4B5FD', text: '#3B0764', border: '#8B5CF6' },
-  social:       { bg: '#F9A8D4', text: '#831843', border: '#EC4899' },
-  questions:    { bg: '#FDBA74', text: '#7C2D12', border: '#F97316' },
-  determiners:  { bg: '#F3F4F6', text: '#1F2937', border: '#D1D5DB' },
-  negation:     { bg: '#FCA5A5', text: '#7F1D1D', border: '#EF4444' },
+/**
+ * Maps each Fitzgerald category to Tailwind class strings using CSS variables.
+ * bg = background, text = text color, border = border color, chip = sentence strip chip
+ */
+const FITZGERALD_CLASSES: Record<FitzgeraldCategory, { bg: string; text: string; border: string }> = {
+  people:       { bg: 'bg-fitzgerald-yellow', text: 'text-fitzgerald-yellow-text', border: 'border-fitzgerald-yellow-border' },
+  verbs:        { bg: 'bg-fitzgerald-green',  text: 'text-fitzgerald-green-text',  border: 'border-fitzgerald-green-border' },
+  descriptors:  { bg: 'bg-fitzgerald-blue',   text: 'text-fitzgerald-blue-text',   border: 'border-fitzgerald-blue-border' },
+  prepositions: { bg: 'bg-fitzgerald-purple', text: 'text-fitzgerald-purple-text', border: 'border-fitzgerald-purple-border' },
+  social:       { bg: 'bg-fitzgerald-pink',   text: 'text-fitzgerald-pink-text',   border: 'border-fitzgerald-pink-border' },
+  questions:    { bg: 'bg-fitzgerald-orange',  text: 'text-fitzgerald-orange-text', border: 'border-fitzgerald-orange-border' },
+  determiners:  { bg: 'bg-fitzgerald-white',   text: 'text-fitzgerald-white-text',  border: 'border-fitzgerald-white-border' },
+  negation:     { bg: 'bg-fitzgerald-red',    text: 'text-fitzgerald-red-text',    border: 'border-fitzgerald-red-border' },
 };
 
 // =============================================================================
@@ -66,13 +70,6 @@ interface CoreWord {
  * Layout: 10 columns x 5 rows = 50 cells
  * Words are ordered LEFT-TO-RIGHT, TOP-TO-BOTTOM.
  * THIS ORDER IS PERMANENT. NEVER CHANGE IT.
- *
- * Word list per issue #20:
- * I, you, want, need, like, don't, help, more, stop, go,
- * come, look, eat, drink, play, yes, no, please, thank you, sorry,
- * happy, sad, angry, tired, hot, cold, big, small, up, down,
- * in, out, on, off, open, close, give, take, put, make,
- * do, have, is, it, that, this, what, where, who, why
  */
 const SUPERCORE_50: CoreWord[] = [
   // Row 1
@@ -150,121 +147,6 @@ function speak(text: string) {
 }
 
 // =============================================================================
-// Styles
-// =============================================================================
-
-const styles = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    height: '100vh',
-    minHeight: '100dvh',
-    background: '#F9FAFB',
-    fontFamily: 'Inter, system-ui, sans-serif',
-  },
-  sentenceBar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
-    minHeight: '64px',
-    background: '#374151',
-    borderRadius: '12px',
-    margin: '8px 8px 0',
-  },
-  sentenceChips: {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    overflowX: 'auto' as const,
-    scrollBehavior: 'smooth' as const,
-  },
-  sentencePlaceholder: {
-    color: '#9CA3AF',
-    fontSize: '16px',
-    fontWeight: 500,
-    userSelect: 'none' as const,
-    padding: '0 8px',
-  },
-  chip: (colors: { bg: string; text: string; border: string }) => ({
-    flexShrink: 0,
-    padding: '6px 12px',
-    borderRadius: '8px',
-    fontWeight: 700,
-    fontSize: '14px',
-    border: `2px solid ${colors.border}`,
-    background: colors.bg,
-    color: colors.text,
-    cursor: 'pointer',
-  }),
-  actionBtn: (bg: string) => ({
-    flexShrink: 0,
-    width: '48px',
-    height: '48px',
-    borderRadius: '12px',
-    border: 'none',
-    background: bg,
-    color: '#fff',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '20px',
-    fontWeight: 700,
-  }),
-  legend: {
-    display: 'flex',
-    flexWrap: 'wrap' as const,
-    gap: '6px',
-    padding: '6px 12px',
-    justifyContent: 'center',
-  },
-  legendItem: (colors: { bg: string; text: string; border: string }) => ({
-    fontSize: '11px',
-    fontWeight: 600,
-    padding: '2px 10px',
-    borderRadius: '9999px',
-    border: `1px solid ${colors.border}`,
-    background: colors.bg,
-    color: colors.text,
-  }),
-  grid: {
-    flex: 1,
-    display: 'grid',
-    gridTemplateColumns: 'repeat(10, 1fr)',
-    gap: '6px',
-    padding: '6px 8px 12px',
-    overflow: 'auto',
-  },
-  gridMobile: {
-    gridTemplateColumns: 'repeat(5, 1fr)',
-  },
-  wordButton: (colors: { bg: string; text: string; border: string }) => ({
-    display: 'flex',
-    flexDirection: 'column' as const,
-    alignItems: 'center',
-    justifyContent: 'center',
-    aspectRatio: '1',
-    minWidth: '48px',
-    minHeight: '48px',
-    borderRadius: '12px',
-    border: `3px solid ${colors.border}`,
-    background: colors.bg,
-    color: colors.text,
-    cursor: 'pointer',
-    userSelect: 'none' as const,
-    touchAction: 'manipulation' as const,
-    fontWeight: 700,
-    fontSize: 'clamp(11px, 2vw, 16px)',
-    padding: '4px',
-    textAlign: 'center' as const,
-    lineHeight: 1.2,
-    transition: 'transform 0.1s',
-  }),
-} as const;
-
-// =============================================================================
 // Sentence Strip
 // =============================================================================
 
@@ -285,37 +167,41 @@ function SentenceStrip({ words, onSpeakAll, onClear, onRemoveWord }: SentenceStr
   }, [words.length]);
 
   return (
-    <div style={styles.sentenceBar}>
+    <div className="flex items-center gap-2 px-3 py-2 min-h-[64px] bg-gray-700 rounded-xl mx-2 mt-2">
       {/* Speak All */}
       <button
         onClick={onSpeakAll}
         disabled={words.length === 0}
-        style={{
-          ...styles.actionBtn(words.length > 0 ? '#10B981' : '#6B7280'),
-          cursor: words.length > 0 ? 'pointer' : 'not-allowed',
-        }}
+        className={`shrink-0 w-12 h-12 rounded-xl border-none text-white flex items-center justify-center text-xl font-bold ${
+          words.length > 0
+            ? 'bg-emerald-500 cursor-pointer'
+            : 'bg-gray-500 cursor-not-allowed'
+        }`}
         aria-label="Speak sentence"
       >
         &#9654;
       </button>
 
       {/* Word chips */}
-      <div ref={scrollRef} style={styles.sentenceChips}>
+      <div ref={scrollRef} className="flex-1 flex items-center gap-1.5 overflow-x-auto scroll-smooth">
         {words.length === 0 ? (
-          <span style={styles.sentencePlaceholder}>
+          <span className="text-gray-400 text-base font-medium select-none px-2">
             Tap words to build a sentence...
           </span>
         ) : (
-          words.map((word, index) => (
-            <button
-              key={`${word.id}-${index}`}
-              onClick={() => onRemoveWord(index)}
-              style={styles.chip(FITZGERALD_COLORS[word.category])}
-              aria-label={`Remove ${word.label}`}
-            >
-              {word.label}
-            </button>
-          ))
+          words.map((word, index) => {
+            const cls = FITZGERALD_CLASSES[word.category];
+            return (
+              <button
+                key={`${word.id}-${index}`}
+                onClick={() => onRemoveWord(index)}
+                className={`shrink-0 px-3 py-1.5 rounded-lg font-bold text-sm border-2 cursor-pointer ${cls.bg} ${cls.text} ${cls.border}`}
+                aria-label={`Remove ${word.label}`}
+              >
+                {word.label}
+              </button>
+            );
+          })
         )}
       </div>
 
@@ -323,7 +209,7 @@ function SentenceStrip({ words, onSpeakAll, onClear, onRemoveWord }: SentenceStr
       {words.length > 0 && (
         <button
           onClick={onClear}
-          style={styles.actionBtn('#EF4444')}
+          className="shrink-0 w-12 h-12 rounded-xl border-none bg-red-500 text-white cursor-pointer flex items-center justify-center text-xl font-bold"
           aria-label="Clear sentence"
         >
           &#10005;
@@ -338,7 +224,7 @@ function SentenceStrip({ words, onSpeakAll, onClear, onRemoveWord }: SentenceStr
 // =============================================================================
 
 function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) => void }) {
-  const colors = FITZGERALD_COLORS[word.category];
+  const cls = FITZGERALD_CLASSES[word.category];
   const [pressed, setPressed] = useState(false);
 
   return (
@@ -346,10 +232,7 @@ function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) 
       onPointerDown={() => setPressed(true)}
       onPointerUp={() => { setPressed(false); onTap(word); }}
       onPointerLeave={() => setPressed(false)}
-      style={{
-        ...styles.wordButton(colors),
-        transform: pressed ? 'scale(0.92)' : 'scale(1)',
-      }}
+      className={`flex flex-col items-center justify-center aspect-square min-w-[48px] min-h-[48px] rounded-xl border-[3px] cursor-pointer select-none touch-manipulation font-bold text-[clamp(11px,2vw,16px)] p-1 text-center leading-tight transition-transform duration-100 ${cls.bg} ${cls.text} ${cls.border} ${pressed ? 'scale-[0.92]' : 'scale-100'}`}
       aria-label={word.label}
       role="button"
     >
@@ -415,7 +298,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   ];
 
   return (
-    <div style={styles.container}>
+    <div className="flex flex-col h-screen min-h-[100dvh] bg-gray-50 font-sans">
       {/* Sentence Strip */}
       <SentenceStrip
         words={sentence}
@@ -425,19 +308,24 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
       />
 
       {/* Color Legend */}
-      <div style={styles.legend}>
-        {legendItems.map(({ category, label }) => (
-          <span key={category} style={styles.legendItem(FITZGERALD_COLORS[category])}>
-            {label}
-          </span>
-        ))}
+      <div className="flex flex-wrap gap-1.5 px-3 py-1.5 justify-center">
+        {legendItems.map(({ category, label }) => {
+          const cls = FITZGERALD_CLASSES[category];
+          return (
+            <span
+              key={category}
+              className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${cls.bg} ${cls.text} ${cls.border}`}
+            >
+              {label}
+            </span>
+          );
+        })}
       </div>
 
       {/* Core Word Grid: 10x5 desktop, 5x10 mobile */}
-      <div style={{
-        ...styles.grid,
-        ...(isMobile ? styles.gridMobile : {}),
-      }}>
+      <div className={`flex-1 grid gap-1.5 px-2 pb-3 pt-1.5 overflow-auto ${
+        isMobile ? 'grid-cols-5' : 'grid-cols-10'
+      }`}>
         {SUPERCORE_50.map(word => (
           <CoreWordButton key={word.id} word={word} onTap={handleWordTap} />
         ))}
