@@ -14,115 +14,16 @@ import {
 // ---------------------------------------------------------------------------
 
 const SAMPLE_USED_WORDS = [
-  "want",
-  "want",
-  "want",
-  "want",
-  "more",
-  "more",
-  "more",
-  "no",
-  "no",
-  "no",
-  "go",
-  "go",
-  "go",
+  "want", "want", "want", "want",
+  "more", "more", "more",
+  "no", "no", "no",
+  "go", "go", "go",
   "happy",
 ];
 
 const SAMPLE_GLP_STAGE = 3;
-
 const SAMPLE_GRID_NAME = "kitchen";
 const SAMPLE_EXISTING_CARDS = ["spoon", "water", "eat", "more"];
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-const styles = {
-  container: {
-    display: "flex",
-    flexDirection: "column" as const,
-    minHeight: "100vh",
-    background: "#FAFAF8",
-    fontFamily: "Inter, system-ui, sans-serif",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    gap: 12,
-    padding: "12px 16px",
-    borderBottom: "1px solid #E5E7EB",
-    background: "#fff",
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    border: "2px solid #E5E7EB",
-    background: "#fff",
-    fontSize: 18,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-  },
-  headerTitle: {
-    fontSize: "1.1rem",
-    fontWeight: 700 as const,
-    color: "#1F2937",
-  },
-  headerSub: {
-    fontSize: "0.75rem",
-    color: "#9CA3AF",
-  },
-  main: {
-    flex: 1,
-    padding: 16,
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 24,
-    maxWidth: 600,
-    width: "100%",
-    margin: "0 auto",
-  },
-  section: {
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 10,
-  },
-  sectionTitle: {
-    fontSize: "0.85rem",
-    fontWeight: 700 as const,
-    color: "#6B7280",
-    textTransform: "uppercase" as const,
-    letterSpacing: "0.05em",
-  },
-  empty: {
-    fontSize: "0.85rem",
-    color: "#9CA3AF",
-    fontStyle: "italic" as const,
-    padding: "8px 0",
-  },
-  acceptedBanner: {
-    fontSize: "0.8rem",
-    color: "#059669",
-    fontWeight: 600 as const,
-    padding: "6px 12px",
-    background: "#D1FAE5",
-    borderRadius: 10,
-    display: "inline-block",
-  },
-  dismissedBanner: {
-    fontSize: "0.8rem",
-    color: "#DC2626",
-    fontWeight: 600 as const,
-    padding: "6px 12px",
-    background: "#FEE2E2",
-    borderRadius: 10,
-    display: "inline-block",
-  },
-};
 
 // ---------------------------------------------------------------------------
 // Page Component
@@ -133,7 +34,6 @@ type DecisionMap = Record<string, "accepted" | "dismissed">;
 export default function SuggestionsPage() {
   const [decisions, setDecisions] = useState<DecisionMap>({});
 
-  // Generate all suggestions from the three engines
   const usageSuggestions = useMemo(
     () => suggestByUsage(SAMPLE_USED_WORDS),
     []
@@ -156,23 +56,28 @@ export default function SuggestionsPage() {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="flex flex-col min-h-screen bg-[var(--warm-bg-subtle)] font-sans">
       {/* Header */}
-      <div style={styles.header}>
-        <a href="/" style={{ textDecoration: "none" }}>
-          <button style={styles.backBtn} aria-label="Back to home">
+      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 bg-white">
+        <a href="/" className="no-underline">
+          <button
+            className="w-10 h-10 rounded-[10px] border-2 border-gray-200 bg-white text-lg cursor-pointer flex items-center justify-center"
+            aria-label="Back to home"
+          >
             &larr;
           </button>
         </a>
         <div>
-          <div style={styles.headerTitle}>Smart Suggestions</div>
-          <div style={styles.headerSub}>
+          <div className="text-lg font-bold text-gray-800">
+            Smart Suggestions
+          </div>
+          <div className="text-xs text-[var(--warm-text-muted)]">
             AI-recommended cards based on context
           </div>
         </div>
       </div>
 
-      <div style={styles.main}>
+      <div className="flex-1 p-4 flex flex-col gap-6 max-w-[600px] w-full mx-auto">
         {/* Usage-based */}
         <Section
           title="Based on word usage"
@@ -228,30 +133,42 @@ function Section({
 }) {
   if (suggestions.length === 0) {
     return (
-      <div style={styles.section}>
-        <div style={styles.sectionTitle}>{title}</div>
-        <div style={styles.empty}>No suggestions right now</div>
+      <div className="flex flex-col gap-2.5">
+        <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+          {title}
+        </div>
+        <div className="text-sm text-[var(--warm-text-muted)] italic py-2">
+          No suggestions right now
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={styles.section}>
-      <div style={styles.sectionTitle}>{title}</div>
+    <div className="flex flex-col gap-2.5">
+      <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">
+        {title}
+      </div>
       {suggestions.map((s) => {
         const k = key(s);
         const decision = decisions[k];
 
         if (decision === "accepted") {
           return (
-            <div key={k} style={styles.acceptedBanner}>
+            <div
+              key={k}
+              className="text-xs text-emerald-600 font-semibold px-3 py-1.5 bg-emerald-100 rounded-[10px] inline-block"
+            >
               &#10003; Added &ldquo;{s.text}&rdquo; to board
             </div>
           );
         }
         if (decision === "dismissed") {
           return (
-            <div key={k} style={styles.dismissedBanner}>
+            <div
+              key={k}
+              className="text-xs text-red-600 font-semibold px-3 py-1.5 bg-red-100 rounded-[10px] inline-block"
+            >
               &#10005; Dismissed &ldquo;{s.text}&rdquo;
             </div>
           );

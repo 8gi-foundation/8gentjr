@@ -59,6 +59,28 @@
   --fitzgerald-white: #F5F5F5;
   --fitzgerald-gray: #CFD8DC;
 
+  /* Fitzgerald Key — text colors (high-contrast on category bg) */
+  --fitzgerald-yellow-text: #78350F;
+  --fitzgerald-green-text: #064E3B;
+  --fitzgerald-blue-text: #1E3A5F;
+  --fitzgerald-purple-text: #3B0764;
+  --fitzgerald-orange-text: #7C2D12;
+  --fitzgerald-red-text: #7F1D1D;
+  --fitzgerald-pink-text: #831843;
+  --fitzgerald-white-text: #1F2937;
+  --fitzgerald-gray-text: #1F2937;
+
+  /* Fitzgerald Key — border colors */
+  --fitzgerald-yellow-border: #F59E0B;
+  --fitzgerald-green-border: #10B981;
+  --fitzgerald-blue-border: #3B82F6;
+  --fitzgerald-purple-border: #8B5CF6;
+  --fitzgerald-orange-border: #F97316;
+  --fitzgerald-red-border: #EF4444;
+  --fitzgerald-pink-border: #EC4899;
+  --fitzgerald-white-border: #D1D5DB;
+  --fitzgerald-gray-border: #9CA3AF;
+
   /* Safety colors */
   --safety-stop: #D50000;
   --safety-help: #FF8A80;

@@ -16,7 +16,7 @@
  * @see https://github.com/8gi-foundation/8gentjr/issues/6
  */
 
-import React, { useState, useRef, useCallback, useEffect, CSSProperties } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 
 // =============================================================================
 // Types
@@ -49,114 +49,6 @@ export interface PaginatedGridProps {
 const SWIPE_THRESHOLD = 50;
 /** Transition duration in ms */
 const TRANSITION_MS = 300;
-
-// =============================================================================
-// Styles
-// =============================================================================
-
-const containerStyle: CSSProperties = {
-  width: '100%',
-  overflow: 'hidden',
-  position: 'relative',
-  touchAction: 'pan-y',
-  userSelect: 'none',
-  WebkitUserSelect: 'none',
-};
-
-const trackStyle = (
-  currentPage: number,
-  totalPages: number,
-  offsetX: number,
-  isTransitioning: boolean,
-): CSSProperties => ({
-  display: 'flex',
-  width: `${totalPages * 100}%`,
-  transform: `translateX(calc(-${(currentPage * 100) / totalPages}% + ${offsetX}px))`,
-  transition: isTransitioning ? `transform ${TRANSITION_MS}ms ease-out` : 'none',
-});
-
-const pageStyle = (totalPages: number): CSSProperties => ({
-  width: `${100 / totalPages}%`,
-  flexShrink: 0,
-});
-
-const gridStyle = (columns: number): CSSProperties => ({
-  display: 'grid',
-  gridTemplateColumns: `repeat(${columns}, 1fr)`,
-  gap: '10px',
-  padding: '8px',
-});
-
-const cardButtonStyle = (bgColor: string): CSSProperties => ({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: '4px',
-  background: bgColor,
-  border: '2px solid #e0e0e0',
-  borderRadius: '12px',
-  padding: '12px 8px',
-  cursor: 'pointer',
-  minHeight: '88px',
-  transition: 'transform 0.1s, border-color 0.1s',
-  userSelect: 'none',
-  WebkitTapHighlightColor: 'transparent',
-  touchAction: 'manipulation',
-});
-
-const emojiStyle: CSSProperties = {
-  fontSize: '36px',
-  lineHeight: 1,
-};
-
-const labelTextStyle: CSSProperties = {
-  fontSize: '16px',
-  fontWeight: 600,
-  color: '#1a1a2e',
-  textAlign: 'center',
-  lineHeight: 1.2,
-  overflow: 'hidden',
-  textOverflow: 'ellipsis',
-  display: '-webkit-box',
-  WebkitLineClamp: 2,
-  WebkitBoxOrient: 'vertical',
-  wordBreak: 'break-word',
-};
-
-const symbolImgStyle: CSSProperties = {
-  width: '48px',
-  height: '48px',
-  objectFit: 'contain',
-};
-
-const dotsContainerStyle: CSSProperties = {
-  display: 'flex',
-  justifyContent: 'center',
-  alignItems: 'center',
-  gap: '10px',
-  padding: '12px 0',
-};
-
-const dotStyle = (active: boolean): CSSProperties => ({
-  width: '24px',
-  height: '24px',
-  borderRadius: '50%',
-  border: 'none',
-  background: active ? '#E8610A' : '#D1D5DB',
-  cursor: 'pointer',
-  transition: 'background 0.2s, transform 0.2s',
-  transform: active ? 'scale(1.15)' : 'scale(1)',
-  padding: 0,
-});
-
-const navHintStyle: CSSProperties = {
-  textAlign: 'center',
-  fontSize: '13px',
-  color: '#9CA3AF',
-  padding: '0 0 8px',
-  userSelect: 'none',
-};
 
 // =============================================================================
 // Component
@@ -202,7 +94,7 @@ export default function PaginatedGrid({
     [totalPages],
   );
 
-  // --- Touch handlers ---
+  // --- Touch handlers (kept as inline style for dynamic transform) ---
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -252,12 +144,12 @@ export default function PaginatedGrid({
 
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'scale(0.93)';
-    e.currentTarget.style.borderColor = '#E8610A';
+    e.currentTarget.style.borderColor = 'var(--brand-accent)';
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'scale(1)';
-    e.currentTarget.style.borderColor = '#e0e0e0';
+    e.currentTarget.style.borderColor = '';
   };
 
   return (
@@ -265,7 +157,7 @@ export default function PaginatedGrid({
       {/* Swipeable track */}
       <div
         ref={containerRef}
-        style={containerStyle}
+        className="w-full overflow-hidden relative touch-pan-y select-none"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -273,10 +165,27 @@ export default function PaginatedGrid({
         aria-label={`AAC grid page ${currentPage + 1} of ${totalPages}`}
         aria-roledescription="carousel"
       >
-        <div style={trackStyle(currentPage, totalPages, offsetX, isTransitioning)}>
+        {/* Track needs dynamic transform for swipe offset — inline style required */}
+        <div
+          className="flex"
+          style={{
+            width: `${totalPages * 100}%`,
+            transform: `translateX(calc(-${(currentPage * 100) / totalPages}% + ${offsetX}px))`,
+            transition: isTransitioning ? `transform ${TRANSITION_MS}ms ease-out` : 'none',
+          }}
+        >
           {pages.map((pageCards, pageIndex) => (
-            <div key={pageIndex} style={pageStyle(totalPages)} role="group" aria-label={`Page ${pageIndex + 1}`}>
-              <div style={gridStyle(columns)}>
+            <div
+              key={pageIndex}
+              className="shrink-0"
+              style={{ width: `${100 / totalPages}%` }}
+              role="group"
+              aria-label={`Page ${pageIndex + 1}`}
+            >
+              <div
+                className="grid gap-2.5 p-2"
+                style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+              >
                 {pageCards.map((card) => (
                   <button
                     key={card.id}
@@ -284,17 +193,20 @@ export default function PaginatedGrid({
                     onPointerDown={handlePointerDown}
                     onPointerUp={handlePointerUp}
                     onPointerLeave={handlePointerUp}
-                    style={cardButtonStyle(card.bgColor ?? '#ffffff')}
+                    className="flex flex-col items-center justify-center gap-1 border-2 border-gray-300 rounded-xl px-2 py-3 cursor-pointer min-h-[88px] transition-transform duration-100 select-none touch-manipulation"
+                    style={{ backgroundColor: card.bgColor ?? '#ffffff' }}
                     aria-label={card.label}
                   >
                     {card.symbolUrl ? (
-                      <img src={card.symbolUrl} alt={card.label} style={symbolImgStyle} />
+                      <img src={card.symbolUrl} alt={card.label} className="w-12 h-12 object-contain" />
                     ) : card.emoji ? (
-                      <span style={emojiStyle}>{card.emoji}</span>
+                      <span className="text-4xl leading-none">{card.emoji}</span>
                     ) : (
-                      <span style={emojiStyle}>{card.label.charAt(0).toUpperCase()}</span>
+                      <span className="text-4xl leading-none">{card.label.charAt(0).toUpperCase()}</span>
                     )}
-                    <span style={labelTextStyle}>{card.label}</span>
+                    <span className="text-base font-semibold text-[var(--warm-text)] text-center leading-tight overflow-hidden line-clamp-2 break-words">
+                      {card.label}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -306,18 +218,22 @@ export default function PaginatedGrid({
       {/* Page indicator dots */}
       {totalPages > 1 && (
         <>
-          <div style={dotsContainerStyle}>
+          <div className="flex justify-center items-center gap-2.5 py-3">
             {Array.from({ length: totalPages }, (_, i) => (
               <button
                 key={i}
                 onClick={() => goToPage(i)}
-                style={dotStyle(i === currentPage)}
+                className={`w-6 h-6 rounded-full border-none cursor-pointer p-0 transition-all duration-200 ${
+                  i === currentPage
+                    ? 'bg-[var(--brand-accent)] scale-[1.15]'
+                    : 'bg-gray-300 scale-100'
+                }`}
                 aria-label={`Go to page ${i + 1}`}
                 aria-current={i === currentPage ? 'true' : undefined}
               />
             ))}
           </div>
-          <p style={navHintStyle}>
+          <p className="text-center text-[13px] text-[var(--warm-text-muted)] pb-2 select-none">
             Swipe or use arrow keys &bull; Page {currentPage + 1} of {totalPages}
           </p>
         </>

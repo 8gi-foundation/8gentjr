@@ -4,7 +4,8 @@
  * 8gent Jr — Sentence Builder Component
  *
  * Sentence strip with word suggestion chips powered by a local sentence engine.
- * Uses Web Speech API for TTS. Encouragement messages on milestones.
+ * Uses Web Speech API for TTS with AppContext ttsRate.
+ * Encouragement messages on milestones.
  *
  * Issue: #22
  */
@@ -15,6 +16,7 @@ import {
   improveSentence,
   getWordColor,
 } from '@/lib/sentence-engine';
+import { useApp } from '@/context/AppContext';
 
 // ---------------------------------------------------------------------------
 // Encouragement messages
@@ -33,6 +35,7 @@ const ENCOURAGEMENTS: Record<number, string> = {
 // ---------------------------------------------------------------------------
 
 export default function SentenceBuilder() {
+  const { settings } = useApp();
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [encouragement, setEncouragement] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -79,12 +82,11 @@ export default function SentenceBuilder() {
       return;
     }
 
-    // Cancel any ongoing speech
     window.speechSynthesis.cancel();
 
     const text = improvedPreview || selectedWords.join(' ');
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
+    utterance.rate = settings.ttsRate;
     utterance.pitch = 1.1;
 
     utterance.onstart = () => setIsSpeaking(true);
@@ -92,66 +94,34 @@ export default function SentenceBuilder() {
     utterance.onerror = () => setIsSpeaking(false);
 
     window.speechSynthesis.speak(utterance);
-  }, [selectedWords, improvedPreview]);
+  }, [selectedWords, improvedPreview, settings.ttsRate]);
+
+  const hasWords = selectedWords.length > 0;
 
   return (
-    <div style={{ width: '100%', maxWidth: 600, margin: '0 auto', padding: 16 }}>
+    <div className="w-full max-w-[600px] mx-auto p-4">
       {/* Header */}
-      <h1
-        style={{
-          fontSize: '1.5rem',
-          fontWeight: 700,
-          color: '#1a1a2e',
-          marginBottom: 4,
-          textAlign: 'center',
-        }}
-      >
+      <h1 className="text-2xl font-bold text-[var(--warm-text)] mb-1 text-center">
         Sentence Builder
       </h1>
-      <p
-        style={{
-          fontSize: '0.9rem',
-          color: '#888',
-          marginBottom: 16,
-          textAlign: 'center',
-        }}
-      >
+      <p className="text-sm text-[var(--warm-text-muted)] mb-4 text-center">
         Tap words to build a sentence, then press Speak
       </p>
 
       {/* Sentence strip */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          minHeight: 56,
-          padding: '10px 14px',
-          marginBottom: 8,
-          background: '#f5f5f5',
-          borderRadius: 14,
-          fontSize: '1.15rem',
-          flexWrap: 'wrap',
-          border: '2px solid #e0e0e0',
-        }}
-      >
-        {selectedWords.length === 0 ? (
-          <span style={{ color: '#aaa', fontStyle: 'italic' }}>
+      <div className="flex items-center gap-2 min-h-[56px] px-3.5 py-2.5 mb-2 bg-gray-100 rounded-[14px] text-lg flex-wrap border-2 border-gray-300">
+        {!hasWords ? (
+          <span className="text-[var(--warm-text-placeholder)] italic">
             Tap words below to start...
           </span>
         ) : (
           selectedWords.map((word, i) => (
             <span
               key={`${word}-${i}`}
+              className="inline-block px-2.5 py-1 rounded-lg font-semibold text-[var(--warm-text)] text-base"
               style={{
-                display: 'inline-block',
-                padding: '4px 10px',
-                borderRadius: 8,
-                background: getWordColor(word) + '22',
+                backgroundColor: getWordColor(word) + '22',
                 border: `2px solid ${getWordColor(word)}`,
-                fontWeight: 600,
-                color: '#1a1a2e',
-                fontSize: '1rem',
               }}
             >
               {word}
@@ -162,154 +132,70 @@ export default function SentenceBuilder() {
 
       {/* Improved preview */}
       {improvedPreview && (
-        <div
-          style={{
-            padding: '8px 14px',
-            marginBottom: 8,
-            background: '#e8f5e9',
-            borderRadius: 10,
-            fontSize: '0.9rem',
-            color: '#2e7d32',
-            fontStyle: 'italic',
-          }}
-        >
+        <div className="px-3.5 py-2 mb-2 bg-green-50 rounded-[10px] text-sm text-green-700 italic">
           {improvedPreview}
         </div>
       )}
 
       {/* Encouragement */}
       {encouragement && (
-        <div
-          style={{
-            padding: '8px 14px',
-            marginBottom: 8,
-            background: '#fff3e0',
-            borderRadius: 10,
-            fontSize: '1rem',
-            fontWeight: 700,
-            color: '#E8610A',
-            textAlign: 'center',
-            animation: 'fadeIn 0.3s ease-in',
-          }}
-        >
+        <div className="px-3.5 py-2 mb-2 bg-[var(--brand-bg-accent)] rounded-[10px] text-base font-bold text-[var(--brand-accent)] text-center animate-[fadeIn_0.3s_ease-in]">
           {encouragement}
         </div>
       )}
 
       {/* Action buttons */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 8,
-          marginBottom: 16,
-        }}
-      >
+      <div className="flex gap-2 mb-4">
         <button
           onClick={handleRemoveLast}
-          disabled={selectedWords.length === 0}
-          style={{
-            flex: 1,
-            padding: '10px 0',
-            borderRadius: 10,
-            border: 'none',
-            background: selectedWords.length > 0 ? '#ff9800' : '#e0e0e0',
-            color: selectedWords.length > 0 ? '#fff' : '#999',
-            fontWeight: 600,
-            fontSize: '0.9rem',
-            cursor: selectedWords.length > 0 ? 'pointer' : 'default',
-          }}
+          disabled={!hasWords}
+          className={`flex-1 py-2.5 rounded-[10px] border-none font-semibold text-sm cursor-pointer ${
+            hasWords
+              ? 'bg-orange-500 text-white'
+              : 'bg-gray-200 text-gray-400 cursor-default'
+          }`}
         >
           Undo
         </button>
         <button
           onClick={handleClear}
-          disabled={selectedWords.length === 0}
-          style={{
-            flex: 1,
-            padding: '10px 0',
-            borderRadius: 10,
-            border: 'none',
-            background: selectedWords.length > 0 ? '#f44336' : '#e0e0e0',
-            color: selectedWords.length > 0 ? '#fff' : '#999',
-            fontWeight: 600,
-            fontSize: '0.9rem',
-            cursor: selectedWords.length > 0 ? 'pointer' : 'default',
-          }}
+          disabled={!hasWords}
+          className={`flex-1 py-2.5 rounded-[10px] border-none font-semibold text-sm cursor-pointer ${
+            hasWords
+              ? 'bg-red-500 text-white'
+              : 'bg-gray-200 text-gray-400 cursor-default'
+          }`}
         >
           Clear
         </button>
         <button
           onClick={handleSpeak}
-          disabled={selectedWords.length === 0 || isSpeaking}
-          style={{
-            flex: 2,
-            padding: '10px 0',
-            borderRadius: 10,
-            border: 'none',
-            background:
-              selectedWords.length === 0
-                ? '#e0e0e0'
-                : isSpeaking
-                  ? '#1b5e20'
-                  : '#4CAF50',
-            color: selectedWords.length > 0 ? '#fff' : '#999',
-            fontWeight: 700,
-            fontSize: '1rem',
-            cursor: selectedWords.length > 0 && !isSpeaking ? 'pointer' : 'default',
-          }}
+          disabled={!hasWords || isSpeaking}
+          className={`flex-[2] py-2.5 rounded-[10px] border-none font-bold text-base cursor-pointer ${
+            !hasWords
+              ? 'bg-gray-200 text-gray-400 cursor-default'
+              : isSpeaking
+                ? 'bg-green-800 text-white'
+                : 'bg-green-500 text-white'
+          }`}
         >
           {isSpeaking ? 'Speaking...' : 'Speak'}
         </button>
       </div>
 
       {/* Word suggestion chips */}
-      <div style={{ marginBottom: 8 }}>
-        <span
-          style={{
-            fontSize: '0.8rem',
-            color: '#888',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: 1,
-          }}
-        >
+      <div className="mb-2">
+        <span className="text-xs text-[var(--warm-text-muted)] font-semibold uppercase tracking-wide">
           {selectedWords.length === 0 ? 'Start with' : 'Next word'}
         </span>
       </div>
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 8,
-        }}
-      >
+      <div className="flex flex-wrap gap-2">
         {suggestions.map((word) => (
           <button
             key={word}
             onClick={() => handleAddWord(word)}
-            style={{
-              padding: '10px 18px',
-              borderRadius: 12,
-              border: `2px solid ${getWordColor(word)}`,
-              background: '#fff',
-              color: '#1a1a2e',
-              fontWeight: 600,
-              fontSize: '1rem',
-              cursor: 'pointer',
-              transition: 'transform 0.1s, background 0.1s',
-            }}
-            onPointerDown={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.93)';
-              (e.currentTarget as HTMLButtonElement).style.background = getWordColor(word) + '22';
-            }}
-            onPointerUp={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
-              (e.currentTarget as HTMLButtonElement).style.background = '#fff';
-            }}
-            onPointerLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
-              (e.currentTarget as HTMLButtonElement).style.background = '#fff';
-            }}
+            className="px-4 py-2.5 rounded-xl bg-white text-[var(--warm-text)] font-semibold text-base cursor-pointer transition-transform duration-100 active:scale-[0.93]"
+            style={{ border: `2px solid ${getWordColor(word)}` }}
           >
             {word}
           </button>

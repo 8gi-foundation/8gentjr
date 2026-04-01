@@ -15,89 +15,13 @@ export interface SuggestionCardProps {
 }
 
 // ---------------------------------------------------------------------------
-// Styles — matches ChangePreview confirm/undo pattern
+// Category badge color classes
 // ---------------------------------------------------------------------------
 
-const styles = {
-  container: {
-    background: "#FFF8F0",
-    border: "2px solid #FDBA74",
-    borderRadius: 16,
-    padding: "12px 16px",
-    display: "flex",
-    alignItems: "center" as const,
-    gap: 12,
-  },
-  content: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column" as const,
-    gap: 4,
-  },
-  text: {
-    fontSize: "1rem",
-    fontWeight: 700 as const,
-    color: "#1F2937",
-  },
-  reason: {
-    fontSize: "0.8rem",
-    color: "#92400E",
-    lineHeight: 1.4,
-  },
-  categoryBadge: (category: Suggestion["category"]) => {
-    const colors = {
-      usage: { bg: "#EDE9FE", color: "#5B21B6", border: "#C4B5FD" },
-      stage: { bg: "#DBEAFE", color: "#1E40AF", border: "#93C5FD" },
-      grid: { bg: "#FEF3C7", color: "#92400E", border: "#FCD34D" },
-    };
-    const c = colors[category];
-    return {
-      fontSize: "0.65rem",
-      fontWeight: 600 as const,
-      textTransform: "uppercase" as const,
-      letterSpacing: "0.05em",
-      padding: "2px 8px",
-      borderRadius: 6,
-      background: c.bg,
-      color: c.color,
-      border: `1px solid ${c.border}`,
-      alignSelf: "flex-start" as const,
-    };
-  },
-  acceptBtn: {
-    width: 48,
-    height: 48,
-    minWidth: 48,
-    minHeight: 48,
-    borderRadius: 14,
-    border: "3px solid #10B981",
-    background: "#D1FAE5",
-    color: "#065F46",
-    fontSize: 24,
-    fontWeight: 700 as const,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    transition: "transform 0.1s",
-  },
-  dismissBtn: {
-    width: 48,
-    height: 48,
-    minWidth: 48,
-    minHeight: 48,
-    borderRadius: 14,
-    border: "3px solid #EF4444",
-    background: "#FEE2E2",
-    color: "#991B1B",
-    fontSize: 24,
-    fontWeight: 700 as const,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center" as const,
-    justifyContent: "center" as const,
-    transition: "transform 0.1s",
-  },
+const CATEGORY_CLASSES: Record<Suggestion['category'], string> = {
+  usage: 'bg-violet-100 text-violet-800 border-violet-300',
+  stage: 'bg-blue-100 text-blue-800 border-blue-300',
+  grid:  'bg-amber-100 text-amber-800 border-amber-300',
 };
 
 // ---------------------------------------------------------------------------
@@ -110,24 +34,30 @@ export default function SuggestionCard({
   onDismiss,
 }: SuggestionCardProps) {
   return (
-    <div style={styles.container}>
-      <div style={styles.content}>
-        <span style={styles.categoryBadge(suggestion.category)}>
+    <div className="bg-[var(--brand-bg-warm)] border-2 border-orange-300 rounded-2xl px-4 py-3 flex items-center gap-3">
+      <div className="flex-1 flex flex-col gap-1">
+        <span
+          className={`text-[0.65rem] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-md border self-start ${CATEGORY_CLASSES[suggestion.category]}`}
+        >
           {suggestion.category}
         </span>
-        <span style={styles.text}>{suggestion.text}</span>
-        <span style={styles.reason}>{suggestion.reason}</span>
+        <span className="text-base font-bold text-gray-800">
+          {suggestion.text}
+        </span>
+        <span className="text-xs text-amber-800 leading-snug">
+          {suggestion.reason}
+        </span>
       </div>
       <button
         onClick={() => onAccept(suggestion)}
-        style={styles.acceptBtn}
+        className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-[14px] border-[3px] border-emerald-500 bg-emerald-100 text-emerald-800 text-2xl font-bold cursor-pointer flex items-center justify-center transition-transform duration-100 active:scale-95"
         aria-label={`Accept suggestion: ${suggestion.text}`}
       >
         &#10003;
       </button>
       <button
         onClick={() => onDismiss(suggestion)}
-        style={styles.dismissBtn}
+        className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-[14px] border-[3px] border-red-500 bg-red-100 text-red-800 text-2xl font-bold cursor-pointer flex items-center justify-center transition-transform duration-100 active:scale-95"
         aria-label={`Dismiss suggestion: ${suggestion.text}`}
       >
         &#10005;
