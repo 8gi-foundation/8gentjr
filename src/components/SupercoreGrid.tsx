@@ -80,7 +80,10 @@ interface CoreWord {
   id: string;
   label: string;
   category: FitzgeraldCategory;
+  arasaacId?: number;
 }
+
+const ARASAAC_IMG = (id: number) => `https://static.arasaac.org/pictograms/${id}/${id}_500.png`;
 
 /**
  * THE SUPERCORE 50 GRID
@@ -91,64 +94,64 @@ interface CoreWord {
  */
 const SUPERCORE_50: CoreWord[] = [
   // Row 1
-  { id: 'w01', label: 'I',         category: 'people' },
-  { id: 'w02', label: 'you',       category: 'people' },
-  { id: 'w03', label: 'want',      category: 'verbs' },
-  { id: 'w04', label: 'need',      category: 'verbs' },
-  { id: 'w05', label: 'like',      category: 'verbs' },
-  { id: 'w06', label: "don't",     category: 'negation' },
-  { id: 'w07', label: 'help',      category: 'social' },
-  { id: 'w08', label: 'more',      category: 'determiners' },
-  { id: 'w09', label: 'stop',      category: 'negation' },
-  { id: 'w10', label: 'go',        category: 'verbs' },
+  { id: 'w01', label: 'I',         category: 'people',      arasaacId: 6632 },
+  { id: 'w02', label: 'you',       category: 'people',      arasaacId: 7116 },
+  { id: 'w03', label: 'want',      category: 'verbs',       arasaacId: 5441 },
+  { id: 'w04', label: 'need',      category: 'verbs',       arasaacId: 32648 },
+  { id: 'w05', label: 'like',      category: 'verbs',       arasaacId: 37721 },
+  { id: 'w06', label: "don't",     category: 'negation',    arasaacId: 5765 },
+  { id: 'w07', label: 'help',      category: 'social',      arasaacId: 32648 },
+  { id: 'w08', label: 'more',      category: 'determiners', arasaacId: 7196 },
+  { id: 'w09', label: 'stop',      category: 'negation',    arasaacId: 7196 },
+  { id: 'w10', label: 'go',        category: 'verbs',       arasaacId: 29951 },
 
   // Row 2
-  { id: 'w11', label: 'come',      category: 'verbs' },
-  { id: 'w12', label: 'look',      category: 'verbs' },
-  { id: 'w13', label: 'eat',       category: 'verbs' },
-  { id: 'w14', label: 'drink',     category: 'verbs' },
-  { id: 'w15', label: 'play',      category: 'verbs' },
-  { id: 'w16', label: 'yes',       category: 'social' },
-  { id: 'w17', label: 'no',        category: 'negation' },
-  { id: 'w18', label: 'please',    category: 'social' },
-  { id: 'w19', label: 'thank you', category: 'social' },
-  { id: 'w20', label: 'sorry',     category: 'social' },
+  { id: 'w11', label: 'come',      category: 'verbs',       arasaacId: 6207 },
+  { id: 'w12', label: 'look',      category: 'verbs',       arasaacId: 6573 },
+  { id: 'w13', label: 'eat',       category: 'verbs',       arasaacId: 6456 },
+  { id: 'w14', label: 'drink',     category: 'verbs',       arasaacId: 6061 },
+  { id: 'w15', label: 'play',      category: 'verbs',       arasaacId: 23392 },
+  { id: 'w16', label: 'yes',       category: 'social',      arasaacId: 2215 },
+  { id: 'w17', label: 'no',        category: 'negation',    arasaacId: 5765 },
+  { id: 'w18', label: 'please',    category: 'social',      arasaacId: 24727 },
+  { id: 'w19', label: 'thank you', category: 'social',      arasaacId: 24727 },
+  { id: 'w20', label: 'sorry',     category: 'social',      arasaacId: 6042 },
 
   // Row 3
-  { id: 'w21', label: 'happy',     category: 'descriptors' },
-  { id: 'w22', label: 'sad',       category: 'descriptors' },
-  { id: 'w23', label: 'angry',     category: 'descriptors' },
-  { id: 'w24', label: 'tired',     category: 'descriptors' },
-  { id: 'w25', label: 'hot',       category: 'descriptors' },
-  { id: 'w26', label: 'cold',      category: 'descriptors' },
-  { id: 'w27', label: 'big',       category: 'descriptors' },
-  { id: 'w28', label: 'small',     category: 'descriptors' },
-  { id: 'w29', label: 'up',        category: 'prepositions' },
-  { id: 'w30', label: 'down',      category: 'prepositions' },
+  { id: 'w21', label: 'happy',     category: 'descriptors', arasaacId: 35811 },
+  { id: 'w22', label: 'sad',       category: 'descriptors', arasaacId: 35813 },
+  { id: 'w23', label: 'angry',     category: 'descriptors', arasaacId: 35809 },
+  { id: 'w24', label: 'tired',     category: 'descriptors', arasaacId: 35815 },
+  { id: 'w25', label: 'hot',       category: 'descriptors', arasaacId: 2806 },
+  { id: 'w26', label: 'cold',      category: 'descriptors', arasaacId: 2805 },
+  { id: 'w27', label: 'big',       category: 'descriptors', arasaacId: 2486 },
+  { id: 'w28', label: 'small',     category: 'descriptors', arasaacId: 2487 },
+  { id: 'w29', label: 'up',        category: 'prepositions', arasaacId: 7053 },
+  { id: 'w30', label: 'down',      category: 'prepositions', arasaacId: 7052 },
 
   // Row 4
-  { id: 'w31', label: 'in',        category: 'prepositions' },
-  { id: 'w32', label: 'out',       category: 'prepositions' },
-  { id: 'w33', label: 'on',        category: 'prepositions' },
-  { id: 'w34', label: 'off',       category: 'prepositions' },
-  { id: 'w35', label: 'open',      category: 'verbs' },
-  { id: 'w36', label: 'close',     category: 'verbs' },
-  { id: 'w37', label: 'give',      category: 'verbs' },
-  { id: 'w38', label: 'take',      category: 'verbs' },
-  { id: 'w39', label: 'put',       category: 'verbs' },
-  { id: 'w40', label: 'make',      category: 'verbs' },
+  { id: 'w31', label: 'in',        category: 'prepositions', arasaacId: 6987 },
+  { id: 'w32', label: 'out',       category: 'prepositions', arasaacId: 6988 },
+  { id: 'w33', label: 'on',        category: 'prepositions', arasaacId: 6989 },
+  { id: 'w34', label: 'off',       category: 'prepositions', arasaacId: 6990 },
+  { id: 'w35', label: 'open',      category: 'verbs',       arasaacId: 7395 },
+  { id: 'w36', label: 'close',     category: 'verbs',       arasaacId: 7396 },
+  { id: 'w37', label: 'give',      category: 'verbs',       arasaacId: 11397 },
+  { id: 'w38', label: 'take',      category: 'verbs',       arasaacId: 11398 },
+  { id: 'w39', label: 'put',       category: 'verbs',       arasaacId: 6979 },
+  { id: 'w40', label: 'make',      category: 'verbs',       arasaacId: 9560 },
 
   // Row 5
-  { id: 'w41', label: 'do',        category: 'verbs' },
-  { id: 'w42', label: 'have',      category: 'verbs' },
-  { id: 'w43', label: 'is',        category: 'verbs' },
-  { id: 'w44', label: 'it',        category: 'determiners' },
-  { id: 'w45', label: 'that',      category: 'determiners' },
-  { id: 'w46', label: 'this',      category: 'determiners' },
-  { id: 'w47', label: 'what',      category: 'questions' },
-  { id: 'w48', label: 'where',     category: 'questions' },
-  { id: 'w49', label: 'who',       category: 'questions' },
-  { id: 'w50', label: 'why',       category: 'questions' },
+  { id: 'w41', label: 'do',        category: 'verbs',       arasaacId: 8248 },
+  { id: 'w42', label: 'have',      category: 'verbs',       arasaacId: 5549 },
+  { id: 'w43', label: 'is',        category: 'verbs',       arasaacId: 8248 },
+  { id: 'w44', label: 'it',        category: 'determiners', arasaacId: 7116 },
+  { id: 'w45', label: 'that',      category: 'determiners', arasaacId: 7116 },
+  { id: 'w46', label: 'this',      category: 'determiners', arasaacId: 7116 },
+  { id: 'w47', label: 'what',      category: 'questions',   arasaacId: 25553 },
+  { id: 'w48', label: 'where',     category: 'questions',   arasaacId: 25554 },
+  { id: 'w49', label: 'who',       category: 'questions',   arasaacId: 25555 },
+  { id: 'w50', label: 'why',       category: 'questions',   arasaacId: 25556 },
 ];
 
 // =============================================================================
@@ -250,11 +253,19 @@ function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) 
       onPointerDown={() => setPressed(true)}
       onPointerUp={() => { setPressed(false); onTap(word); }}
       onPointerLeave={() => setPressed(false)}
-      className={`flex flex-col items-center justify-center aspect-square min-w-[48px] min-h-[48px] rounded-xl border-[3px] cursor-pointer select-none touch-manipulation font-bold text-[clamp(11px,2vw,16px)] p-1 text-center leading-tight transition-transform duration-100 ${cls.bg} ${cls.text} ${cls.border} ${pressed ? 'scale-[0.92]' : 'scale-100'}`}
+      className={`flex flex-col items-center justify-center aspect-square min-w-[48px] min-h-[48px] rounded-xl border-[3px] cursor-pointer select-none touch-manipulation p-1 text-center leading-tight transition-transform duration-100 ${cls.bg} ${cls.text} ${cls.border} ${pressed ? 'scale-[0.92]' : 'scale-100'}`}
       aria-label={word.label}
       role="button"
     >
-      {word.label}
+      {word.arasaacId && (
+        <img
+          src={ARASAAC_IMG(word.arasaacId)}
+          alt={word.label}
+          className="w-[clamp(32px,5vw,56px)] h-[clamp(32px,5vw,56px)] object-contain pointer-events-none"
+          loading="lazy"
+        />
+      )}
+      <span className="font-bold text-[clamp(10px,1.5vw,14px)] mt-0.5">{word.label}</span>
     </button>
   );
 }
