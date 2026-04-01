@@ -276,14 +276,14 @@ function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) 
       role="button"
     >
       {word.arasaacId && (
-        <Image
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
           src={ARASAAC_IMG(word.arasaacId)}
           alt={word.label}
           width={56}
           height={56}
           className="w-[clamp(32px,5vw,56px)] h-[clamp(32px,5vw,56px)] object-contain pointer-events-none"
           loading="lazy"
-          unoptimized={false}
         />
       )}
       <span className="font-bold text-[clamp(10px,1.5vw,14px)] mt-0.5 truncate max-w-full">{word.label}</span>
