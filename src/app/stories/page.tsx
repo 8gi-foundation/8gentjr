@@ -9,42 +9,15 @@ export default function StoriesPage() {
   const [selected, setSelected] = useState<SocialStory | null>(null);
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding: "2rem 0",
-        background: "#FFF8F0",
-      }}
-    >
+    <main className="min-h-screen flex flex-col items-center py-8 bg-[#FFF8F0]">
       {selected ? (
         <StoryViewer story={selected} onBack={() => setSelected(null)} />
       ) : (
         <>
-          <h1
-            style={{
-              fontSize: "clamp(1.5rem, 4vw, 2.5rem)",
-              fontWeight: 800,
-              color: "#E8610A",
-              marginBottom: "0.25rem",
-              textAlign: "center",
-            }}
-          >
+          <h1 className="text-[clamp(1.5rem,4vw,2.5rem)] font-extrabold text-[#E8610A] mb-1 text-center">
             Social Stories
           </h1>
-          <p
-            style={{
-              fontSize: "1rem",
-              color: "#666",
-              marginBottom: "1.5rem",
-              textAlign: "center",
-              maxWidth: 400,
-              padding: "0 1rem",
-              lineHeight: 1.5,
-            }}
-          >
+          <p className="text-base text-gray-500 mb-6 text-center max-w-[400px] px-4 leading-relaxed">
             Picture-based stories to help understand everyday situations.
           </p>
           <StoryList onSelect={setSelected} />

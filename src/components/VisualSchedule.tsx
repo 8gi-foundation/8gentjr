@@ -22,7 +22,6 @@ type ActivityState = "past" | "current" | "future";
 
 function getActivityState(item: ScheduleItem, currentItem: ScheduleItem | null): ActivityState {
   if (!currentItem) {
-    // If no current activity, compare against now
     const now = new Date();
     const hour = now.getHours() + now.getMinutes() / 60;
     return hour >= item.endHour ? "past" : "future";
@@ -30,63 +29,6 @@ function getActivityState(item: ScheduleItem, currentItem: ScheduleItem | null):
   if (item.startHour === currentItem.startHour) return "current";
   return item.endHour <= currentItem.startHour ? "past" : "future";
 }
-
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
-
-function cardStyle(state: ActivityState): React.CSSProperties {
-  const base: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 16,
-    padding: "16px 20px",
-    borderRadius: 16,
-    border: "2px solid transparent",
-    transition: "all 200ms cubic-bezier(0.4, 0, 0.2, 1)",
-    cursor: "default",
-  };
-
-  if (state === "current") {
-    return {
-      ...base,
-      border: "2px solid #E8610A",
-      boxShadow: "0 0 16px rgba(232, 97, 10, 0.3)",
-      transform: "scale(1.03)",
-    };
-  }
-
-  if (state === "past") {
-    return {
-      ...base,
-      opacity: 0.45,
-      filter: "grayscale(0.3)",
-    };
-  }
-
-  return base; // future — normal
-}
-
-const emojiStyle = (state: ActivityState): React.CSSProperties => ({
-  fontSize: state === "current" ? 40 : 32,
-  lineHeight: 1,
-  flexShrink: 0,
-  transition: "font-size 200ms cubic-bezier(0.4, 0, 0.2, 1)",
-});
-
-const nameStyle: React.CSSProperties = {
-  fontSize: 18,
-  fontWeight: 700,
-  color: "#1a1a2e",
-  margin: 0,
-};
-
-const timeStyle: React.CSSProperties = {
-  fontSize: 14,
-  color: "#6B7280",
-  margin: 0,
-  fontWeight: 500,
-};
 
 // ---------------------------------------------------------------------------
 // Component
@@ -113,35 +55,35 @@ export default function VisualSchedule({ schedule = DEFAULT_SCHEDULE }: VisualSc
   }, [currentItem]);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-        width: "100%",
-        maxWidth: 480,
-        margin: "0 auto",
-      }}
-    >
+    <div className="flex flex-col gap-3 w-full max-w-[480px] mx-auto">
       {schedule.map((item) => {
         const state = getActivityState(item, currentItem);
         return (
           <div
             key={item.name}
             ref={state === "current" ? currentRef : undefined}
-            style={{
-              ...cardStyle(state),
-              background: item.color,
-            }}
+            className={`flex items-center gap-4 py-4 px-5 rounded-2xl border-2 transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              state === "current"
+                ? "border-[#E8610A] shadow-[0_0_16px_rgba(232,97,10,0.3)] scale-[1.03]"
+                : state === "past"
+                  ? "border-transparent opacity-[0.45] grayscale-[0.3]"
+                  : "border-transparent"
+            }`}
+            style={{ background: item.color }}
             aria-current={state === "current" ? "true" : undefined}
             role="listitem"
           >
-            <span style={emojiStyle(state)} aria-hidden="true">
+            <span
+              className={`leading-none shrink-0 transition-[font-size] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+                state === "current" ? "text-[40px]" : "text-[32px]"
+              }`}
+              aria-hidden="true"
+            >
               {item.emoji}
             </span>
             <div>
-              <p style={nameStyle}>{item.name}</p>
-              <p style={timeStyle}>{item.timeRange}</p>
+              <p className="text-lg font-bold text-[#1a1a2e] m-0">{item.name}</p>
+              <p className="text-sm text-gray-500 m-0 font-medium">{item.timeRange}</p>
             </div>
           </div>
         );

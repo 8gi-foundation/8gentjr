@@ -9,18 +9,12 @@ export const metadata: Metadata = {
 
 export default function SymbolsPage() {
   return (
-    <main style={{ minHeight: "100vh" }}>
-      <header
-        style={{
-          padding: "24px 16px 0",
-          maxWidth: 960,
-          margin: "0 auto",
-        }}
-      >
-        <h1 style={{ fontSize: 28, fontWeight: 700, margin: "0 0 4px" }}>
+    <main className="min-h-screen">
+      <header className="pt-6 px-4 max-w-[960px] mx-auto">
+        <h1 className="text-[28px] font-bold m-0 mb-1">
           Symbol Search
         </h1>
-        <p style={{ color: "#666", fontSize: 15, margin: "0 0 8px" }}>
+        <p className="text-gray-500 text-[15px] m-0 mb-2">
           Browse 46,000+ ARASAAC pictographic symbols for communication boards.
         </p>
       </header>

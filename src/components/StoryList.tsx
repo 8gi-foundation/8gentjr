@@ -13,66 +13,22 @@ export default function StoryList({
   onSelect: (story: SocialStory) => void;
 }) {
   return (
-    <div style={styles.grid}>
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 w-full max-w-[520px] px-4">
       {SOCIAL_STORIES.map((story) => (
         <button
           key={story.id}
           onClick={() => onSelect(story)}
-          style={styles.card}
+          className="flex flex-col items-center gap-2 py-5 px-4 bg-white rounded-2xl border-2 border-[#FFF0E0] shadow-[0_2px_12px_rgba(232,97,10,0.06)] cursor-pointer transition-all duration-[120ms] min-h-[48px] select-none hover:scale-105 hover:shadow-md active:scale-95"
+          style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
           aria-label={`Read story: ${story.title}`}
         >
-          <span style={styles.icon}>{story.icon}</span>
-          <span style={styles.title}>{story.title}</span>
-          <span style={styles.badge}>{story.steps.length} steps</span>
+          <span className="text-[2.5rem] leading-none">{story.icon}</span>
+          <span className="text-base font-semibold text-[#1a1a2e] text-center">{story.title}</span>
+          <span className="text-xs font-semibold text-[#E8610A] bg-[#FFF0E0] py-0.5 px-2.5 rounded-xl">
+            {story.steps.length} steps
+          </span>
         </button>
       ))}
     </div>
   );
 }
-
-/* ── Styles ──────────────────────────────────────────────── */
-
-const styles = {
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))",
-    gap: "1rem",
-    width: "100%",
-    maxWidth: 520,
-    padding: "0 1rem",
-  },
-  card: {
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    gap: "0.5rem",
-    padding: "1.25rem 1rem",
-    background: "#FFFFFF",
-    borderRadius: 16,
-    border: "2px solid #FFF0E0",
-    boxShadow: "0 2px 12px rgba(232, 97, 10, 0.06)",
-    cursor: "pointer",
-    transition: "transform 0.12s ease, box-shadow 0.12s ease",
-    minHeight: 48,
-    touchAction: "manipulation" as const,
-    WebkitTapHighlightColor: "transparent",
-  },
-  icon: {
-    fontSize: "2.5rem",
-    lineHeight: 1,
-  },
-  title: {
-    fontSize: "1rem",
-    fontWeight: 600 as const,
-    color: "#1a1a2e",
-    textAlign: "center" as const,
-  },
-  badge: {
-    fontSize: "0.75rem",
-    fontWeight: 600 as const,
-    color: "#E8610A",
-    background: "#FFF0E0",
-    padding: "3px 10px",
-    borderRadius: 12,
-  },
-} as const;

@@ -3,15 +3,13 @@
 /**
  * Analytics — Usage stats and progress dashboard
  *
- * Pure CSS visuals (no charting library). Uses theme tokens for
- * the child-friendly warm aesthetic.
+ * Tailwind CSS visuals (no charting library).
  *
  * @see https://github.com/8gi-foundation/8gentjr/issues/24
  */
 
 import React, { useEffect, useState } from "react";
 import { getSessionStats, clearOldLogs, type SessionStats } from "@/lib/session-logger";
-import { colors, borderRadius, shadows, fonts, spacing } from "@/styles/theme";
 
 // ---------------------------------------------------------------------------
 // StatCard
@@ -27,45 +25,19 @@ interface StatCardProps {
 function StatCard({ label, value, trend = "flat", color }: StatCardProps) {
   const arrow = trend === "up" ? "\u25B2" : trend === "down" ? "\u25BC" : "";
   const arrowColor =
-    trend === "up" ? colors.success : trend === "down" ? colors.danger : colors.textMuted;
+    trend === "up" ? "text-emerald-600" : trend === "down" ? "text-red-600" : "text-gray-400";
 
   return (
-    <div
-      style={{
-        flex: "1 1 140px",
-        minWidth: 140,
-        background: colors.surface,
-        borderRadius: borderRadius.default,
-        boxShadow: shadows.card,
-        padding: spacing.lg,
-        display: "flex",
-        flexDirection: "column",
-        gap: spacing.xs,
-      }}
-    >
-      <span
-        style={{
-          fontSize: fonts.sizeSmall,
-          fontWeight: fonts.weightMedium,
-          color: colors.textMuted,
-          textTransform: "uppercase" as const,
-          letterSpacing: "0.05em",
-        }}
-      >
+    <div className="flex-[1_1_140px] min-w-[140px] bg-[#FFF1E6] rounded-2xl shadow-[0_2px_12px_rgba(232,97,10,0.08)] p-6 flex flex-col gap-1">
+      <span className="text-[13px] font-medium text-gray-500 uppercase tracking-wide">
         {label}
       </span>
-      <div style={{ display: "flex", alignItems: "baseline", gap: spacing.sm }}>
-        <span
-          style={{
-            fontSize: 32,
-            fontWeight: fonts.weightExtrabold,
-            color,
-          }}
-        >
+      <div className="flex items-baseline gap-2">
+        <span className="text-[32px] font-extrabold" style={{ color }}>
           {value}
         </span>
         {arrow && (
-          <span style={{ fontSize: fonts.sizeSmall, color: arrowColor }}>{arrow}</span>
+          <span className={`text-[13px] ${arrowColor}`}>{arrow}</span>
         )}
       </div>
     </div>
@@ -79,7 +51,7 @@ function StatCard({ label, value, trend = "flat", color }: StatCardProps) {
 function BarChart({ items }: { items: { word: string; count: number }[] }) {
   if (items.length === 0) {
     return (
-      <p style={{ color: colors.textMuted, fontSize: fonts.sizeBody }}>
+      <p className="text-gray-500 text-base">
         No word data yet. Start using the AAC board to see stats here.
       </p>
     );
@@ -88,57 +60,19 @@ function BarChart({ items }: { items: { word: string; count: number }[] }) {
   const max = Math.max(...items.map((i) => i.count), 1);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: spacing.sm }}>
+    <div className="flex flex-col gap-2">
       {items.map((item) => (
-        <div
-          key={item.word}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: spacing.md,
-          }}
-        >
-          <span
-            style={{
-              width: 80,
-              fontSize: fonts.sizeBody,
-              fontWeight: fonts.weightSemibold,
-              color: colors.text,
-              textAlign: "right",
-              flexShrink: 0,
-            }}
-          >
+        <div key={item.word} className="flex items-center gap-4">
+          <span className="w-20 text-base font-semibold text-[#1a1a2e] text-right shrink-0">
             {item.word}
           </span>
-          <div
-            style={{
-              flex: 1,
-              height: 28,
-              background: colors.border,
-              borderRadius: borderRadius.small,
-              overflow: "hidden",
-            }}
-          >
+          <div className="flex-1 h-7 bg-[#F0DECA] rounded-xl overflow-hidden">
             <div
-              style={{
-                width: `${(item.count / max) * 100}%`,
-                height: "100%",
-                background: colors.primary,
-                borderRadius: borderRadius.small,
-                transition: "width 400ms cubic-bezier(0.4, 0, 0.2, 1)",
-                minWidth: 4,
-              }}
+              className="h-full bg-[#E8610A] rounded-xl transition-[width] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] min-w-1"
+              style={{ width: `${(item.count / max) * 100}%` }}
             />
           </div>
-          <span
-            style={{
-              width: 36,
-              fontSize: fonts.sizeSmall,
-              color: colors.textMuted,
-              textAlign: "left",
-              flexShrink: 0,
-            }}
-          >
+          <span className="w-9 text-[13px] text-gray-500 text-left shrink-0">
             {item.count}
           </span>
         </div>
@@ -162,49 +96,22 @@ export default function Analytics() {
   if (!stats) return null;
 
   return (
-    <div
-      style={{
-        maxWidth: 720,
-        margin: "0 auto",
-        padding: spacing.xl,
-        fontFamily: fonts.family,
-      }}
-    >
+    <div className="max-w-[720px] mx-auto p-8 font-sans">
       {/* Header */}
-      <h1
-        style={{
-          fontSize: 28,
-          fontWeight: fonts.weightExtrabold,
-          color: colors.text,
-          marginBottom: spacing.xs,
-        }}
-      >
+      <h1 className="text-[28px] font-extrabold text-[#1a1a2e] mb-1">
         Progress
       </h1>
-      <p
-        style={{
-          fontSize: fonts.sizeBody,
-          color: colors.textMuted,
-          marginBottom: spacing.xl,
-        }}
-      >
+      <p className="text-base text-gray-500 mb-8">
         See how much you have been communicating. Keep it up!
       </p>
 
       {/* Stat Cards */}
-      <div
-        style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: spacing.md,
-          marginBottom: spacing.xl,
-        }}
-      >
+      <div className="flex flex-wrap gap-4 mb-8">
         <StatCard
           label="Words Today"
           value={stats.totalWords}
           trend={stats.totalWords > 0 ? "up" : "flat"}
-          color={colors.primary}
+          color="#E8610A"
         />
         <StatCard
           label="Unique Words"
@@ -216,7 +123,7 @@ export default function Analytics() {
           label="Sessions This Week"
           value={stats.sessionsThisWeek}
           trend={stats.sessionsThisWeek > 0 ? "up" : "flat"}
-          color={colors.success}
+          color="#059669"
         />
         <StatCard
           label="Streak"
@@ -227,24 +134,10 @@ export default function Analytics() {
       </div>
 
       {/* Top Words */}
-      <h2
-        style={{
-          fontSize: fonts.sizeHeading,
-          fontWeight: fonts.weightBold,
-          color: colors.text,
-          marginBottom: spacing.md,
-        }}
-      >
+      <h2 className="text-xl font-bold text-[#1a1a2e] mb-4">
         Top 5 Words
       </h2>
-      <div
-        style={{
-          background: colors.surface,
-          borderRadius: borderRadius.default,
-          boxShadow: shadows.card,
-          padding: spacing.lg,
-        }}
-      >
+      <div className="bg-[#FFF1E6] rounded-2xl shadow-[0_2px_12px_rgba(232,97,10,0.08)] p-6">
         <BarChart items={stats.topWords} />
       </div>
     </div>

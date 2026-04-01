@@ -290,31 +290,28 @@ export default function PhysicsPlayground() {
   }, []);
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#14141e', userSelect: 'none', touchAction: 'none' }}>
+    <div className="h-screen flex flex-col bg-[#14141e] select-none touch-none">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px 16px', background: '#E8610A', flexShrink: 0 }}>
-        <a href="/" style={{ position: 'absolute', left: 16, color: '#fff', fontWeight: 700, fontSize: 18, textDecoration: 'none', cursor: 'pointer' }}>
+      <div className="flex items-center justify-center py-3 px-4 bg-[#E8610A] shrink-0 relative">
+        <a href="/" className="absolute left-4 text-white font-bold text-lg no-underline cursor-pointer">
           &larr; Home
         </a>
-        <span style={{ color: '#fff', fontWeight: 700, fontSize: 20 }}>
+        <span className="text-white font-bold text-xl">
           Science Lab
         </span>
       </div>
 
       {/* Mode Selector */}
-      <div style={{ display: 'flex', gap: 8, padding: '10px 12px', background: '#1e1e2e', flexShrink: 0, justifyContent: 'center' }}>
+      <div className="flex gap-2 py-2.5 px-3 bg-[#1e1e2e] shrink-0 justify-center">
         {MODES.map(m => (
           <button
             key={m.id}
             onClick={() => setMode(m.id)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '8px 20px', borderRadius: 20, border: 'none',
-              fontWeight: 700, fontSize: 14, cursor: 'pointer',
-              background: mode === m.id ? '#E8610A' : '#333',
-              color: mode === m.id ? '#fff' : '#999',
-              transition: 'all 0.15s',
-            }}
+            className={`flex items-center gap-1.5 py-2 px-5 rounded-full border-none font-bold text-sm cursor-pointer transition-all ${
+              mode === m.id
+                ? 'bg-[#E8610A] text-white'
+                : 'bg-[#333] text-gray-500'
+            }`}
           >
             {m.emoji} {m.label}
           </button>
@@ -324,7 +321,7 @@ export default function PhysicsPlayground() {
       {/* Canvas */}
       <canvas
         ref={canvasRef}
-        style={{ flex: 1, width: '100%', cursor: 'crosshair' }}
+        className="flex-1 w-full cursor-crosshair"
         onMouseDown={handleDown}
         onMouseMove={handleMove}
         onMouseUp={handleUp}
@@ -334,45 +331,45 @@ export default function PhysicsPlayground() {
       />
 
       {/* Controls */}
-      <div style={{ padding: '12px 16px', background: 'rgba(30,30,46,0.9)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div className="py-3 px-4 bg-[rgba(30,30,46,0.9)] shrink-0 flex items-center gap-3">
         {mode === 'particles' && (
           <>
-            <span style={{ fontSize: 12, color: '#999', width: 48 }}>Gravity</span>
+            <span className="text-xs text-gray-500 w-12">Gravity</span>
             <input type="range" min="0" max="1" step="0.01" value={gravity}
               onChange={e => setGravity(+e.target.value)}
-              style={{ flex: 1, height: 8, accentColor: '#E8610A' }} />
+              className="flex-1 h-2 accent-[#E8610A]" />
             <button onClick={shake}
-              style={{ padding: '8px 14px', background: '#FFB300', borderRadius: 12, border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              className="py-2 px-3.5 bg-amber-500 rounded-xl border-none text-white text-[13px] font-bold cursor-pointer">
               Shake!
             </button>
             <button onClick={clear}
-              style={{ padding: '8px 14px', background: '#E53935', borderRadius: 12, border: 'none', color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              className="py-2 px-3.5 bg-red-600 rounded-xl border-none text-white text-[13px] font-bold cursor-pointer">
               Clear
             </button>
           </>
         )}
         {mode === 'projectile' && (
           <>
-            <span style={{ fontSize: 12, color: '#999', width: 48 }}>Power</span>
+            <span className="text-xs text-gray-500 w-12">Power</span>
             <input type="range" min="0.1" max="1" step="0.01" value={power}
               onChange={e => setPower(+e.target.value)}
-              style={{ flex: 1, height: 8, accentColor: '#FF6622' }} />
-            <span style={{ fontSize: 12, color: '#999', width: 48 }}>Gravity</span>
+              className="flex-1 h-2 accent-[#FF6622]" />
+            <span className="text-xs text-gray-500 w-12">Gravity</span>
             <input type="range" min="0" max="1" step="0.01" value={gravity}
               onChange={e => setGravity(+e.target.value)}
-              style={{ flex: 1, height: 8, accentColor: '#FF6622' }} />
+              className="flex-1 h-2 accent-[#FF6622]" />
           </>
         )}
         {mode === 'pendulum' && (
           <>
-            <span style={{ fontSize: 12, color: '#999', width: 48 }}>String</span>
+            <span className="text-xs text-gray-500 w-12">String</span>
             <input type="range" min="0.2" max="1" step="0.01" value={pendLen}
               onChange={e => setPendLen(+e.target.value)}
-              style={{ flex: 1, height: 8, accentColor: '#26A69A' }} />
-            <span style={{ fontSize: 12, color: '#999', width: 48 }}>Gravity</span>
+              className="flex-1 h-2 accent-teal-500" />
+            <span className="text-xs text-gray-500 w-12">Gravity</span>
             <input type="range" min="0.1" max="1" step="0.01" value={gravity}
               onChange={e => setGravity(+e.target.value)}
-              style={{ flex: 1, height: 8, accentColor: '#26A69A' }} />
+              className="flex-1 h-2 accent-teal-500" />
           </>
         )}
       </div>

@@ -80,48 +80,29 @@ export default function SymbolSearch() {
   };
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px" }}>
+    <div className="max-w-[960px] mx-auto px-4 py-6">
       {/* Search input */}
-      <div style={{ position: "relative", marginBottom: 16 }}>
+      <div className="relative mb-4">
         <input
           type="text"
           value={query}
           onChange={handleChange}
           placeholder="Search 46,000+ symbols... e.g. happy, food, school"
           autoFocus
-          style={{
-            width: "100%",
-            padding: "14px 16px",
-            fontSize: 18,
-            border: "2px solid #ddd",
-            borderRadius: 12,
-            outline: "none",
-            boxSizing: "border-box",
-            fontFamily: "inherit",
-          }}
+          className="w-full px-4 py-3.5 text-lg border-2 border-gray-300 rounded-xl outline-none font-[inherit] focus:border-[#E8610A] transition-colors"
         />
       </div>
 
       {/* Recent searches */}
       {!searched && recent.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <p style={{ fontSize: 13, color: "#888", margin: "0 0 8px" }}>
-            Recent searches
-          </p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <div className="mb-6">
+          <p className="text-[13px] text-gray-400 mb-2">Recent searches</p>
+          <div className="flex flex-wrap gap-2">
             {recent.map((term) => (
               <button
                 key={term}
                 onClick={() => handleRecentClick(term)}
-                style={{
-                  padding: "6px 14px",
-                  fontSize: 14,
-                  border: "1px solid #ddd",
-                  borderRadius: 20,
-                  background: "#f5f5f5",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
+                className="px-3.5 py-1.5 text-sm border border-gray-300 rounded-full bg-gray-100 cursor-pointer font-[inherit] hover:bg-gray-200 transition-colors"
               >
                 {term}
               </button>
@@ -132,31 +113,20 @@ export default function SymbolSearch() {
 
       {/* Loading spinner */}
       {loading && (
-        <div style={{ textAlign: "center", padding: 48 }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              border: "4px solid #eee",
-              borderTop: "4px solid #6c63ff",
-              borderRadius: "50%",
-              animation: "spin 0.8s linear infinite",
-              margin: "0 auto 12px",
-            }}
-          />
-          <p style={{ color: "#888", fontSize: 14 }}>Searching ARASAAC...</p>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div className="text-center py-12">
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-indigo-500 rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-gray-400 text-sm">Searching ARASAAC...</p>
         </div>
       )}
 
       {/* No results */}
       {searched && !loading && results.length === 0 && (
-        <div style={{ textAlign: "center", padding: 48 }}>
-          <p style={{ fontSize: 48, margin: "0 0 8px" }}>:/</p>
-          <p style={{ color: "#888", fontSize: 16 }}>
+        <div className="text-center py-12">
+          <p className="text-5xl mb-2">:/</p>
+          <p className="text-gray-400 text-base">
             No symbols found for &ldquo;{query.trim()}&rdquo;
           </p>
-          <p style={{ color: "#aaa", fontSize: 13 }}>
+          <p className="text-gray-300 text-[13px]">
             Try a simpler word like &ldquo;eat&rdquo;, &ldquo;happy&rdquo;, or
             &ldquo;school&rdquo;
           </p>
@@ -166,58 +136,22 @@ export default function SymbolSearch() {
       {/* Results grid */}
       {!loading && results.length > 0 && (
         <>
-          <p style={{ fontSize: 13, color: "#888", margin: "0 0 12px" }}>
+          <p className="text-[13px] text-gray-400 mb-3">
             {results.length} symbol{results.length !== 1 ? "s" : ""} found
           </p>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-              gap: 12,
-            }}
-          >
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-3">
             {results.map((sym) => (
               <div
                 key={sym._id}
-                style={{
-                  border: "1px solid #eee",
-                  borderRadius: 12,
-                  padding: 12,
-                  textAlign: "center",
-                  background: "#fff",
-                  transition: "box-shadow 0.15s",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.boxShadow =
-                    "0 2px 12px rgba(0,0,0,0.1)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.boxShadow = "none")
-                }
+                className="border border-gray-200 rounded-xl p-3 text-center bg-white cursor-pointer transition-shadow hover:shadow-md"
               >
                 <img
                   src={getImageUrl(sym._id)}
                   alt={sym.keywords[0]?.keyword || `Symbol ${sym._id}`}
                   loading="lazy"
-                  style={{
-                    width: "100%",
-                    height: "auto",
-                    maxHeight: 120,
-                    objectFit: "contain",
-                  }}
+                  className="w-full h-auto max-h-[120px] object-contain"
                 />
-                <p
-                  style={{
-                    margin: "8px 0 0",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#333",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+                <p className="mt-2 text-[13px] font-medium text-gray-800 overflow-hidden text-ellipsis whitespace-nowrap">
                   {sym.keywords[0]?.keyword || `#${sym._id}`}
                 </p>
               </div>

@@ -8,8 +8,6 @@ import type { SocialStory } from "@/lib/social-stories";
    Large touch targets, read-aloud via Web Speech API.
    ──────────────────────────────────────────────────────────── */
 
-const ARROW_SIZE = 60;
-
 export default function StoryViewer({
   story,
   onBack,
@@ -42,214 +40,85 @@ export default function StoryViewer({
   }, [current.text]);
 
   return (
-    <div style={styles.container}>
+    <div className="max-w-[480px] mx-auto p-4 flex flex-col items-center gap-4 min-h-[80vh]">
       {/* Header */}
-      <div style={styles.header}>
-        <button onClick={onBack} style={styles.backButton} aria-label="Back to stories">
-          ← Back
+      <div className="w-full flex justify-between items-center">
+        <button
+          onClick={onBack}
+          className="bg-transparent border-none text-base text-[#E8610A] font-semibold cursor-pointer py-2 px-3 rounded-lg min-h-[44px] min-w-[44px]"
+          aria-label="Back to stories"
+        >
+          &larr; Back
         </button>
-        <span style={styles.counter}>
+        <span className="text-[0.95rem] font-semibold text-gray-400 bg-[#FFF0E0] py-1.5 px-3.5 rounded-full">
           {step + 1} / {total}
         </span>
       </div>
 
       {/* Title */}
-      <h2 style={styles.title}>
+      <h2 className="text-2xl font-bold text-[#1a1a2e] m-0 text-center">
         {story.icon} {story.title}
       </h2>
 
       {/* Step card */}
-      <div style={styles.card}>
-        <div style={styles.emoji}>{current.emoji}</div>
-        <p style={styles.text}>{current.text}</p>
+      <div className="bg-white rounded-[20px] py-8 px-6 shadow-[0_4px_24px_rgba(232,97,10,0.08)] border-2 border-[#FFF0E0] w-full flex flex-col items-center gap-4">
+        <div className="text-[4rem] leading-none">{current.emoji}</div>
+        <p className="text-xl leading-relaxed text-center text-gray-700 m-0 font-medium">
+          {current.text}
+        </p>
 
         {/* Read aloud */}
         <button
           onClick={readAloud}
-          style={{
-            ...styles.readButton,
-            ...(speaking ? styles.readButtonActive : {}),
-          }}
+          className={`rounded-[14px] py-2.5 px-5 text-base font-semibold text-[#E8610A] cursor-pointer min-h-[48px] min-w-[48px] transition-colors ${
+            speaking
+              ? "bg-[#FFDDB5] border-2 border-[#E8610A]"
+              : "bg-[#FFF0E0] border-2 border-[#F5D5B0]"
+          }`}
           aria-label="Read aloud"
         >
-          {speaking ? "🔊 Reading..." : "🔈 Read Aloud"}
+          {speaking ? "Reading..." : "Read Aloud"}
         </button>
 
         {/* Parent tip */}
-        <div style={styles.tip}>
+        <div className="bg-[#F8F4F0] rounded-xl py-3 px-4 text-sm text-gray-500 leading-relaxed w-full border-l-[3px] border-l-[#E8610A]">
           <strong>Tip for parents:</strong> {current.tip}
         </div>
       </div>
 
       {/* Navigation arrows */}
-      <div style={styles.nav}>
+      <div className="flex gap-8 items-center">
         <button
           onClick={prev}
           disabled={step === 0}
-          style={{
-            ...styles.arrow,
-            opacity: step === 0 ? 0.3 : 1,
-          }}
+          className="w-[60px] h-[60px] min-w-[60px] min-h-[60px] rounded-full border-2 border-[#F0DECA] bg-white text-2xl cursor-pointer flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-transform active:scale-95 disabled:opacity-30"
+          style={{ touchAction: "manipulation" }}
           aria-label="Previous step"
         >
-          ◀
+          &#9664;
         </button>
         <button
           onClick={next}
           disabled={step === total - 1}
-          style={{
-            ...styles.arrow,
-            opacity: step === total - 1 ? 0.3 : 1,
-          }}
+          className="w-[60px] h-[60px] min-w-[60px] min-h-[60px] rounded-full border-2 border-[#F0DECA] bg-white text-2xl cursor-pointer flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.06)] transition-transform active:scale-95 disabled:opacity-30"
+          style={{ touchAction: "manipulation" }}
           aria-label="Next step"
         >
-          ▶
+          &#9654;
         </button>
       </div>
 
       {/* Progress dots */}
-      <div style={styles.dots}>
+      <div className="flex gap-2">
         {story.steps.map((_, i) => (
           <div
             key={i}
-            style={{
-              ...styles.dot,
-              background: i === step ? "#E8610A" : "#E0D5CA",
-            }}
+            className={`w-2.5 h-2.5 rounded-full transition-colors ${
+              i === step ? "bg-[#E8610A]" : "bg-[#E0D5CA]"
+            }`}
           />
         ))}
       </div>
     </div>
   );
 }
-
-/* ── Styles ──────────────────────────────────────────────── */
-
-const styles = {
-  container: {
-    maxWidth: 480,
-    margin: "0 auto",
-    padding: "1rem",
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    gap: "1rem",
-    minHeight: "80vh",
-  },
-  header: {
-    width: "100%",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  backButton: {
-    background: "none",
-    border: "none",
-    fontSize: "1rem",
-    color: "#E8610A",
-    fontWeight: 600 as const,
-    cursor: "pointer",
-    padding: "8px 12px",
-    borderRadius: 8,
-    minHeight: 44,
-    minWidth: 44,
-  },
-  counter: {
-    fontSize: "0.95rem",
-    fontWeight: 600 as const,
-    color: "#888",
-    background: "#FFF0E0",
-    padding: "6px 14px",
-    borderRadius: 20,
-  },
-  title: {
-    fontSize: "1.5rem",
-    fontWeight: 700 as const,
-    color: "#1a1a2e",
-    margin: 0,
-    textAlign: "center" as const,
-  },
-  card: {
-    background: "#FFFFFF",
-    borderRadius: 20,
-    padding: "2rem 1.5rem",
-    boxShadow: "0 4px 24px rgba(232, 97, 10, 0.08)",
-    border: "2px solid #FFF0E0",
-    width: "100%",
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    gap: "1rem",
-  },
-  emoji: {
-    fontSize: "4rem",
-    lineHeight: 1,
-  },
-  text: {
-    fontSize: "1.25rem",
-    lineHeight: 1.6,
-    textAlign: "center" as const,
-    color: "#333",
-    margin: 0,
-    fontWeight: 500 as const,
-  },
-  readButton: {
-    background: "#FFF0E0",
-    border: "2px solid #F5D5B0",
-    borderRadius: 14,
-    padding: "10px 20px",
-    fontSize: "1rem",
-    fontWeight: 600 as const,
-    color: "#E8610A",
-    cursor: "pointer",
-    minHeight: 48,
-    minWidth: 48,
-    transition: "background 0.15s ease",
-  },
-  readButtonActive: {
-    background: "#FFDDB5",
-    borderColor: "#E8610A",
-  },
-  tip: {
-    background: "#F8F4F0",
-    borderRadius: 12,
-    padding: "12px 16px",
-    fontSize: "0.85rem",
-    color: "#666",
-    lineHeight: 1.5,
-    width: "100%",
-    borderLeft: "3px solid #E8610A",
-  },
-  nav: {
-    display: "flex",
-    gap: "2rem",
-    alignItems: "center",
-  },
-  arrow: {
-    width: ARROW_SIZE,
-    height: ARROW_SIZE,
-    minWidth: ARROW_SIZE,
-    minHeight: ARROW_SIZE,
-    borderRadius: ARROW_SIZE / 2,
-    border: "2px solid #F0DECA",
-    background: "#FFFFFF",
-    fontSize: "1.5rem",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-    transition: "transform 0.1s ease",
-    touchAction: "manipulation" as const,
-  },
-  dots: {
-    display: "flex",
-    gap: 8,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    transition: "background 0.2s ease",
-  },
-} as const;

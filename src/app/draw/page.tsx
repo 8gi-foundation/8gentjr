@@ -4,42 +4,12 @@ import DrawCanvas from "@/components/DrawCanvas";
 
 export default function DrawPage() {
   return (
-    <main
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100dvh",
-        padding: "12px",
-        boxSizing: "border-box",
-        fontFamily: "Inter, system-ui, sans-serif",
-      }}
-    >
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 12,
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "1.3rem",
-            fontWeight: 800,
-            color: "#E8610A",
-            margin: 0,
-          }}
-        >
+    <main className="flex flex-col h-[100dvh] p-3 font-sans">
+      <header className="flex items-center justify-between mb-3">
+        <h1 className="text-xl font-extrabold text-[#E8610A] m-0">
           Draw
         </h1>
-        <a
-          href="/"
-          style={{
-            color: "#666",
-            textDecoration: "none",
-            fontSize: "0.9rem",
-          }}
-        >
+        <a href="/" className="text-gray-500 no-underline text-sm">
           Back
         </a>
       </header>

@@ -8,8 +8,6 @@ import { useRef, useState, useCallback, useEffect } from "react";
 
 /** Minimum interactive element size (WCAG 2.5.5 / 2.5.8 compliance) */
 const TOUCH_TARGET_PX = 48;
-/** Minimum gap between interactive elements */
-const TOUCH_GAP_PX = 8;
 
 const COLORS = [
   { id: "black", hex: "#1a1a2e", label: "Black" },
@@ -53,7 +51,6 @@ export default function DrawCanvas() {
       canvas.width = rect.width;
       canvas.height = rect.height;
 
-      // Fill with white background
       const ctx = canvas.getContext("2d");
       if (ctx) {
         ctx.fillStyle = "#ffffff";
@@ -102,7 +99,6 @@ export default function DrawCanvas() {
       const pos = getPos(e);
       lastPos.current = pos;
 
-      // Draw a dot for single taps
       const ctx = canvasRef.current?.getContext("2d");
       if (ctx) {
         ctx.fillStyle = color;
@@ -139,62 +135,23 @@ export default function DrawCanvas() {
   }, []);
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        width: "100%",
-        overflow: "hidden",
-      }}
-    >
+    <div className="flex flex-col h-full w-full overflow-hidden">
       {/* Canvas area */}
-      <div
-        style={{
-          flex: 1,
-          position: "relative",
-          background: "#ffffff",
-          borderRadius: 12,
-          overflow: "hidden",
-          border: "2px solid #e0e0e0",
-          touchAction: "none",
-        }}
-      >
+      <div className="flex-1 relative bg-white rounded-xl overflow-hidden border-2 border-gray-300 touch-none">
         <canvas
           ref={canvasRef}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerLeave={handlePointerUp}
-          style={{
-            display: "block",
-            width: "100%",
-            height: "100%",
-            cursor: "crosshair",
-          }}
+          className="block w-full h-full cursor-crosshair"
         />
       </div>
 
       {/* Toolbar — all buttons meet 48px minimum touch target */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: TOUCH_GAP_PX,
-          padding: "12px 0 0",
-        }}
-      >
+      <div className="flex flex-col gap-2 pt-3">
         {/* Color picker row */}
-        <div
-          role="radiogroup"
-          aria-label="Brush color"
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: TOUCH_GAP_PX,
-            justifyContent: "center",
-          }}
-        >
+        <div role="radiogroup" aria-label="Brush color" className="flex flex-wrap gap-2 justify-center">
           {COLORS.map((c) => {
             const isSelected = color === c.hex;
             return (
@@ -204,27 +161,22 @@ export default function DrawCanvas() {
                 aria-checked={isSelected}
                 aria-label={c.label}
                 onClick={() => setColor(c.hex)}
+                className="shrink-0 p-0 rounded-full cursor-pointer transition-all"
                 style={{
-                  /* WCAG touch target: 48px minimum */
                   width: TOUCH_TARGET_PX,
                   height: TOUCH_TARGET_PX,
                   minWidth: TOUCH_TARGET_PX,
                   minHeight: TOUCH_TARGET_PX,
-                  borderRadius: "50%",
                   border: isSelected
                     ? "3px solid #E8610A"
                     : c.id === "white"
                       ? "2px solid #ccc"
                       : "2px solid transparent",
                   background: c.hex,
-                  cursor: "pointer",
                   boxShadow: isSelected
                     ? "0 0 0 3px rgba(232, 97, 10, 0.3)"
                     : "0 1px 3px rgba(0,0,0,0.12)",
-                  transition: "box-shadow 0.15s, border-color 0.15s, transform 0.1s",
                   transform: isSelected ? "scale(1.1)" : "scale(1)",
-                  padding: 0,
-                  flexShrink: 0,
                 }}
               />
             );
@@ -232,24 +184,8 @@ export default function DrawCanvas() {
         </div>
 
         {/* Brush size row + clear button */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: TOUCH_GAP_PX,
-            flexWrap: "wrap",
-          }}
-        >
-          <div
-            role="radiogroup"
-            aria-label="Brush size"
-            style={{
-              display: "flex",
-              gap: TOUCH_GAP_PX,
-              alignItems: "center",
-            }}
-          >
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <div role="radiogroup" aria-label="Brush size" className="flex gap-2 items-center">
             {BRUSH_SIZES.map((s) => {
               const isSelected = brushSize.id === s.id;
               return (
@@ -259,35 +195,23 @@ export default function DrawCanvas() {
                   aria-checked={isSelected}
                   aria-label={s.label}
                   onClick={() => setBrushSize(s)}
+                  className={`shrink-0 p-0 rounded-xl flex items-center justify-center cursor-pointer transition-all ${
+                    isSelected ? "border-[3px] border-[#E8610A] bg-[#fff5ee]" : "border-2 border-gray-300 bg-white"
+                  }`}
                   style={{
-                    /* WCAG touch target: 48px minimum */
                     width: TOUCH_TARGET_PX,
                     height: TOUCH_TARGET_PX,
                     minWidth: TOUCH_TARGET_PX,
                     minHeight: TOUCH_TARGET_PX,
-                    borderRadius: 12,
-                    border: isSelected
-                      ? "3px solid #E8610A"
-                      : "2px solid #ddd",
-                    background: isSelected ? "#fff5ee" : "#fff",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "border-color 0.15s, background 0.15s",
-                    padding: 0,
-                    flexShrink: 0,
                   }}
                 >
-                  {/* Visual indicator: circle sized proportionally */}
                   <span
+                    className="block rounded-full"
                     style={{
-                      display: "block",
                       width: Math.max(6, s.radius * 2),
                       height: Math.max(6, s.radius * 2),
                       maxWidth: 32,
                       maxHeight: 32,
-                      borderRadius: "50%",
                       background: color,
                     }}
                   />
@@ -300,22 +224,7 @@ export default function DrawCanvas() {
           <button
             aria-label="Clear canvas"
             onClick={handleClear}
-            style={{
-              /* WCAG touch target: 48px minimum */
-              height: TOUCH_TARGET_PX,
-              minHeight: TOUCH_TARGET_PX,
-              minWidth: TOUCH_TARGET_PX,
-              padding: "0 20px",
-              borderRadius: 12,
-              border: "2px solid #e63946",
-              background: "#fff",
-              color: "#e63946",
-              fontWeight: 700,
-              fontSize: "0.95rem",
-              cursor: "pointer",
-              transition: "background 0.15s, color 0.15s",
-              flexShrink: 0,
-            }}
+            className="shrink-0 h-12 min-h-[48px] min-w-[48px] px-5 rounded-xl border-2 border-red-500 bg-white text-red-500 font-bold text-[0.95rem] cursor-pointer transition-colors hover:bg-red-50"
           >
             Clear
           </button>
