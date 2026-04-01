@@ -1,7 +1,5 @@
 "use client";
 
-import { CSSProperties } from "react";
-
 /**
  * AAC (Augmentative and Alternative Communication) Card
  *
@@ -25,62 +23,6 @@ export interface AACCardProps {
   onClick?: () => void;
 }
 
-/** Minimum label size per WCAG + AAC guidelines for arm's-length readability */
-const MIN_LABEL_FONT_SIZE = 16;
-
-const cardStyle: CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  alignItems: "center",
-  justifyContent: "center",
-  borderRadius: 12,
-  border: "2px solid #e0e0e0",
-  padding: "12px 8px",
-  cursor: "pointer",
-  transition: "transform 0.15s ease, box-shadow 0.15s ease",
-  userSelect: "none",
-  WebkitTapHighlightColor: "transparent",
-  minWidth: 80,
-  minHeight: 100,
-};
-
-const symbolStyle: CSSProperties = {
-  width: 64,
-  height: 64,
-  objectFit: "contain",
-  marginBottom: 8,
-};
-
-const labelStyle: CSSProperties = {
-  /**
-   * FIXED: was 9px, now 16px.
-   * Minimum 14px per AAC standards; we use 16px for comfortable arm's-length reading.
-   */
-  fontSize: `${MIN_LABEL_FONT_SIZE}px`,
-  fontWeight: 600,
-  lineHeight: 1.2,
-  textAlign: "center",
-  color: "#1a1a2e",
-  /* Prevent truncation on standard grid sizes; ellipsis as safety net */
-  overflow: "hidden",
-  textOverflow: "ellipsis",
-  display: "-webkit-box",
-  WebkitLineClamp: 2,
-  WebkitBoxOrient: "vertical",
-  wordBreak: "break-word",
-  maxWidth: "100%",
-};
-
-const placeholderSymbolStyle: CSSProperties = {
-  ...symbolStyle,
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  background: "#f0f0f0",
-  borderRadius: 8,
-  fontSize: 28,
-};
-
 export default function AACCard({
   symbolUrl,
   symbolAlt,
@@ -93,25 +35,42 @@ export default function AACCard({
       type="button"
       onClick={onClick}
       aria-label={label}
-      style={{ ...cardStyle, background: bgColor }}
-      onMouseDown={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = "scale(0.95)";
-      }}
-      onMouseUp={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = "scale(1)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.transform = "scale(1)";
-      }}
+      className="
+        aac-card flex flex-col items-center justify-center
+        rounded-xl border-2 border-[--brand-border]
+        py-3 px-2 cursor-pointer min-w-[80px] min-h-[100px]
+        transition-transform duration-150 ease-out
+        active:scale-95 hover:shadow-md
+      "
+      style={{ background: bgColor }}
     >
       {symbolUrl ? (
-        <img src={symbolUrl} alt={symbolAlt ?? label} style={symbolStyle} />
+        <img
+          src={symbolUrl}
+          alt={symbolAlt ?? label}
+          className="w-16 h-16 object-contain mb-2"
+        />
       ) : (
-        <div style={placeholderSymbolStyle} role="img" aria-label={symbolAlt ?? label}>
+        <div
+          className="
+            w-16 h-16 flex items-center justify-center
+            bg-[--warm-bg-page] rounded-lg text-[28px] mb-2
+          "
+          role="img"
+          aria-label={symbolAlt ?? label}
+        >
           {label.charAt(0).toUpperCase()}
         </div>
       )}
-      <span style={labelStyle}>{label}</span>
+      <span
+        className="
+          text-base font-semibold leading-tight text-center text-[--brand-text]
+          overflow-hidden text-ellipsis max-w-full
+          line-clamp-2 break-words
+        "
+      >
+        {label}
+      </span>
     </button>
   );
 }
