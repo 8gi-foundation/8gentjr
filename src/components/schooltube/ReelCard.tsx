@@ -10,6 +10,35 @@ import { useState } from "react";
 import type { Reel } from "@/lib/reels-data";
 import GamePlayer from "./GamePlayer";
 
+/** Embedded video player overlay */
+function VideoPlayer({ url, onClose }: { url: string; onClose: () => void }) {
+  // Convert YouTube watch URLs to embed URLs
+  const embedUrl = url
+    .replace("youtube.com/watch?v=", "youtube.com/embed/")
+    .replace("youtu.be/", "youtube.com/embed/");
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center">
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 w-12 h-12 rounded-full bg-white/20 text-white text-2xl flex items-center justify-center hover:bg-white/30 z-10"
+        aria-label="Close video"
+      >
+        &#10005;
+      </button>
+      <div className="w-full max-w-4xl aspect-video rounded-2xl overflow-hidden shadow-2xl">
+        <iframe
+          src={embedUrl}
+          className="w-full h-full"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          title="Video player"
+        />
+      </div>
+    </div>
+  );
+}
+
 function getGameCategory(
   topics: string[]
 ): "sensory" | "speech" | "game" {
@@ -32,9 +61,11 @@ export default function ReelCard({ reel }: { reel: Reel }) {
     ? CATEGORY_STYLES[category]
     : CATEGORY_STYLES.game;
 
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
+
   const handleClick = () => {
     if (reel.type === "video" && reel.videoUrl) {
-      window.open(reel.videoUrl, "_blank", "noopener");
+      setIsVideoOpen(true);
     } else {
       setIsPlaying(true);
     }
@@ -115,6 +146,13 @@ export default function ReelCard({ reel }: { reel: Reel }) {
           reel={reel}
           open={isPlaying}
           onOpenChange={setIsPlaying}
+        />
+      )}
+
+      {isVideoOpen && reel.type === "video" && reel.videoUrl && (
+        <VideoPlayer
+          url={reel.videoUrl}
+          onClose={() => setIsVideoOpen(false)}
         />
       )}
     </>
