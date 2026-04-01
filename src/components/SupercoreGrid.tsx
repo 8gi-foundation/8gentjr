@@ -24,9 +24,10 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
 
 // =============================================================================
-// Fitzgerald Key Color Definitions
+// Fitzgerald Key Color Definitions (mapped from shared vocabulary system)
 // =============================================================================
 
 type FitzgeraldCategory =
@@ -38,6 +39,18 @@ type FitzgeraldCategory =
   | 'questions'
   | 'determiners'
   | 'negation';
+
+/** Map grid categories to canonical Fitzgerald Key word categories */
+const CATEGORY_TO_WORD_TYPE: Record<FitzgeraldCategory, WordCategory> = {
+  people: 'pronoun',
+  verbs: 'verb',
+  descriptors: 'adjective',
+  prepositions: 'preposition',
+  social: 'social',
+  questions: 'question',
+  determiners: 'determiner',
+  negation: 'negation',
+};
 
 /**
  * Maps each Fitzgerald category to Tailwind class strings using CSS variables.
@@ -53,6 +66,11 @@ const FITZGERALD_CLASSES: Record<FitzgeraldCategory, { bg: string; text: string;
   determiners:  { bg: 'bg-fitzgerald-white',   text: 'text-fitzgerald-white-text',  border: 'border-fitzgerald-white-border' },
   negation:     { bg: 'bg-fitzgerald-red',    text: 'text-fitzgerald-red-text',    border: 'border-fitzgerald-red-border' },
 };
+
+/** Get inline Fitzgerald Key color for a grid category (used by non-Tailwind contexts) */
+export function getGridCategoryColor(category: FitzgeraldCategory) {
+  return FITZGERALD_COLORS[CATEGORY_TO_WORD_TYPE[category]];
+}
 
 // =============================================================================
 // Core Word Data — FIXED positions, NEVER reorder

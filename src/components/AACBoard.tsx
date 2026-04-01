@@ -12,7 +12,7 @@ export type GridDensity = (typeof GRID_DENSITY_OPTIONS)[number];
 const DEFAULT_COLUMNS: GridDensity = 4;
 
 // ---------------------------------------------------------------------------
-// AAC symbols from vocabulary system (replaces hardcoded SAMPLE_SYMBOLS)
+// AAC symbols from vocabulary system (replaces hardcoded placeholder set)
 // ---------------------------------------------------------------------------
 const AAC_SYMBOLS = [
   ...GENERAL_PHRASES,
@@ -89,12 +89,12 @@ export default function AACBoard({
         </div>
       )}
 
-      {/* Symbol grid */}
+      {/* Symbol grid — uses ARASAAC pictograms from vocabulary system */}
       <div
         className="grid gap-2.5"
         style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
       >
-        {SAMPLE_SYMBOLS.map((sym) => (
+        {AAC_SYMBOLS.map((sym) => (
           <button
             key={sym.id}
             onClick={() => handleSymbolTap(sym.label)}
@@ -107,9 +107,12 @@ export default function AACBoard({
             "
             style={{ minHeight: 88 }}
           >
-            <span className="text-[39px] leading-none min-w-[60px] min-h-[60px] flex items-center justify-center">
-              {sym.emoji}
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={sym.imageUrl}
+              alt={sym.label}
+              className="w-[60px] h-[60px] object-contain"
+            />
             <span className="text-xs font-semibold text-[--brand-text-soft]">
               {sym.label}
             </span>
