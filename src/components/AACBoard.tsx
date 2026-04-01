@@ -9,25 +9,23 @@ export const GRID_DENSITY_OPTIONS = [4, 6, 8, 10] as const;
 export type GridDensity = (typeof GRID_DENSITY_OPTIONS)[number];
 
 const DEFAULT_COLUMNS: GridDensity = 4;
-const CELL_GAP_PX = 10;
-const MIN_ICON_SIZE_PX = 60;
 
 // ---------------------------------------------------------------------------
 // Sample AAC symbols (placeholder set — will be replaced by real symbol bank)
 // ---------------------------------------------------------------------------
 const SAMPLE_SYMBOLS = [
-  { id: "want", label: "I want", emoji: "👋" },
-  { id: "eat", label: "Eat", emoji: "🍽️" },
-  { id: "drink", label: "Drink", emoji: "🥤" },
-  { id: "play", label: "Play", emoji: "🎮" },
-  { id: "help", label: "Help", emoji: "🆘" },
-  { id: "more", label: "More", emoji: "➕" },
-  { id: "stop", label: "Stop", emoji: "🛑" },
-  { id: "yes", label: "Yes", emoji: "✅" },
-  { id: "no", label: "No", emoji: "❌" },
-  { id: "happy", label: "Happy", emoji: "😊" },
-  { id: "sad", label: "Sad", emoji: "😢" },
-  { id: "tired", label: "Tired", emoji: "😴" },
+  { id: "want", label: "I want", emoji: "\u{1F44B}" },
+  { id: "eat", label: "Eat", emoji: "\u{1F37D}\uFE0F" },
+  { id: "drink", label: "Drink", emoji: "\u{1F964}" },
+  { id: "play", label: "Play", emoji: "\u{1F3AE}" },
+  { id: "help", label: "Help", emoji: "\u{1F198}" },
+  { id: "more", label: "More", emoji: "\u2795" },
+  { id: "stop", label: "Stop", emoji: "\u{1F6D1}" },
+  { id: "yes", label: "Yes", emoji: "\u2705" },
+  { id: "no", label: "No", emoji: "\u274C" },
+  { id: "happy", label: "Happy", emoji: "\u{1F60A}" },
+  { id: "sad", label: "Sad", emoji: "\u{1F622}" },
+  { id: "tired", label: "Tired", emoji: "\u{1F634}" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -57,38 +55,16 @@ export default function AACBoard({
   const handleClear = () => setSelectedSymbols([]);
 
   return (
-    <div style={{ width: "100%", maxWidth: 900, margin: "0 auto" }}>
+    <div className="w-full max-w-[900px] mx-auto">
       {/* Sentence strip */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          minHeight: 48,
-          padding: "8px 12px",
-          marginBottom: 12,
-          background: "#f5f5f5",
-          borderRadius: 12,
-          fontSize: "1.1rem",
-          flexWrap: "wrap",
-        }}
-      >
-        <span style={{ flex: 1, color: selectedSymbols.length ? "#1a1a2e" : "#999" }}>
+      <div className="flex items-center gap-2 min-h-12 px-3 py-2 mb-3 bg-[--warm-bg-subtle] rounded-xl text-lg flex-wrap">
+        <span className={`flex-1 ${selectedSymbols.length ? "text-[--brand-text]" : "text-[--brand-text-muted]"}`}>
           {selectedSymbols.length ? selectedSymbols.join(" ") : "Tap symbols to build a sentence..."}
         </span>
         {selectedSymbols.length > 0 && (
           <button
             onClick={handleClear}
-            style={{
-              background: "#E8610A",
-              color: "#fff",
-              border: "none",
-              borderRadius: 8,
-              padding: "6px 14px",
-              cursor: "pointer",
-              fontWeight: 600,
-              fontSize: "0.9rem",
-            }}
+            className="bg-[--brand-accent] hover:bg-[--brand-accent-hover] text-white border-none rounded-lg px-3.5 py-1.5 cursor-pointer font-semibold text-sm transition-colors"
           >
             Clear
           </button>
@@ -97,31 +73,19 @@ export default function AACBoard({
 
       {/* Density selector */}
       {showDensitySelector && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            marginBottom: 12,
-            fontSize: "0.85rem",
-            color: "#666",
-          }}
-        >
+        <div className="flex items-center gap-2 mb-3 text-sm text-[--brand-text-soft]">
           <span>Grid size:</span>
           {GRID_DENSITY_OPTIONS.map((opt) => (
             <button
               key={opt}
               onClick={() => setColumns(opt)}
-              style={{
-                background: columns === opt ? "#E8610A" : "#eee",
-                color: columns === opt ? "#fff" : "#333",
-                border: "none",
-                borderRadius: 6,
-                padding: "4px 10px",
-                cursor: "pointer",
-                fontWeight: columns === opt ? 700 : 400,
-                fontSize: "0.85rem",
-              }}
+              className={`
+                border-none rounded-md px-2.5 py-1 cursor-pointer text-sm transition-colors
+                ${columns === opt
+                  ? "bg-[--brand-accent] text-white font-bold"
+                  : "bg-[--warm-bg-page] text-[--brand-text-soft] hover:bg-[--warm-border-light]"
+                }
+              `}
             >
               {opt}
             </button>
@@ -131,57 +95,26 @@ export default function AACBoard({
 
       {/* Symbol grid */}
       <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gap: CELL_GAP_PX,
-        }}
+        className="grid gap-2.5"
+        style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
       >
         {SAMPLE_SYMBOLS.map((sym) => (
           <button
             key={sym.id}
             onClick={() => handleSymbolTap(sym.label)}
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 4,
-              background: "#fff",
-              border: "2px solid #e0e0e0",
-              borderRadius: 12,
-              padding: 8,
-              cursor: "pointer",
-              transition: "transform 0.1s, border-color 0.1s",
-              minHeight: MIN_ICON_SIZE_PX + 28, // icon + label
-            }}
-            onPointerDown={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.95)";
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "#E8610A";
-            }}
-            onPointerUp={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "#e0e0e0";
-            }}
-            onPointerLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
-              (e.currentTarget as HTMLButtonElement).style.borderColor = "#e0e0e0";
-            }}
+            className="
+              aac-card flex flex-col items-center justify-center gap-1
+              bg-white border-2 border-[--brand-border] rounded-xl p-2
+              cursor-pointer transition-all duration-100
+              active:scale-95 active:border-[--brand-accent]
+              hover:shadow-md
+            "
+            style={{ minHeight: 88 }}
           >
-            <span
-              style={{
-                fontSize: `${MIN_ICON_SIZE_PX * 0.65}px`,
-                lineHeight: 1,
-                minWidth: MIN_ICON_SIZE_PX,
-                minHeight: MIN_ICON_SIZE_PX,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
+            <span className="text-[39px] leading-none min-w-[60px] min-h-[60px] flex items-center justify-center">
               {sym.emoji}
             </span>
-            <span style={{ fontSize: "0.8rem", fontWeight: 600, color: "#333" }}>
+            <span className="text-xs font-semibold text-[--brand-text-soft]">
               {sym.label}
             </span>
           </button>
