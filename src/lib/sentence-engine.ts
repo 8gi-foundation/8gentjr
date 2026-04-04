@@ -20,7 +20,7 @@ interface WordEntry {
 
 const CORE_WORDS: WordEntry[] = [
   // Pronouns
-  { word: 'I', category: 'pronoun', nextWords: ['want', 'like', 'need', 'am', 'feel', 'see', 'have', 'go', 'eat', 'drink'] },
+  { word: 'I', category: 'pronoun', nextWords: ['want', 'like', 'need', 'am', 'feel', 'see', 'have', 'go', 'eat', 'drink', 'play', 'can', 'love', 'do'] },
   { word: 'you', category: 'pronoun', nextWords: ['are', 'want', 'like', 'need', 'go', 'have', 'can', 'help'] },
   { word: 'he', category: 'pronoun', nextWords: ['is', 'wants', 'likes', 'has', 'goes', 'can'] },
   { word: 'she', category: 'pronoun', nextWords: ['is', 'wants', 'likes', 'has', 'goes', 'can'] },
@@ -46,6 +46,14 @@ const CORE_WORDS: WordEntry[] = [
   { word: 'can', category: 'verb', nextWords: ['I', 'you', 'we', 'go', 'play', 'have', 'do', 'help'] },
   { word: 'do', category: 'verb', nextWords: ['it', 'that', 'more', 'again', 'now'] },
   { word: 'look', category: 'verb', nextWords: ['at', 'here', 'there', 'it', 'that'] },
+  { word: 'run', category: 'verb', nextWords: ['outside', 'now', 'please', 'fast', 'more'] },
+  { word: 'jump', category: 'verb', nextWords: ['more', 'now', 'please', 'high'] },
+  { word: 'throw', category: 'verb', nextWords: ['ball', 'it', 'please', 'more'] },
+  { word: 'bounce', category: 'verb', nextWords: ['ball', 'it', 'more', 'please'] },
+  { word: 'kick', category: 'verb', nextWords: ['ball', 'it', 'please', 'more'] },
+  { word: 'draw', category: 'verb', nextWords: ['please', 'more', 'it', 'that'] },
+  { word: 'read', category: 'verb', nextWords: ['book', 'please', 'more', 'it'] },
+  { word: 'love', category: 'verb', nextWords: ['it', 'that', 'you', 'music', 'food', 'game'] },
 
   // Nouns
   { word: 'food', category: 'noun', nextWords: ['please', 'now', 'more', 'is'] },
@@ -53,11 +61,17 @@ const CORE_WORDS: WordEntry[] = [
   { word: 'juice', category: 'noun', nextWords: ['please', 'now', 'more'] },
   { word: 'home', category: 'noun', nextWords: ['now', 'please'] },
   { word: 'toy', category: 'noun', nextWords: ['please', 'now', 'is'] },
-  { word: 'book', category: 'noun', nextWords: ['please', 'now', 'is'] },
+  { word: 'book', category: 'noun', nextWords: ['please', 'now', 'is', 'read'] },
   { word: 'music', category: 'noun', nextWords: ['please', 'now', 'is'] },
-  { word: 'game', category: 'noun', nextWords: ['please', 'now', 'is'] },
-  { word: 'friend', category: 'noun', nextWords: ['is', 'here'] },
+  { word: 'game', category: 'noun', nextWords: ['please', 'now', 'is', 'play'] },
+  { word: 'friend', category: 'noun', nextWords: ['play', 'is', 'here', 'help', 'come'] },
   { word: 'turn', category: 'noun', nextWords: ['now', 'please'] },
+  { word: 'ball', category: 'noun', nextWords: ['please', 'throw', 'bounce', 'play', 'kick'] },
+  { word: 'playground', category: 'noun', nextWords: ['please', 'now', 'go', 'play'] },
+  { word: 'teacher', category: 'noun', nextWords: ['help', 'is', 'look', 'please'] },
+  { word: 'lunch', category: 'noun', nextWords: ['please', 'now', 'more', 'eat'] },
+  { word: 'snack', category: 'noun', nextWords: ['please', 'now', 'more', 'eat'] },
+  { word: 'pencil', category: 'noun', nextWords: ['please', 'draw', 'is'] },
 
   // Adjectives
   { word: 'happy', category: 'adjective', nextWords: ['now', 'today'] },
@@ -185,7 +199,8 @@ export function improveSentence(words: string[]): string {
   // 1. Fix "I" always capitalized
   result = result.map((w) => (w === 'i' ? 'I' : w));
 
-  // 2. Insert articles before lone nouns if missing
+  // 2. Insert "the" before nouns only when prev is a verb or preposition
+  //    Never insert after pronouns (I, you, my…) — breaks AAC grammar
   const nouns = new Set(
     CORE_WORDS.filter((e) => e.category === 'noun').map((e) => e.word.toLowerCase())
   );
@@ -196,11 +211,10 @@ export function improveSentence(words: string[]): string {
     const w = result[i];
     const prev = i > 0 ? result[i - 1] : '';
 
-    // Add "the" before a noun if no determiner/adjective precedes
     if (nouns.has(w) && !determiners.has(prev) && prev !== 'more') {
-      // Check if prev is an adjective (then determiner goes before that)
-      const prevEntry = wordMap.get(prev);
-      if (!prevEntry || prevEntry.category !== 'adjective') {
+      const prevEntry = wordMap.get(prev.toLowerCase());
+      // Only add article when the previous word is a verb or preposition
+      if (prevEntry && (prevEntry.category === 'verb' || prevEntry.category === 'preposition')) {
         withArticles.push('the');
       }
     }
