@@ -91,13 +91,16 @@ export async function speak(options: TTSOptions): Promise<TTSEngine> {
   // Stop anything currently playing
   stopSpeaking();
 
-  // ElevenLabs only — no browser TTS fallback (avoid double-voice issue)
+  // Try ElevenLabs first
   try {
     const engine = await speakElevenLabs(text, { voiceId, stability, similarityBoost, volume });
-    return engine;
+    if (engine === 'elevenlabs') return 'elevenlabs';
   } catch {
-    return 'none';
+    // Fall through to browser TTS
   }
+
+  // Fallback: Web Speech API (caller should signal this to the user)
+  return speakBrowser(text, { rate, volume });
 }
 
 // ---------------------------------------------------------------------------
