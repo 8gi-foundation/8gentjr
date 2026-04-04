@@ -188,12 +188,12 @@ function SentenceStrip({ words, onSpeakAll, onMagicSpeak, isMagicLoading, onClea
   }, [words.length]);
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 min-h-[64px] bg-gray-700 rounded-xl mx-2 mt-2">
+    <div className="flex items-center gap-1.5 px-2 py-1.5 min-h-[56px] bg-gray-700 rounded-xl mx-2 mt-2">
       {/* Speak All (exact words) */}
       <button
         onClick={onSpeakAll}
         disabled={words.length === 0}
-        className={`shrink-0 w-12 h-12 rounded-xl border-none text-white flex items-center justify-center text-xl font-bold ${
+        className={`shrink-0 w-10 h-10 rounded-xl border-none text-white flex items-center justify-center text-lg font-bold ${
           words.length > 0
             ? 'bg-emerald-500 cursor-pointer'
             : 'bg-gray-500 cursor-not-allowed'
@@ -203,11 +203,11 @@ function SentenceStrip({ words, onSpeakAll, onMagicSpeak, isMagicLoading, onClea
         &#9654;
       </button>
 
-      {/* Magic sparkle button — sends to Groq for grammar improvement */}
+      {/* Magic sparkle button */}
       <button
         onClick={onMagicSpeak}
         disabled={words.length < 2 || isMagicLoading}
-        className={`shrink-0 w-12 h-12 rounded-xl border-none text-white flex items-center justify-center text-lg font-bold transition-all ${
+        className={`shrink-0 w-10 h-10 rounded-xl border-none text-white flex items-center justify-center text-base font-bold transition-all ${
           words.length >= 2 && !isMagicLoading
             ? 'bg-purple-500 cursor-pointer hover:bg-purple-400 active:scale-90'
             : 'bg-gray-500 cursor-not-allowed'
@@ -245,7 +245,7 @@ function SentenceStrip({ words, onSpeakAll, onMagicSpeak, isMagicLoading, onClea
       {words.length > 0 && (
         <button
           onClick={onClear}
-          className="shrink-0 w-12 h-12 rounded-xl border-none bg-red-500 text-white cursor-pointer flex items-center justify-center text-xl font-bold"
+          className="shrink-0 w-10 h-10 rounded-xl border-none bg-red-500 text-white cursor-pointer flex items-center justify-center text-lg font-bold"
           aria-label="Clear sentence"
         >
           &#10005;
@@ -268,7 +268,8 @@ function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) 
       onPointerDown={() => setPressed(true)}
       onPointerUp={() => { setPressed(false); onTap(word); }}
       onPointerLeave={() => setPressed(false)}
-      className={`flex flex-col items-center justify-center aspect-square min-w-[48px] min-h-[48px] rounded-xl border-[3px] cursor-pointer select-none touch-manipulation p-1 text-center leading-tight transition-transform duration-100 ${cls.bg} ${cls.text} ${cls.border} ${pressed ? 'scale-[0.92]' : 'scale-100'}`}
+      className={`flex flex-col items-center justify-center rounded-xl border-[3px] cursor-pointer select-none touch-manipulation py-1.5 px-0.5 text-center leading-tight transition-transform duration-100 ${cls.bg} ${cls.text} ${cls.border} ${pressed ? 'scale-[0.92]' : 'scale-100'}`}
+      style={{ minHeight: 72 }}
       aria-label={word.label}
       role="button"
     >
@@ -277,13 +278,13 @@ function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) 
         <img
           src={ARASAAC_IMG(word.arasaacId)}
           alt={word.label}
-          width={56}
-          height={56}
-          className="w-[clamp(32px,5vw,56px)] h-[clamp(32px,5vw,56px)] object-contain pointer-events-none"
+          width={52}
+          height={52}
+          className="w-[52px] h-[52px] object-contain pointer-events-none"
           loading="lazy"
         />
       )}
-      <span className="font-bold text-[clamp(10px,1.5vw,14px)] mt-0.5 truncate max-w-full">{word.label}</span>
+      <span className="font-bold text-[11px] mt-0.5 w-full truncate px-0.5">{word.label}</span>
     </button>
   );
 }
@@ -299,12 +300,17 @@ export interface SupercoreGridProps {
 
 export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const [sentence, setSentence] = useState<CoreWord[]>([]);
-  const [isMobile, setIsMobile] = useState(false);
+  const [cols, setCols] = useState(10);
   const [isMagicLoading, setIsMagicLoading] = useState(false);
 
-  // Detect mobile for responsive grid
+  // Responsive column count: 4 on phone, 5 on small tablet, 10 on desktop
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640);
+    const check = () => {
+      const w = window.innerWidth;
+      if (w < 480) setCols(4);
+      else if (w < 768) setCols(5);
+      else setCols(10);
+    };
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
@@ -383,14 +389,14 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
         onRemoveWord={handleRemoveWord}
       />
 
-      {/* Color Legend */}
-      <div className="flex flex-wrap gap-1.5 px-3 py-1.5 justify-center">
+      {/* Color Legend — single scrollable row */}
+      <div className="flex gap-1 px-2 py-1 overflow-x-auto no-scrollbar shrink-0">
         {legendItems.map(({ category, label }) => {
           const cls = FITZGERALD_CLASSES[category];
           return (
             <span
               key={category}
-              className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${cls.bg} ${cls.text} ${cls.border}`}
+              className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${cls.bg} ${cls.text} ${cls.border}`}
             >
               {label}
             </span>
@@ -398,10 +404,11 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
         })}
       </div>
 
-      {/* Core Word Grid: 10x5 desktop, 5x10 mobile */}
-      <div className={`flex-1 grid gap-1.5 px-2 pb-3 pt-1.5 overflow-auto ${
-        isMobile ? 'grid-cols-5' : 'grid-cols-10'
-      }`}>
+      {/* Core Word Grid */}
+      <div
+        className="flex-1 grid gap-1 px-1.5 pb-2 pt-1 overflow-auto"
+        style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+      >
         {SUPERCORE_50.map(word => (
           <CoreWordButton key={word.id} word={word} onTap={handleWordTap} />
         ))}
