@@ -3,24 +3,22 @@
 /**
  * Talk Page — main AAC communication hub for 8gent Jr.
  *
- * Three modes:
- * - "For You"  — contextual/frequent phrases
- * - "All"      — full vocabulary grid
- * - "Browse"   — browse by AAC category
+ * Structure:
+ * - Default: Core AAC board (high-frequency words)
+ * - Reachable: Sentence Builder, Browse by Category
  *
- * Includes safety phrases bar always visible at bottom.
- * Ported from NickOS talk interface, adapted to 8gent Jr architecture.
+ * Safety phrases bar always visible at bottom.
  */
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import AACBoard from "@/components/AACBoard";
 import AACHome from "@/components/AACHome";
-import AACKeyboard from "@/components/AACKeyboard";
 import AACEncouragement from "@/components/AACEncouragement";
 import SentenceBuilder from "@/components/SentenceBuilder";
+import { speak } from "@/lib/tts";
 
-type ViewMode = "contextual" | "all" | "categories";
+type ViewMode = "core" | "sentences" | "browse";
 
 // Safety phrases — always accessible
 const SAFETY_PHRASES = [
@@ -34,108 +32,92 @@ const SAFETY_PHRASES = [
 
 export default function TalkPage() {
   const router = useRouter();
-  const [viewMode, setViewMode] = useState<ViewMode>("contextual");
+  const [viewMode, setViewMode] = useState<ViewMode>("core");
   const [spokenCount, setSpokenCount] = useState(0);
 
   const handleSpeakSafety = useCallback((text: string) => {
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1.1;
-      window.speechSynthesis.speak(utterance);
-      setSpokenCount((c) => c + 1);
-    }
+    speak({ text });
+    setSpokenCount((c) => c + 1);
   }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-cyan-500 via-teal-500 to-green-500 flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <button
-          onClick={() => router.push("/")}
-          className="flex items-center gap-1 text-white/80 hover:text-white transition-colors"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            viewBox="0 0 24 24"
+        {viewMode === "core" ? (
+          <button
+            onClick={() => router.push("/")}
+            className="flex items-center gap-1 text-white/80 hover:text-white transition-colors"
           >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          <span className="text-lg font-medium">Back</span>
-        </button>
-        <h1 className="text-white text-xl font-bold">Talk</h1>
-        <div className="w-16" /> {/* Spacer */}
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            <span className="text-lg font-medium">Back</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => setViewMode("core")}
+            className="flex items-center gap-1 text-white/80 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            <span className="text-lg font-medium">Back</span>
+          </button>
+        )}
+        <h1 className="text-white text-xl font-bold">
+          {viewMode === "core" ? "Talk" : viewMode === "sentences" ? "Sentence Builder" : "Browse Topics"}
+        </h1>
+        <div className="w-16" />
       </div>
 
-      {/* Encouragement */}
-      <div className="px-4 py-1">
-        <AACEncouragement wordCount={spokenCount} />
-      </div>
-
-      {/* View Mode Tabs */}
-      <div className="px-4 py-2">
-        <div className="flex items-center gap-2 bg-white/10 rounded-xl p-1">
-          <button
-            onClick={() => setViewMode("contextual")}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-              viewMode === "contextual"
-                ? "bg-white text-gray-900"
-                : "text-white/80 hover:bg-white/10"
-            }`}
-          >
-            For You
-          </button>
-          <button
-            onClick={() => setViewMode("all")}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-              viewMode === "all"
-                ? "bg-white text-gray-900"
-                : "text-white/80 hover:bg-white/10"
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setViewMode("categories")}
-            className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
-              viewMode === "categories"
-                ? "bg-white text-gray-900"
-                : "text-white/80 hover:bg-white/10"
-            }`}
-          >
-            Browse
-          </button>
+      {/* Encouragement — only on core view */}
+      {viewMode === "core" && (
+        <div className="px-4 py-1">
+          <AACEncouragement wordCount={spokenCount} />
         </div>
-      </div>
+      )}
 
-      {/* AAC Keyboard input */}
-      <div className="px-4 py-2">
-        <AACKeyboard
-          onWordSelect={(word) => {
-            handleSpeakSafety(word);
-          }}
-        />
-      </div>
+      {/* Main content */}
+      <div className="flex-1 overflow-y-auto">
 
-      {/* Main content area */}
-      <div className="flex-1 px-4 py-2 overflow-y-auto">
-        {viewMode === "contextual" && (
-          <div className="space-y-4">
+        {/* CORE VIEW — main AAC board + nav shortcuts */}
+        {viewMode === "core" && (
+          <div className="flex flex-col gap-3 px-4 py-2">
+            {/* Navigation shortcuts */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setViewMode("sentences")}
+                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-2xl px-4 py-3 text-white font-semibold transition-colors active:scale-95"
+              >
+                <span className="text-2xl">✏️</span>
+                <span>Build a sentence</span>
+              </button>
+              <button
+                onClick={() => setViewMode("browse")}
+                className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-2xl px-4 py-3 text-white font-semibold transition-colors active:scale-95"
+              >
+                <span className="text-2xl">📚</span>
+                <span>Browse topics</span>
+              </button>
+            </div>
+
+            {/* Core AAC board */}
+            <div className="bg-white/10 rounded-2xl p-2">
+              <AACBoard columns={4} showDensitySelector />
+            </div>
+          </div>
+        )}
+
+        {/* SENTENCE BUILDER VIEW */}
+        {viewMode === "sentences" && (
+          <div className="px-4 py-2">
             <SentenceBuilder />
           </div>
         )}
 
-        {viewMode === "all" && (
-          <div className="bg-white/10 rounded-2xl p-2">
-            <AACBoard columns={4} showDensitySelector />
-          </div>
-        )}
-
-        {viewMode === "categories" && <AACHome />}
+        {/* BROWSE VIEW */}
+        {viewMode === "browse" && <AACHome />}
       </div>
 
       {/* Safety phrases bar — always visible */}

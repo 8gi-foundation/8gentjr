@@ -287,7 +287,7 @@ export const GENERAL_PHRASES: AACPhrase[] = [
   { id: 'gen-more', text: 'more', imageUrl: ARASAAC(32753), categoryId: 'general' },
   { id: 'gen-done', text: 'done', imageUrl: ARASAAC(28429), categoryId: 'general' },
   { id: 'gen-want', text: 'I want', imageUrl: ARASAAC(5441), categoryId: 'general' },
-  { id: 'gen-dont-want', text: "I don't want", imageUrl: ARASAAC(5442), categoryId: 'general' },
+  { id: 'gen-dont-want', text: "I don't want", imageUrl: ARASAAC(29129), categoryId: 'general' },
   { id: 'gen-please', text: 'please', imageUrl: ARASAAC(8195), categoryId: 'general' },
   { id: 'gen-thanks', text: 'thank you', imageUrl: ARASAAC(8129), categoryId: 'general' },
   { id: 'gen-ok', text: 'ok', imageUrl: ARASAAC(5584), categoryId: 'general' },
