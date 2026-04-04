@@ -133,7 +133,7 @@ export default function CategoryDetailPage() {
                     {phrase.text.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <span className="text-xs font-semibold text-gray-700 text-center leading-tight line-clamp-2">
+                <span className="text-sm font-semibold text-gray-700 text-center leading-tight line-clamp-2">
                   {phrase.text}
                 </span>
               </button>
