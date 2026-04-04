@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { GENERAL_PHRASES, FEELINGS_PHRASES, ACTIONS_PHRASES } from "@/lib/vocabulary";
+import { speak } from "@/lib/tts";
 
 // ---------------------------------------------------------------------------
 // Grid density presets — progressive from accessible to advanced
@@ -46,6 +47,13 @@ export default function AACBoard({
 
   const handleSymbolTap = (label: string) => {
     setSelectedSymbols((prev) => [...prev, label]);
+    speak({ text: label });
+  };
+
+  const handleSpeakSentence = () => {
+    if (selectedSymbols.length > 0) {
+      speak({ text: selectedSymbols.join(" ") });
+    }
   };
 
   const handleClear = () => setSelectedSymbols([]);
@@ -58,12 +66,20 @@ export default function AACBoard({
           {selectedSymbols.length ? selectedSymbols.join(" ") : "Tap symbols to build a sentence..."}
         </span>
         {selectedSymbols.length > 0 && (
-          <button
-            onClick={handleClear}
-            className="bg-[--brand-accent] hover:bg-[--brand-accent-hover] text-white border-none rounded-lg px-3.5 py-1.5 cursor-pointer font-semibold text-sm transition-colors"
-          >
-            Clear
-          </button>
+          <>
+            <button
+              onClick={handleSpeakSentence}
+              className="bg-green-500 hover:bg-green-600 text-white border-none rounded-lg px-3.5 py-1.5 cursor-pointer font-semibold text-sm transition-colors"
+            >
+              ▶ Speak
+            </button>
+            <button
+              onClick={handleClear}
+              className="bg-[--brand-accent] hover:bg-[--brand-accent-hover] text-white border-none rounded-lg px-3.5 py-1.5 cursor-pointer font-semibold text-sm transition-colors"
+            >
+              Clear
+            </button>
+          </>
         )}
       </div>
 
