@@ -2,6 +2,7 @@
 
 /**
  * Supercore 50 Core Word Grid
+ * Issue #20: Fixed motor planning grid — words NEVER move.
  *
  * Fixed-position AAC grid following Smartbox Supercore design principles.
  * 50 high-frequency words covering ~40-45% of daily communication.
@@ -26,6 +27,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
 import { logWord } from '@/lib/session-logger';
+import { speak as elevenLabsSpeak } from '@/lib/tts';
 
 // =============================================================================
 // Fitzgerald Key Color Definitions (mapped from shared vocabulary system)
@@ -156,16 +158,11 @@ const SUPERCORE_50: CoreWord[] = [
 ];
 
 // =============================================================================
-// TTS Helper (Web Speech API)
+// TTS Helper — ElevenLabs via tts.ts
 // =============================================================================
 
 function speak(text: string) {
-  if (typeof window === 'undefined' || !window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.rate = 0.9;
-  utterance.pitch = 1.1;
-  window.speechSynthesis.speak(utterance);
+  elevenLabsSpeak({ text });
 }
 
 // =============================================================================
@@ -337,7 +334,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
       const res = await fetch('/api/improve-sentence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ words }),
+        body: JSON.stringify({ cards: words }),
       });
       if (res.ok) {
         const data = await res.json();
