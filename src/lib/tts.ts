@@ -91,18 +91,13 @@ export async function speak(options: TTSOptions): Promise<TTSEngine> {
   // Stop anything currently playing
   stopSpeaking();
 
-  // Try ElevenLabs first (if online)
-  if (navigator.onLine) {
-    try {
-      const engine = await speakElevenLabs(text, { voiceId, stability, similarityBoost, volume });
-      if (engine === 'elevenlabs') return 'elevenlabs';
-    } catch {
-      // Fall through to browser TTS
-    }
+  // ElevenLabs only — no browser TTS fallback (avoid double-voice issue)
+  try {
+    const engine = await speakElevenLabs(text, { voiceId, stability, similarityBoost, volume });
+    return engine;
+  } catch {
+    return 'none';
   }
-
-  // Fallback: Web Speech API
-  return speakBrowser(text, { rate, volume });
 }
 
 // ---------------------------------------------------------------------------
@@ -137,11 +132,13 @@ async function speakElevenLabs(
       resolve('elevenlabs');
     };
     audio.onerror = () => {
+      audio.src = '';
       URL.revokeObjectURL(url);
       currentAudio = null;
       resolve('none');
     };
     audio.play().catch(() => {
+      audio.src = '';
       URL.revokeObjectURL(url);
       currentAudio = null;
       resolve('none');
