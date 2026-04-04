@@ -24,15 +24,18 @@ export default function CategoryDetailPage() {
   const phrases = useMemo(() => getPhrasesByCategory(categoryId), [categoryId]);
 
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
+  const [engineFallback, setEngineFallback] = useState(false);
 
-  const handleTap = useCallback((text: string) => {
+  const handleTap = useCallback(async (text: string) => {
     setSelectedWords((prev) => [...prev, text]);
-    speak({ text });
+    const engine = await speak({ text });
+    setEngineFallback(engine === 'browser');
   }, []);
 
-  const handleSpeak = useCallback(() => {
+  const handleSpeak = useCallback(async () => {
     if (selectedWords.length === 0) return;
-    speak({ text: selectedWords.join(" ") });
+    const engine = await speak({ text: selectedWords.join(" ") });
+    setEngineFallback(engine === 'browser');
   }, [selectedWords]);
 
   const handleClear = () => setSelectedWords([]);
@@ -91,6 +94,7 @@ export default function CategoryDetailPage() {
         onSpeak={handleSpeak}
         onClear={handleClear}
         onRemoveWord={handleRemoveWord}
+        engineFallback={engineFallback}
       />
 
       {/* Word grid */}

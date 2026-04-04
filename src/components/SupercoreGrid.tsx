@@ -162,10 +162,6 @@ const SUPERCORE_50: CoreWord[] = [
 // TTS Helper — ElevenLabs via tts.ts
 // =============================================================================
 
-function speak(text: string) {
-  elevenLabsSpeak({ text });
-}
-
 // =============================================================================
 // Sentence Strip — now uses SharedSentenceBar
 // =============================================================================
@@ -217,6 +213,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const [sentence, setSentence] = useState<CoreWord[]>([]);
   const [cols, setCols] = useState(10);
   const [isMagicLoading, setIsMagicLoading] = useState(false);
+  const [engineFallback, setEngineFallback] = useState(false);
 
   // Responsive column count: 4 on phone, 5 on small tablet, 10 on desktop
   useEffect(() => {
@@ -231,9 +228,10 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  const speakText = useCallback((text: string) => {
+  const speakText = useCallback(async (text: string) => {
     if (onSpeak) { onSpeak(text); return; }
-    speak(text);
+    const engine = await elevenLabsSpeak({ text });
+    setEngineFallback(engine === 'browser');
   }, [onSpeak]);
 
   const handleWordTap = useCallback((word: CoreWord) => {
@@ -305,6 +303,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
         isMagicLoading={isMagicLoading}
         onClear={handleClear}
         onRemoveWord={handleRemoveWord}
+        engineFallback={engineFallback}
       />
 
       {/* Color Legend — single scrollable row */}
