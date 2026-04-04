@@ -284,7 +284,7 @@ function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) 
           loading="lazy"
         />
       )}
-      <span className="font-bold text-[11px] mt-0.5 w-full truncate px-0.5">{word.label}</span>
+      <span className="font-bold text-[14px] mt-0.5 w-full truncate px-0.5 leading-none">{word.label}</span>
     </button>
   );
 }

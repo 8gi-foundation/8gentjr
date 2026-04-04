@@ -129,7 +129,7 @@ export default function AACBoard({
               alt={sym.label}
               className="w-[60px] h-[60px] object-contain"
             />
-            <span className="text-xs font-semibold text-[--brand-text-soft]">
+            <span className="text-sm font-semibold text-[--brand-text-soft]">
               {sym.label}
             </span>
           </button>
