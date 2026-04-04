@@ -24,10 +24,11 @@
  * - Red:     Negation (no, don't, stop)
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
 import { logWord } from '@/lib/session-logger';
 import { speak as elevenLabsSpeak } from '@/lib/tts';
+import { SharedSentenceBar } from '@/components/SharedSentenceBar';
 
 // =============================================================================
 // Fitzgerald Key Color Definitions (mapped from shared vocabulary system)
@@ -166,94 +167,8 @@ function speak(text: string) {
 }
 
 // =============================================================================
-// Sentence Strip
+// Sentence Strip — now uses SharedSentenceBar
 // =============================================================================
-
-interface SentenceStripProps {
-  words: CoreWord[];
-  onSpeakAll: () => void;
-  onMagicSpeak: () => void;
-  isMagicLoading: boolean;
-  onClear: () => void;
-  onRemoveWord: (index: number) => void;
-}
-
-function SentenceStrip({ words, onSpeakAll, onMagicSpeak, isMagicLoading, onClear, onRemoveWord }: SentenceStripProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
-    }
-  }, [words.length]);
-
-  return (
-    <div className="flex items-center gap-1.5 px-2 py-1.5 min-h-[56px] bg-gray-700 rounded-xl mx-2 mt-2">
-      {/* Speak All (exact words) */}
-      <button
-        onClick={onSpeakAll}
-        disabled={words.length === 0}
-        className={`shrink-0 w-10 h-10 rounded-xl border-none text-white flex items-center justify-center text-lg font-bold ${
-          words.length > 0
-            ? 'bg-emerald-500 cursor-pointer'
-            : 'bg-gray-500 cursor-not-allowed'
-        }`}
-        aria-label="Speak sentence"
-      >
-        &#9654;
-      </button>
-
-      {/* Magic sparkle button */}
-      <button
-        onClick={onMagicSpeak}
-        disabled={words.length < 2 || isMagicLoading}
-        className={`shrink-0 w-10 h-10 rounded-xl border-none text-white flex items-center justify-center text-base font-bold transition-all ${
-          words.length >= 2 && !isMagicLoading
-            ? 'bg-purple-500 cursor-pointer hover:bg-purple-400 active:scale-90'
-            : 'bg-gray-500 cursor-not-allowed'
-        } ${isMagicLoading ? 'animate-pulse' : ''}`}
-        aria-label="Improve and speak sentence"
-        title="Magic: improve my sentence"
-      >
-        &#10024;
-      </button>
-
-      {/* Word chips */}
-      <div ref={scrollRef} className="flex-1 flex items-center gap-1.5 overflow-x-auto scroll-smooth">
-        {words.length === 0 ? (
-          <span className="text-gray-400 text-base font-medium select-none px-2">
-            Tap words to build a sentence...
-          </span>
-        ) : (
-          words.map((word, index) => {
-            const cls = FITZGERALD_CLASSES[word.category];
-            return (
-              <button
-                key={`${word.id}-${index}`}
-                onClick={() => onRemoveWord(index)}
-                className={`shrink-0 px-3 py-1.5 rounded-lg font-bold text-sm border-2 cursor-pointer ${cls.bg} ${cls.text} ${cls.border}`}
-                aria-label={`Remove ${word.label}`}
-              >
-                {word.label}
-              </button>
-            );
-          })
-        )}
-      </div>
-
-      {/* Clear */}
-      {words.length > 0 && (
-        <button
-          onClick={onClear}
-          className="shrink-0 w-10 h-10 rounded-xl border-none bg-red-500 text-white cursor-pointer flex items-center justify-center text-lg font-bold"
-          aria-label="Clear sentence"
-        >
-          &#10005;
-        </button>
-      )}
-    </div>
-  );
-}
 
 // =============================================================================
 // Single Core Word Button
@@ -380,10 +295,13 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   return (
     <div className="flex flex-col h-screen min-h-[100dvh] bg-gray-50 font-sans">
       {/* Sentence Strip */}
-      <SentenceStrip
-        words={sentence}
-        onSpeakAll={handleSpeakAll}
-        onMagicSpeak={handleMagicSpeak}
+      <SharedSentenceBar
+        words={sentence.map(w => ({
+          label: w.label,
+          className: `${FITZGERALD_CLASSES[w.category].bg} ${FITZGERALD_CLASSES[w.category].text} ${FITZGERALD_CLASSES[w.category].border}`,
+        }))}
+        onSpeak={handleSpeakAll}
+        onMagic={handleMagicSpeak}
         isMagicLoading={isMagicLoading}
         onClear={handleClear}
         onRemoveWord={handleRemoveWord}
