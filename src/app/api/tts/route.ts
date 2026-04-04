@@ -1,48 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * POST /api/tts
+ * GET /api/tts?text=hello&voice=<id>
  *
- * ElevenLabs TTS proxy endpoint for 8gent Jr.
- * Keeps the API key server-side. Returns audio/mpeg stream.
+ * ElevenLabs TTS proxy for 8gent Jr.
+ * GET allows Vercel CDN to cache responses — same text = served from edge, no ElevenLabs call.
+ * Returns audio/mpeg with 1-year immutable cache header.
  *
- * Body: { text: string, voiceId?: string, stability?: number, similarityBoost?: number }
- * Returns: audio/mpeg (or 204 if ElevenLabs not configured)
- *
- * Issue: #53
+ * Falls back to 204 if ElevenLabs not configured (client uses browser TTS).
  */
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-const DEFAULT_VOICE_ID = process.env.ELEVENLABS_JR_VOICE_ID ?? 'EXAVITQu4vr4xnSDxMaL'; // Sarah (child-friendly)
 
-interface TTSRequest {
-  text: string;
-  voiceId?: string;
-  stability?: number;
-  similarityBoost?: number;
-}
+// Jessica — Playful, Bright, Warm (young female, child-friendly)
+const DEFAULT_VOICE_ID = process.env.ELEVENLABS_JR_VOICE_ID ?? 'cgSgspJ2msm6clMCkdW9';
 
-export async function POST(request: NextRequest) {
-  // No API key configured — client should fall back to browser TTS
+export async function GET(request: NextRequest) {
+  const text = request.nextUrl.searchParams.get('text')?.trim();
+  const voiceId = request.nextUrl.searchParams.get('voice') || DEFAULT_VOICE_ID;
+
+  if (!text) {
+    return NextResponse.json({ error: 'text param required' }, { status: 400 });
+  }
+
+  if (text.length > 1000) {
+    return NextResponse.json({ error: 'Text too long (max 1000 chars)' }, { status: 400 });
+  }
+
   if (!ELEVENLABS_API_KEY) {
     return new NextResponse(null, { status: 204 });
   }
 
   try {
-    const body: TTSRequest = await request.json();
-    const { text, voiceId, stability = 0.5, similarityBoost = 0.75 } = body;
-
-    // Validate
-    if (!text || typeof text !== 'string') {
-      return NextResponse.json({ error: 'Text is required' }, { status: 400 });
-    }
-    if (text.length > 1000) {
-      return NextResponse.json({ error: 'Text too long (max 1000 chars)' }, { status: 400 });
-    }
-
-    const voice = voiceId || DEFAULT_VOICE_ID;
-
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}`, {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,8 +42,8 @@ export async function POST(request: NextRequest) {
         text,
         model_id: 'eleven_turbo_v2_5',
         voice_settings: {
-          stability: Math.max(0, Math.min(1, stability)),
-          similarity_boost: Math.max(0, Math.min(1, similarityBoost)),
+          stability: 0.5,
+          similarity_boost: 0.75,
           style: 0.0,
           use_speaker_boost: true,
         },
@@ -62,8 +52,7 @@ export async function POST(request: NextRequest) {
 
     if (!res.ok) {
       const errText = await res.text().catch(() => 'Unknown error');
-      console.error(`[TTS API] ElevenLabs ${res.status}: ${errText}`);
-      // Return 204 so client falls back gracefully
+      console.error(`[TTS] ElevenLabs ${res.status}: ${errText}`);
       return new NextResponse(null, { status: 204 });
     }
 
@@ -74,11 +63,26 @@ export async function POST(request: NextRequest) {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Content-Length': String(audioBuffer.byteLength),
-        'Cache-Control': 'private, max-age=3600',
+        // Permanent CDN cache — same text+voice always returns identical audio
+        'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
   } catch (error) {
-    console.error('[TTS API] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('[TTS] Error:', error);
+    return new NextResponse(null, { status: 204 });
+  }
+}
+
+// Keep POST for backwards compat (redirects to GET logic)
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { text, voiceId } = body;
+    const url = new URL(request.url);
+    url.searchParams.set('text', text || '');
+    if (voiceId) url.searchParams.set('voice', voiceId);
+    return GET(new NextRequest(url.toString(), { method: 'GET' }));
+  } catch {
+    return new NextResponse(null, { status: 400 });
   }
 }

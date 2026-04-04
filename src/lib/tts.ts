@@ -113,16 +113,9 @@ async function speakElevenLabs(
   text: string,
   opts: { voiceId?: string; stability: number; similarityBoost: number; volume: number }
 ): Promise<TTSEngine> {
-  const res = await fetch('/api/tts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      text,
-      voiceId: opts.voiceId,
-      stability: opts.stability,
-      similarityBoost: opts.similarityBoost,
-    }),
-  });
+  const params = new URLSearchParams({ text });
+  if (opts.voiceId) params.set('voice', opts.voiceId);
+  const res = await fetch(`/api/tts?${params.toString()}`);
 
   // 204 = not configured, 4xx/5xx = error — fall back
   if (!res.ok || res.status === 204) {

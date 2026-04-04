@@ -4,8 +4,12 @@
  * 8gent Jr — Sentence Builder Component
  *
  * Sentence strip with word suggestion chips powered by a local sentence engine.
- * Uses Web Speech API for TTS with AppContext ttsRate.
- * Encouragement messages on milestones.
+ * Uses ElevenLabs TTS (via tts.ts) for all speech output.
+ *
+ * Two speak modes:
+ *   Speak  — speaks the raw words as-is
+ *   ✨ Magic — calls /api/improve-sentence (Groq LLM), shows & speaks the
+ *             grammatically corrected version
  *
  * Issue: #22
  */
@@ -13,10 +17,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   suggestNextWord,
-  improveSentence,
   getWordColor,
   getAllWords,
 } from '@/lib/sentence-engine';
+import { speak } from '@/lib/tts';
 import { useApp } from '@/context/AppContext';
 
 // ---------------------------------------------------------------------------
@@ -40,52 +44,40 @@ export default function SentenceBuilder() {
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [encouragement, setEncouragement] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [improvedPreview, setImprovedPreview] = useState<string | null>(null);
+  const [isMagicking, setIsMagicking] = useState(false);
+  const [magicPreview, setMagicPreview] = useState<string | null>(null);
   const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Local suggestions as baseline (always available)
   const localSuggestions = suggestNextWord(selectedWords);
-  // Use AI suggestions if available, otherwise local
   const suggestions = aiSuggestions ?? localSuggestions;
 
   // Fetch AI autocomplete suggestions (with debounce + local fallback)
   useEffect(() => {
-    // Reset AI suggestions when words change — local kicks in immediately
     setAiSuggestions(null);
-
     if (selectedWords.length === 0) return;
-
     if (debounceRef.current) clearTimeout(debounceRef.current);
-
     debounceRef.current = setTimeout(async () => {
       try {
         const lastWord = selectedWords[selectedWords.length - 1];
         const res = await fetch('/api/autocomplete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            input: lastWord,
-            existingWords: getAllWords(),
-          }),
+          body: JSON.stringify({ input: lastWord, existingWords: getAllWords() }),
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.suggestions?.length > 0) {
-            setAiSuggestions(data.suggestions);
-          }
+          if (data.suggestions?.length > 0) setAiSuggestions(data.suggestions);
         }
       } catch {
-        // Silently fall back to local suggestions
+        // Fall back to local suggestions silently
       }
     }, 300);
-
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [selectedWords]);
 
-  // Show encouragement on milestones
+  // Encouragement on milestones
   useEffect(() => {
     const msg = ENCOURAGEMENTS[selectedWords.length];
     if (msg) {
@@ -95,13 +87,9 @@ export default function SentenceBuilder() {
     }
   }, [selectedWords.length]);
 
-  // Update improved preview when words change (local, instant)
+  // Clear magic preview when words change
   useEffect(() => {
-    if (selectedWords.length >= 2) {
-      setImprovedPreview(improveSentence(selectedWords));
-    } else {
-      setImprovedPreview(null);
-    }
+    setMagicPreview(null);
   }, [selectedWords]);
 
   const handleAddWord = useCallback((word: string) => {
@@ -114,29 +102,41 @@ export default function SentenceBuilder() {
 
   const handleClear = useCallback(() => {
     setSelectedWords([]);
-    setImprovedPreview(null);
+    setMagicPreview(null);
   }, []);
 
-  const handleSpeak = useCallback(() => {
-    if (selectedWords.length === 0) return;
-    if (!('speechSynthesis' in window)) {
-      alert('Speech is not supported in this browser.');
-      return;
+  // Speak raw words via ElevenLabs
+  const handleSpeak = useCallback(async () => {
+    if (selectedWords.length === 0 || isSpeaking) return;
+    setIsSpeaking(true);
+    try {
+      await speak({ text: selectedWords.join(' '), rate: settings.ttsRate });
+    } finally {
+      setIsSpeaking(false);
     }
+  }, [selectedWords, isSpeaking, settings.ttsRate]);
 
-    window.speechSynthesis.cancel();
-
-    const text = improvedPreview || selectedWords.join(' ');
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = settings.ttsRate;
-    utterance.pitch = 1.1;
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    window.speechSynthesis.speak(utterance);
-  }, [selectedWords, improvedPreview, settings.ttsRate]);
+  // Magic: AI-improve the sentence, then speak it via ElevenLabs
+  const handleMagic = useCallback(async () => {
+    if (selectedWords.length === 0 || isMagicking) return;
+    setIsMagicking(true);
+    try {
+      const res = await fetch('/api/improve-sentence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cards: selectedWords }),
+      });
+      const improved = res.ok
+        ? (await res.json()).improved ?? selectedWords.join(' ')
+        : selectedWords.join(' ');
+      setMagicPreview(improved);
+      await speak({ text: improved, rate: settings.ttsRate });
+    } catch {
+      await speak({ text: selectedWords.join(' '), rate: settings.ttsRate });
+    } finally {
+      setIsMagicking(false);
+    }
+  }, [selectedWords, isMagicking, settings.ttsRate]);
 
   const hasWords = selectedWords.length > 0;
 
@@ -172,16 +172,17 @@ export default function SentenceBuilder() {
         )}
       </div>
 
-      {/* Improved preview */}
-      {improvedPreview && (
-        <div className="px-3.5 py-2 mb-2 bg-green-50 rounded-[10px] text-sm text-green-700 italic">
-          {improvedPreview}
+      {/* Magic preview */}
+      {magicPreview && (
+        <div className="px-3.5 py-2 mb-2 bg-purple-50 rounded-[10px] text-sm text-purple-700 italic flex items-center gap-2">
+          <span>✨</span>
+          <span>{magicPreview}</span>
         </div>
       )}
 
       {/* Encouragement */}
       {encouragement && (
-        <div className="px-3.5 py-2 mb-2 bg-[var(--brand-bg-accent)] rounded-[10px] text-base font-bold text-[var(--brand-accent)] text-center animate-[fadeIn_0.3s_ease-in]">
+        <div className="px-3.5 py-2 mb-2 bg-[var(--brand-bg-accent)] rounded-[10px] text-base font-bold text-[var(--brand-accent)] text-center">
           {encouragement}
         </div>
       )}
@@ -192,9 +193,7 @@ export default function SentenceBuilder() {
           onClick={handleRemoveLast}
           disabled={!hasWords}
           className={`flex-1 py-2.5 rounded-[10px] border-none font-semibold text-sm cursor-pointer ${
-            hasWords
-              ? 'bg-orange-500 text-white'
-              : 'bg-gray-200 text-gray-400 cursor-default'
+            hasWords ? 'bg-orange-500 text-white' : 'bg-gray-200 text-gray-400 cursor-default'
           }`}
         >
           Undo
@@ -203,17 +202,15 @@ export default function SentenceBuilder() {
           onClick={handleClear}
           disabled={!hasWords}
           className={`flex-1 py-2.5 rounded-[10px] border-none font-semibold text-sm cursor-pointer ${
-            hasWords
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-200 text-gray-400 cursor-default'
+            hasWords ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400 cursor-default'
           }`}
         >
           Clear
         </button>
         <button
           onClick={handleSpeak}
-          disabled={!hasWords || isSpeaking}
-          className={`flex-[2] py-2.5 rounded-[10px] border-none font-bold text-base cursor-pointer ${
+          disabled={!hasWords || isSpeaking || isMagicking}
+          className={`flex-1 py-2.5 rounded-[10px] border-none font-bold text-base cursor-pointer ${
             !hasWords
               ? 'bg-gray-200 text-gray-400 cursor-default'
               : isSpeaking
@@ -221,7 +218,20 @@ export default function SentenceBuilder() {
                 : 'bg-green-500 text-white'
           }`}
         >
-          {isSpeaking ? 'Speaking...' : 'Speak'}
+          {isSpeaking ? '…' : 'Speak'}
+        </button>
+        <button
+          onClick={handleMagic}
+          disabled={!hasWords || isMagicking || isSpeaking}
+          className={`flex-[1.4] py-2.5 rounded-[10px] border-none font-bold text-base cursor-pointer ${
+            !hasWords
+              ? 'bg-gray-200 text-gray-400 cursor-default'
+              : isMagicking
+                ? 'bg-purple-800 text-white'
+                : 'bg-purple-500 text-white'
+          }`}
+        >
+          {isMagicking ? '✨…' : '✨ Magic'}
         </button>
       </div>
 
