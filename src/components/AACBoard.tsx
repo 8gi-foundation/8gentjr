@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { GENERAL_PHRASES, FEELINGS_PHRASES, ACTIONS_PHRASES } from "@/lib/vocabulary";
 import { speak } from "@/lib/tts";
+import { SharedSentenceBar } from "@/components/SharedSentenceBar";
 
 // ---------------------------------------------------------------------------
 // Grid density presets — progressive from accessible to advanced
@@ -58,34 +59,22 @@ export default function AACBoard({
 
   const handleClear = () => setSelectedSymbols([]);
 
+  const handleRemoveWord = (index: number) =>
+    setSelectedSymbols((prev) => prev.filter((_, i) => i !== index));
+
   return (
     <div className="w-full max-w-[900px] mx-auto">
-      {/* Sentence strip */}
-      <div className="flex items-center gap-2 min-h-12 px-3 py-2 mb-3 bg-[--warm-bg-subtle] rounded-xl text-lg flex-wrap">
-        <span className={`flex-1 ${selectedSymbols.length ? "text-[--brand-text]" : "text-[--brand-text-muted]"}`}>
-          {selectedSymbols.length ? selectedSymbols.join(" ") : "Tap symbols to build a sentence..."}
-        </span>
-        {selectedSymbols.length > 0 && (
-          <>
-            <button
-              onClick={handleSpeakSentence}
-              className="bg-green-500 hover:bg-green-600 text-white border-none rounded-lg px-3.5 py-1.5 cursor-pointer font-semibold text-sm transition-colors"
-            >
-              ▶ Speak
-            </button>
-            <button
-              onClick={handleClear}
-              className="bg-[--brand-accent] hover:bg-[--brand-accent-hover] text-white border-none rounded-lg px-3.5 py-1.5 cursor-pointer font-semibold text-sm transition-colors"
-            >
-              Clear
-            </button>
-          </>
-        )}
-      </div>
+      {/* Sentence strip — shared design */}
+      <SharedSentenceBar
+        words={selectedSymbols.map((label) => ({ label }))}
+        onSpeak={handleSpeakSentence}
+        onClear={handleClear}
+        onRemoveWord={handleRemoveWord}
+      />
 
       {/* Density selector */}
       {showDensitySelector && (
-        <div className="flex items-center gap-2 mb-3 text-sm text-[--brand-text-soft]">
+        <div className="flex items-center gap-2 my-3 text-sm text-[--brand-text-soft]">
           <span>Grid size:</span>
           {GRID_DENSITY_OPTIONS.map((opt) => (
             <button
