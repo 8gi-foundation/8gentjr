@@ -134,9 +134,9 @@ const SUPERCORE_50: CoreWord[] = [
 
   // Row 4
   { id: 'w31', label: 'in',        category: 'prepositions', arasaacId: 7034 },
-  { id: 'w32', label: 'out',       category: 'prepositions', arasaacId: 8252 },
+  { id: 'w32', label: 'out',       category: 'prepositions', arasaacId: 6606 },
   { id: 'w33', label: 'on',        category: 'prepositions', arasaacId: 7814 },
-  { id: 'w34', label: 'off',       category: 'prepositions', arasaacId: 7020 },
+  { id: 'w34', label: 'off',       category: 'prepositions', arasaacId: 27518 },
   { id: 'w35', label: 'open',      category: 'verbs',       arasaacId: 24825 },
   { id: 'w36', label: 'close',     category: 'verbs',       arasaacId: 30383 },
   { id: 'w37', label: 'give',      category: 'verbs',       arasaacId: 28431 },
@@ -145,7 +145,7 @@ const SUPERCORE_50: CoreWord[] = [
   { id: 'w40', label: 'make',      category: 'verbs',       arasaacId: 32751 },
 
   // Row 5
-  { id: 'w41', label: 'do',        category: 'verbs',       arasaacId: 32751 },
+  { id: 'w41', label: 'do',        category: 'verbs',       arasaacId: 6624 },
   { id: 'w42', label: 'have',      category: 'verbs',       arasaacId: 32761 },
   { id: 'w43', label: 'is',        category: 'verbs',       arasaacId: 8115 },
   { id: 'w44', label: 'it',        category: 'determiners', arasaacId: 31670 },
@@ -284,7 +284,7 @@ function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) 
           loading="lazy"
         />
       )}
-      <span className="font-bold text-[14px] mt-0.5 w-full truncate px-0.5 leading-none">{word.label}</span>
+      <span className="font-bold text-[14px] leading-none mt-0.5 w-full truncate px-0.5">{word.label}</span>
     </button>
   );
 }
