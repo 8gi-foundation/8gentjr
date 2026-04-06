@@ -10,14 +10,12 @@
  */
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { SupercoreGrid } from "@/components/SupercoreGrid";
 import AACHome from "@/components/AACHome";
 
 type ViewMode = "core" | "browse";
 
 export default function TalkPage() {
-  const router = useRouter();
   const [viewMode, setViewMode] = useState<ViewMode>("core");
 
   return (
@@ -25,15 +23,13 @@ export default function TalkPage() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-3 pb-2 bg-gray-800 shrink-0">
         <button
-          onClick={() => viewMode === "browse" ? setViewMode("core") : router.push("/")}
-          className="flex items-center gap-1 text-white/70 hover:text-white transition-colors"
+          onClick={() => setViewMode("core")}
+          className={`flex items-center gap-1 text-white/70 hover:text-white transition-colors ${viewMode === "core" ? "invisible" : ""}`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
             <polyline points="15 18 9 12 15 6" />
           </svg>
-          <span className="text-base font-medium">
-            {viewMode === "browse" ? "Core" : "Home"}
-          </span>
+          <span className="text-base font-medium">Core</span>
         </button>
 
         <h1 className="text-white text-lg font-bold">
