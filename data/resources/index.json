@@ -1,0 +1,46 @@
+{
+  "meta": {
+    "description": "Research datasets, tools, and publications relevant to 8gent Jr and neurodivergent AAC development",
+    "last_updated": "2026-04-06",
+    "schema_version": "1.0"
+  },
+  "resources": [
+    {
+      "id": "pgc-psychiatric-genetics-2026",
+      "name": "Psychiatric Genomics Consortium — Full GWAS Dataset",
+      "type": "dataset",
+      "host": "Hugging Face (OpenMed)",
+      "hf_org": "OpenMed",
+      "hf_datasets": [
+        "OpenMed/pgc-schizophrenia",
+        "OpenMed/pgc-adhd",
+        "OpenMed/pgc-autism",
+        "OpenMed/pgc-depression",
+        "OpenMed/pgc-bipolar",
+        "OpenMed/pgc-ptsd",
+        "OpenMed/pgc-ocd"
+      ],
+      "load_example": "from datasets import load_dataset\nds = load_dataset('OpenMed/pgc-schizophrenia', 'scz2022')",
+      "format": "Apache Parquet",
+      "size": "~1 billion rows",
+      "disorders": [
+        "ADHD",
+        "Depression",
+        "Schizophrenia",
+        "Bipolar",
+        "PTSD",
+        "OCD",
+        "Autism"
+      ],
+      "disorder_groups": 12,
+      "publications": 52,
+      "source_org": "Psychiatric Genomics Consortium (PGC)",
+      "original_sources": ["Figshare", "university servers"],
+      "license": "CC BY 4.0",
+      "relevance_to_8gentjr": "ADHD and Autism are primary user populations for AAC tools. GWAS data may inform feature prioritization, symptom clustering, and evidence-based vocabulary selection.",
+      "tags": ["genetics", "gwas", "adhd", "autism", "psychiatry", "neurodivergent", "research"],
+      "added": "2026-04-06",
+      "notes": "Convert from Figshare/university servers to clean Parquet. Full attribution required per CC BY 4.0."
+    }
+  ]
+}

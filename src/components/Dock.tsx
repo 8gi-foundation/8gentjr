@@ -169,6 +169,15 @@ function IconPlus({ color }: { color: string }) {
   );
 }
 
+function IconParentChat({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 8h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2v4l-4-4H9a2 2 0 0 1-2-2v-1" />
+      <path d="M15 4H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2v4l4-4h4a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z" />
+    </svg>
+  );
+}
+
 function IconSettings({ color }: { color: string }) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -187,6 +196,7 @@ const MORE_ITEMS: MoreItem[] = [
   { id: 'toolshed', label: 'Toolshed', icon: IconToolshed, href: '/toolshed' },
   { id: 'intuition', label: 'Intuition', icon: IconBrain, href: '/intuition' },
   { id: 'vsd', label: 'Scenes', icon: IconImage, href: '/vsd' },
+  { id: 'parent-chat', label: 'Parent Chat', icon: IconParentChat, href: '/parent-chat' },
   { id: 'add', label: 'Add Card', icon: IconPlus, href: '/add' },
   { id: 'settings', label: 'My Stuff', icon: IconSettings, href: '/settings' },
 ];

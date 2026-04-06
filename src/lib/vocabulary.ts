@@ -278,8 +278,8 @@ export const AAC_CATEGORIES: AACCategory[] = [
 // =============================================================================
 
 export const GENERAL_PHRASES: AACPhrase[] = [
-  { id: 'gen-i', text: 'I', imageUrl: ARASAAC(6867), categoryId: 'general' },
-  { id: 'gen-you', text: 'you', imageUrl: ARASAAC(6866), categoryId: 'general' },
+  { id: 'gen-i', text: 'I', imageUrl: ARASAAC(6632), categoryId: 'general' },
+  { id: 'gen-you', text: 'you', imageUrl: ARASAAC(6625), categoryId: 'general' },
   { id: 'gen-yes', text: 'yes', imageUrl: ARASAAC(5584), categoryId: 'general' },
   { id: 'gen-no', text: 'no', imageUrl: ARASAAC(5526), categoryId: 'general' },
   { id: 'gen-help', text: 'help', imageUrl: ARASAAC(7171), categoryId: 'general' },
