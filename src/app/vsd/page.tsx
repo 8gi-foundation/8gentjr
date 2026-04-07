@@ -151,8 +151,8 @@ export default function VSDPage() {
                   flex items-center justify-center
                   focus:outline-none focus-visible:ring-4 focus-visible:ring-white
                   ${isActive
-                    ? 'border-white bg-white/40 shadow-lg shadow-white/30'
-                    : 'border-white/50 bg-white/15 hover:bg-white/30 hover:border-white/80'
+                    ? 'border-white bg-black/20 shadow-lg shadow-black/20'
+                    : 'border-white/70 bg-black/10 hover:bg-black/20 hover:border-white'
                   }
                 `}
                 style={{
@@ -168,7 +168,7 @@ export default function VSDPage() {
                     {hotspot.phrase}
                   </div>
                 )}
-                <span className={`text-white font-semibold text-sm drop-shadow-md text-center px-1 leading-tight select-none pointer-events-none ${isActive ? 'opacity-0' : 'opacity-90'}`}>
+                <span className={`bg-black/65 text-white font-semibold text-sm rounded-xl px-2.5 py-1 text-center leading-tight select-none pointer-events-none backdrop-blur-sm ${isActive ? 'opacity-0' : 'opacity-100'}`}>
                   {hotspot.phrase}
                 </span>
               </button>
