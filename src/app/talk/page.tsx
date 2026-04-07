@@ -12,6 +12,7 @@
 import { useState } from "react";
 import { SupercoreGrid } from "@/components/SupercoreGrid";
 import AACHome from "@/components/AACHome";
+import { VoiceCardCreator } from "@/components/VoiceCardCreator";
 
 type ViewMode = "core" | "browse";
 
@@ -49,6 +50,9 @@ export default function TalkPage() {
         {viewMode === "core" && <SupercoreGrid />}
         {viewMode === "browse" && <AACHome />}
       </div>
+
+      {/* Parent voice card creator — floating mic, bottom-left */}
+      <VoiceCardCreator />
     </div>
   );
 }
