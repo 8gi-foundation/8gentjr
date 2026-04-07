@@ -115,13 +115,15 @@ async function speakElevenLabs(
   if (opts.voiceId) params.set('voice', opts.voiceId);
   const res = await fetch(`/api/tts?${params.toString()}`);
 
-  // 204 = not configured, 4xx/5xx = error — fall back
-  if (!res.ok || res.status === 204) {
-    return 'none';
-  }
+  // 204 = not configured — fall back to browser TTS
+  if (res.status === 204) return 'none';
+
+  // Other error — ElevenLabs is configured but failed; fail silently, no robot fallback
+  if (!res.ok) return 'elevenlabs';
 
   const blob = await res.blob();
-  if (blob.size === 0) return 'none';
+  // Empty blob — configured but silent failure; don't trigger robot voice
+  if (blob.size === 0) return 'elevenlabs';
 
   const url = URL.createObjectURL(blob);
   const audio = new Audio(url);
@@ -138,13 +140,16 @@ async function speakElevenLabs(
       audio.src = '';
       URL.revokeObjectURL(url);
       currentAudio = null;
-      resolve('none');
+      // Don't resolve 'none' — would trigger browser TTS while ElevenLabs may still be audible
+      resolve('elevenlabs');
     };
     audio.play().catch(() => {
+      // iOS Safari can reject play() after user gesture context expires during fetch.
+      // Resolve 'elevenlabs' to prevent robot voice from firing on top.
       audio.src = '';
       URL.revokeObjectURL(url);
       currentAudio = null;
-      resolve('none');
+      resolve('elevenlabs');
     });
   });
 }
