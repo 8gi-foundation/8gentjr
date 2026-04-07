@@ -72,7 +72,14 @@ export default function SongCreator() {
 
         if (data.status === 'complete' && data.audioUrl) {
           setAudioUrl(data.audioUrl);
-          if (data.title) setSongTitle(data.title);
+          const title = data.title || 'My Song';
+          setSongTitle(title);
+          // Persist to localStorage so the player tab can show it
+          try {
+            const saved = JSON.parse(localStorage.getItem('8gentjr_songs') || '[]');
+            saved.unshift({ id: Date.now().toString(), title, audioUrl: data.audioUrl, createdAt: Date.now() });
+            localStorage.setItem('8gentjr_songs', JSON.stringify(saved.slice(0, 50)));
+          } catch { /* localStorage unavailable */ }
           setPhase('ready');
           return;
         }
@@ -133,7 +140,14 @@ export default function SongCreator() {
 
       // Path B: direct audio (ElevenLabs fallback)
       if (data.audioUrl) {
+        const title = data.title || prompt.trim().slice(0, 40) || 'My Song';
         setAudioUrl(data.audioUrl);
+        setSongTitle(title);
+        try {
+          const saved = JSON.parse(localStorage.getItem('8gentjr_songs') || '[]');
+          saved.unshift({ id: Date.now().toString(), title, audioUrl: data.audioUrl, createdAt: Date.now() });
+          localStorage.setItem('8gentjr_songs', JSON.stringify(saved.slice(0, 50)));
+        } catch { /* localStorage unavailable */ }
         setPhase('ready');
         return;
       }
