@@ -12,8 +12,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 
-// Jessica — Playful, Bright, Warm (young female, child-friendly)
-const DEFAULT_VOICE_ID = process.env.ELEVENLABS_JR_VOICE_ID ?? 'cgSgspJ2msm6clMCkdW9';
+// Charlie — Young, Natural, Conversational (child voice, ElevenLabs)
+const DEFAULT_VOICE_ID = process.env.ELEVENLABS_JR_VOICE_ID ?? 'IKne3meq5aSn9XLyUdCD';
 
 export async function GET(request: NextRequest) {
   const text = request.nextUrl.searchParams.get('text')?.trim();
