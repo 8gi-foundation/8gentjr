@@ -99,22 +99,23 @@ export default function ReelCard({ reel }: { reel: Reel }) {
     <>
       <button
         onClick={handleClick}
-        className="relative overflow-hidden rounded-2xl shadow-md group cursor-pointer transition-all hover:ring-2 hover:ring-cyan-400 active:scale-[0.97] w-full text-left"
+        className="relative overflow-hidden rounded-2xl shadow-lg group cursor-pointer transition-all hover:ring-2 hover:ring-cyan-400 active:scale-[0.93] w-full text-left"
+        style={{ transition: 'transform 0.1s ease, box-shadow 0.15s ease' }}
       >
         <div
-          className="aspect-[3/4] relative"
+          className="aspect-[4/3] relative"
           style={{ background: getGradient(reel.topics) }}
         >
 
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
-          {/* Center play icon */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-14 w-14 rounded-full bg-white/90 flex items-center justify-center shadow-xl">
+          {/* Center play icon — visible on hover (desktop) always on touch */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 sm:group-hover:opacity-100 opacity-100 transition-opacity duration-150">
+            <div className="h-14 w-14 rounded-full bg-white/95 flex items-center justify-center shadow-xl">
               {reel.type === "video" ? (
                 <svg
-                  className="h-7 w-7 text-cyan-500 ml-0.5"
+                  className="h-7 w-7 text-cyan-500 ml-1"
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
@@ -122,7 +123,7 @@ export default function ReelCard({ reel }: { reel: Reel }) {
                 </svg>
               ) : (
                 <svg
-                  className="h-7 w-7 text-cyan-500"
+                  className="h-6 w-6 text-cyan-500"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
