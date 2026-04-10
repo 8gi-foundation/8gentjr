@@ -9,11 +9,55 @@
 import { useState, useEffect, useRef } from "react";
 import type { Reel } from "@/lib/reels-data";
 
-// Import existing game components from the 8gentjr codebase
+// Import game components — academic
+import BubblePopNumbers from "@/components/games/academic/BubblePopNumbers";
+import ColorMix from "@/components/games/academic/ColorMix";
+import ColorSort from "@/components/games/academic/ColorSort";
+import CountingBalls from "@/components/games/academic/CountingBalls";
+import LetterTrace from "@/components/games/academic/LetterTrace";
+import NumberBonds from "@/components/games/academic/NumberBonds";
+import NumberOrder from "@/components/games/academic/NumberOrder";
+import PatternComplete from "@/components/games/academic/PatternComplete";
+import ShapeMatch from "@/components/games/academic/ShapeMatch";
+import SizeSort from "@/components/games/academic/SizeSort";
+
+// Import game components — memory
+import MemoryMatch from "@/components/games/memory/MemoryMatch";
+
+// Import game components — sensory
+import BallRain from "@/components/games/sensory/BallRain";
+import BottleFill from "@/components/games/sensory/BottleFill";
+import BubbleWrap from "@/components/games/sensory/BubbleWrap";
+import IceCreamBuilder from "@/components/games/sensory/IceCreamBuilder";
+import MarbleRun from "@/components/games/sensory/MarbleRun";
+import RainbowPaint from "@/components/games/sensory/RainbowPaint";
+import ShapeTower from "@/components/games/sensory/ShapeTower";
+import SpinFidget from "@/components/games/sensory/SpinFidget";
+import WaterPour from "@/components/games/sensory/WaterPour";
+
+// Import game components — sensory 3D
+import BallRun3D from "@/components/games/sensory-3d/BallRun3D";
+import BreathingSphere from "@/components/games/sensory/BreathingSphere";
+import CalmingParticles from "@/components/games/sensory-3d/CalmingParticles";
+import ChainReaction from "@/components/games/sensory-3d/ChainReaction";
+import CrystalGarden from "@/components/games/sensory-3d/CrystalGarden";
+import DominoCascade from "@/components/games/sensory-3d/DominoCascade";
+import LavaLamp from "@/components/games/sensory-3d/LavaLamp";
+import MagneticParticles from "@/components/games/sensory-3d/MagneticParticles";
+import MusicalBalls from "@/components/games/sensory-3d/MusicalBalls";
+import ParticleFireworks from "@/components/games/sensory-3d/ParticleFireworks";
+import PendulumWave from "@/components/games/sensory-3d/PendulumWave";
+import Starfield from "@/components/games/sensory-3d/Starfield";
+
+// Import game components — speech
 import AnimalSounds from "@/components/games/speech/AnimalSounds";
-import WordRepeat from "@/components/games/speech/WordRepeat";
-import RhymeTime from "@/components/games/speech/RhymeTime";
+import CopyMove from "@/components/games/speech/CopyMove";
 import FeelingsExplorer from "@/components/games/speech/FeelingsExplorer";
+import JumpCount from "@/components/games/speech/JumpCount";
+import NatureExplore from "@/components/games/speech/NatureExplore";
+import RhymeTime from "@/components/games/speech/RhymeTime";
+import SentenceBuilder from "@/components/games/speech/SentenceBuilder";
+import WordRepeat from "@/components/games/speech/WordRepeat";
 
 interface GamePlayerProps {
   reel: Reel;
@@ -23,10 +67,52 @@ interface GamePlayerProps {
 
 /** Map gameType strings to available game components */
 const AVAILABLE_GAMES: Record<string, React.ComponentType> = {
+  // Academic
+  counting: CountingBalls,
+  bubblePop: BubblePopNumbers,
+  numberOrder: NumberOrder,
+  numberBonds: NumberBonds,
+  matching: ShapeMatch,
+  sizeSort: SizeSort,
+  colorSort: ColorSort,
+  colorMix: ColorMix,
+  letterTrace: LetterTrace,
+  pattern: PatternComplete,
+  // Memory
+  memory: MemoryMatch,
+  // Sensory
+  ballRain: BallRain,
+  iceCream: IceCreamBuilder,
+  bottleFill: BottleFill,
+  shapeTower: ShapeTower,
+  rainbowPaint: RainbowPaint,
+  bubbleWrap: BubbleWrap,
+  waterPour: WaterPour,
+  fidget: SpinFidget,
+  marbleRun: MarbleRun,
+  breathingSphere: BreathingSphere,
+  // Sensory 3D
+  fireworks: ParticleFireworks,
+  musical: MusicalBalls,
+  ballRun3d: BallRun3D,
+  calmingParticles3d: CalmingParticles,
+  breathingSphere3d: BreathingSphere,
+  chainReaction3d: ChainReaction,
+  crystalGarden3d: CrystalGarden,
+  dominoCascade3d: DominoCascade,
+  lavaLamp3d: LavaLamp,
+  magneticParticles3d: MagneticParticles,
+  pendulumWave3d: PendulumWave,
+  starfield3d: Starfield,
+  // Speech
   animalSounds: AnimalSounds,
+  feelings: FeelingsExplorer,
   wordRepeat: WordRepeat,
   rhymeTime: RhymeTime,
-  feelings: FeelingsExplorer,
+  copyMove: CopyMove,
+  sentenceBuilder: SentenceBuilder,
+  natureExplore: NatureExplore,
+  jumpCount: JumpCount,
 };
 
 export default function GamePlayer({
