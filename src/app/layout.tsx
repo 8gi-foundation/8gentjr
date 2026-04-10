@@ -5,6 +5,7 @@ import { Providers } from './providers';
 import { OfflineBanner } from '../components/OfflineBanner';
 import Dock from '../components/Dock';
 import { LockScreenGate } from '../components/LockScreenGate';
+import { InstallPrompt } from '../components/InstallPrompt';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -24,7 +25,6 @@ export const metadata: Metadata = {
   },
   description:
     'Personalised AI OS for neurodivergent children. AAC communication, AI-generated symbols, personalized voice. Free forever.',
-  manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -36,6 +36,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#FFFDF9' },
@@ -54,6 +57,7 @@ export default function RootLayout({
         <Providers>
           <LockScreenGate>
             <OfflineBanner />
+            <InstallPrompt />
             <main className="pb-safe-dock">{children}</main>
             <Dock />
           </LockScreenGate>
