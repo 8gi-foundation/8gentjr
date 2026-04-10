@@ -1,9 +1,10 @@
 'use client';
 
-import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import SongCreator from '@/components/SongCreator';
 import { ChladniVisualizer } from '@/components/ChladniVisualizer';
+import { DrumPads } from '@/components/DrumPads';
+import { XylophoneKeys } from '@/components/XylophoneKeys';
 
 const TABS = [
   { id: 'songs',       label: 'My Songs',   icon: '🎵' },
@@ -123,6 +124,33 @@ function MySongsTab() {
   );
 }
 
+function InstrumentsPanel() {
+  const [instrument, setInstrument] = useState<'drums' | 'xylophone'>('drums');
+  return (
+    <div className="flex flex-col items-center gap-3 w-full max-w-md px-4">
+      <div className="flex gap-2 p-1 rounded-[12px] bg-[#f0e6d6]">
+        {[
+          { id: 'drums' as const, label: 'Drums', icon: '🥁' },
+          { id: 'xylophone' as const, label: 'Xylophone', icon: '🎵' },
+        ].map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setInstrument(t.id)}
+            className={`px-4 py-1.5 border-none rounded-[8px] font-bold text-[13px] cursor-pointer transition-all duration-150 ${
+              instrument === t.id
+                ? 'bg-white text-[#1a1a2e] shadow-md'
+                : 'bg-transparent text-[#8a7e70]'
+            }`}
+          >
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+      {instrument === 'drums' ? <DrumPads /> : <XylophoneKeys />}
+    </div>
+  );
+}
+
 export default function MusicHubPage() {
   const [tab, setTab] = useState<TabId>('songs');
 
@@ -148,17 +176,7 @@ export default function MusicHubPage() {
       {/* Tab content */}
       {tab === 'songs' && <MySongsTab />}
       {tab === 'create' && <SongCreator />}
-      {tab === 'instruments' && (
-        <div className="flex flex-col items-center gap-4 w-full max-w-md px-4">
-          <p className="text-[#8a7e70] text-center text-[15px]">Play drums, xylophone, and more!</p>
-          <Link
-            href="/music/instruments"
-            className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-[#FF6B35] to-[#E8610A] text-white font-bold text-lg shadow-lg active:scale-95 transition-transform no-underline"
-          >
-            🎹 Open Instruments
-          </Link>
-        </div>
-      )}
+      {tab === 'instruments' && <InstrumentsPanel />}
       {tab === 'soundart' && <ChladniVisualizer />}
     </div>
   );
