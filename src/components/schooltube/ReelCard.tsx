@@ -53,28 +53,74 @@ const CATEGORY_STYLES = {
   game: { bg: "bg-cyan-400", text: "text-white", label: "GAME" },
 } as const;
 
-/** Gradient backgrounds per topic — matches NickOS vibrant card style */
-const TOPIC_GRADIENTS: Record<string, string> = {
-  numbers: "linear-gradient(135deg, #FF6B6B, #FFE66D)",
-  letters: "linear-gradient(135deg, #4ECDC4, #556270)",
-  colors: "linear-gradient(135deg, #F093FB, #F5576C)",
-  shapes: "linear-gradient(135deg, #4FACFE, #00F2FE)",
-  patterns: "linear-gradient(135deg, #43E97B, #38F9D7)",
-  sensory: "linear-gradient(135deg, #FA709A, #FEE140)",
-  speech: "linear-gradient(135deg, #A18CD1, #FBC2EB)",
-  feelings: "linear-gradient(135deg, #FCCB90, #D57EEB)",
-  animals: "linear-gradient(135deg, #84FAB0, #8FD3F4)",
-  nature: "linear-gradient(135deg, #667EEA, #764BA2)",
-  movement: "linear-gradient(135deg, #FF9A9E, #FECFEF)",
-  music: "linear-gradient(135deg, #A1C4FD, #C2E9FB)",
-  default: "linear-gradient(135deg, #E0C3FC, #8EC5FC)",
+/** Per-card emoji + gradient — matches NickOS vibrant card style */
+const CARD_THUMBNAILS: Record<number, { emoji: string; from: string; to: string }> = {
+  // Videos
+  1: { emoji: "\uD83D\uDD22", from: "#f97316", to: "#ec4899" },
+  5: { emoji: "\uD83D\uDD22", from: "#ef4444", to: "#f59e0b" },
+  2: { emoji: "\uD83D\uDD24", from: "#8b5cf6", to: "#3b82f6" },
+  6: { emoji: "\uD83D\uDD24", from: "#6366f1", to: "#ec4899" },
+  3: { emoji: "\uD83C\uDF08", from: "#ef4444", to: "#eab308" },
+  7: { emoji: "\uD83C\uDF08", from: "#f97316", to: "#eab308" },
+  4: { emoji: "\uD83D\uDD37", from: "#06b6d4", to: "#8b5cf6" },
+  9: { emoji: "\uD83D\uDD37", from: "#3b82f6", to: "#8b5cf6" },
+  // Academic games
+  10: { emoji: "\uD83C\uDFAF", from: "#f97316", to: "#ef4444" },
+  11: { emoji: "\uD83E\uDEE7", from: "#3b82f6", to: "#06b6d4" },
+  12: { emoji: "\u270F\uFE0F", from: "#f59e0b", to: "#ef4444" },
+  13: { emoji: "\uD83D\uDD22", from: "#22c55e", to: "#06b6d4" },
+  20: { emoji: "\uD83D\uDD36", from: "#8b5cf6", to: "#ec4899" },
+  21: { emoji: "\uD83C\uDFB4", from: "#6366f1", to: "#3b82f6" },
+  22: { emoji: "\uD83D\uDCCF", from: "#f97316", to: "#eab308" },
+  30: { emoji: "\uD83C\uDFA8", from: "#10b981", to: "#3b82f6" },
+  31: { emoji: "\uD83C\uDFA8", from: "#ef4444", to: "#f59e0b" },
+  40: { emoji: "\u270F\uFE0F", from: "#f59e0b", to: "#ef4444" },
+  50: { emoji: "\uD83E\uDDE9", from: "#a855f7", to: "#ec4899" },
+  // Sensory games
+  100: { emoji: "\uD83C\uDF27\uFE0F", from: "#6366f1", to: "#ec4899" },
+  101: { emoji: "\uD83C\uDF66", from: "#ec4899", to: "#f59e0b" },
+  102: { emoji: "\uD83E\uDDF4", from: "#3b82f6", to: "#6366f1" },
+  103: { emoji: "\uD83C\uDFD7\uFE0F", from: "#f97316", to: "#ef4444" },
+  104: { emoji: "\uD83C\uDF86", from: "#eab308", to: "#ef4444" },
+  105: { emoji: "\uD83C\uDFB5", from: "#8b5cf6", to: "#ec4899" },
+  106: { emoji: "\uD83D\uDD8C\uFE0F", from: "#22c55e", to: "#06b6d4" },
+  107: { emoji: "\uD83E\uDEE7", from: "#14b8a6", to: "#06b6d4" },
+  108: { emoji: "\uD83D\uDCA7", from: "#3b82f6", to: "#22c55e" },
+  109: { emoji: "\uD83C\uDF00", from: "#06b6d4", to: "#6366f1" },
+  110: { emoji: "\uD83D\uDD2E", from: "#a855f7", to: "#3b82f6" },
+  // Sensory 3D games
+  120: { emoji: "\u2728", from: "#6366f1", to: "#a855f7" },
+  121: { emoji: "\uD83E\uDEC1", from: "#0ea5e9", to: "#6366f1" },
+  122: { emoji: "\uD83D\uDC8E", from: "#a855f7", to: "#ec4899" },
+  123: { emoji: "\u2B50", from: "#1e1b4b", to: "#312e81" },
+  124: { emoji: "\uD83D\uDCA5", from: "#ef4444", to: "#f97316" },
+  125: { emoji: "\uD83C\uDFD7\uFE0F", from: "#6366f1", to: "#ec4899" },
+  126: { emoji: "\uD83D\uDD2E", from: "#7c3aed", to: "#4f46e5" },
+  127: { emoji: "\uD83C\uDFB2", from: "#f59e0b", to: "#ef4444" },
+  128: { emoji: "\uD83C\uDFB5", from: "#0f172a", to: "#1e1b4b" },
+  129: { emoji: "\uD83E\uDDF2", from: "#f59e0b", to: "#06b6d4" },
+  // Speech games
+  200: { emoji: "\uD83D\uDC3E", from: "#22c55e", to: "#10b981" },
+  201: { emoji: "\uD83D\uDE0A", from: "#f59e0b", to: "#f97316" },
+  202: { emoji: "\uD83D\uDDE3\uFE0F", from: "#3b82f6", to: "#8b5cf6" },
+  203: { emoji: "\uD83E\uDD38", from: "#22c55e", to: "#f59e0b" },
+  204: { emoji: "\uD83D\uDCDD", from: "#6366f1", to: "#ec4899" },
+  205: { emoji: "\uD83C\uDFB6", from: "#f59e0b", to: "#ef4444" },
+  206: { emoji: "\uD83C\uDF3F", from: "#22c55e", to: "#06b6d4" },
+  207: { emoji: "\uD83E\uDD98", from: "#f97316", to: "#22c55e" },
 };
 
-function getGradient(topics: string[]): string {
-  for (const t of topics) {
-    if (TOPIC_GRADIENTS[t]) return TOPIC_GRADIENTS[t];
+const FALLBACK_GRADIENT = "linear-gradient(135deg, #E0C3FC, #8EC5FC)";
+
+function getCardStyle(reel: Reel): { gradient: string; emoji: string } {
+  const thumb = CARD_THUMBNAILS[reel.id];
+  if (thumb) {
+    return {
+      gradient: `linear-gradient(135deg, ${thumb.from}, ${thumb.to})`,
+      emoji: thumb.emoji,
+    };
   }
-  return TOPIC_GRADIENTS.default;
+  return { gradient: FALLBACK_GRADIENT, emoji: "\uD83C\uDFAE" };
 }
 
 export default function ReelCard({ reel }: { reel: Reel }) {
@@ -86,6 +132,7 @@ export default function ReelCard({ reel }: { reel: Reel }) {
     : CATEGORY_STYLES.game;
 
   const [isVideoOpen, setIsVideoOpen] = useState(false);
+  const cardStyle = getCardStyle(reel);
 
   const handleClick = () => {
     if (reel.type === "video" && reel.videoUrl) {
@@ -104,8 +151,12 @@ export default function ReelCard({ reel }: { reel: Reel }) {
       >
         <div
           className="aspect-[4/3] relative"
-          style={{ background: getGradient(reel.topics) }}
+          style={{ background: cardStyle.gradient }}
         >
+          {/* Card emoji icon */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-6xl opacity-90 drop-shadow-lg">{cardStyle.emoji}</span>
+          </div>
 
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
