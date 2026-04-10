@@ -308,7 +308,7 @@ export const FEELINGS_PHRASES: AACPhrase[] = [
   { id: 'feel-love', text: 'love', imageUrl: ARASAAC(8020), categoryId: 'feelings' },
   { id: 'feel-excited', text: 'excited', imageUrl: ARASAAC(39090), categoryId: 'feelings' },
   { id: 'feel-nervous', text: 'nervous', imageUrl: ARASAAC(35549), categoryId: 'feelings' },
-  { id: 'feel-hot', text: 'hot', imageUrl: ARASAAC(32179), categoryId: 'feelings' },
+  { id: 'feel-hot', text: 'hot', imageUrl: ARASAAC(28655), categoryId: 'feelings' },
   { id: 'feel-cold', text: 'cold', imageUrl: ARASAAC(32178), categoryId: 'feelings' },
   { id: 'feel-hungry', text: 'hungry', imageUrl: ARASAAC(35525), categoryId: 'feelings' },
   { id: 'feel-thirsty', text: 'thirsty', imageUrl: ARASAAC(35523), categoryId: 'feelings' },
@@ -326,7 +326,7 @@ export const ACTIONS_PHRASES: AACPhrase[] = [
   { id: 'act-walk', text: 'walk', imageUrl: ARASAAC(6044), categoryId: 'actions' },
   { id: 'act-run', text: 'run', imageUrl: ARASAAC(6465), categoryId: 'actions' },
   { id: 'act-jump', text: 'jump', imageUrl: ARASAAC(6607), categoryId: 'actions' },
-  { id: 'act-read', text: 'read', imageUrl: ARASAAC(6463), categoryId: 'actions' },
+  { id: 'act-read', text: 'read', imageUrl: ARASAAC(7141), categoryId: 'actions' },
   { id: 'act-write', text: 'write', imageUrl: ARASAAC(2380), categoryId: 'actions' },
   { id: 'act-watch', text: 'watch', imageUrl: ARASAAC(6564), categoryId: 'actions' },
   { id: 'act-give', text: 'give', imageUrl: ARASAAC(28431), categoryId: 'actions' },
@@ -340,10 +340,10 @@ export const QUESTIONS_PHRASES: AACPhrase[] = [
   { id: 'q-who', text: 'who?', imageUrl: ARASAAC(9853), categoryId: 'questions' },
   { id: 'q-why', text: 'why?', imageUrl: ARASAAC(36719), categoryId: 'questions' },
   { id: 'q-how', text: 'how?', imageUrl: ARASAAC(22619), categoryId: 'questions' },
-  { id: 'q-can-i', text: 'can I?', imageUrl: ARASAAC(7667), categoryId: 'questions' },
+  { id: 'q-can-i', text: 'can I?', imageUrl: ARASAAC(9847), categoryId: 'questions' },
   { id: 'q-do-you', text: 'do you?', imageUrl: ARASAAC(22620), categoryId: 'questions' },
   { id: 'q-is-it', text: 'is it?', imageUrl: ARASAAC(22620), categoryId: 'questions' },
-  { id: 'q-dont-know', text: "I don't know", imageUrl: ARASAAC(28248), categoryId: 'questions' },
+  { id: 'q-dont-know', text: "I don't know", imageUrl: ARASAAC(7180), categoryId: 'questions' },
 ];
 
 export const FOOD_PHRASES: AACPhrase[] = [
@@ -352,7 +352,7 @@ export const FOOD_PHRASES: AACPhrase[] = [
   { id: 'food-banana', text: 'banana', imageUrl: ARASAAC(2530), categoryId: 'food' },
   { id: 'food-bread', text: 'bread', imageUrl: ARASAAC(2494), categoryId: 'food' },
   { id: 'food-cheese', text: 'cheese', imageUrl: ARASAAC(2541), categoryId: 'food' },
-  { id: 'food-chicken', text: 'chicken', imageUrl: ARASAAC(2825), categoryId: 'food' },
+  { id: 'food-chicken', text: 'chicken', imageUrl: ARASAAC(4952), categoryId: 'food' },
   { id: 'food-pizza', text: 'pizza', imageUrl: ARASAAC(2527), categoryId: 'food' },
   { id: 'food-pasta', text: 'pasta', imageUrl: ARASAAC(8652), categoryId: 'food' },
   { id: 'food-rice', text: 'rice', imageUrl: ARASAAC(6911), categoryId: 'food' },
@@ -506,7 +506,7 @@ export const GLP_STAGE1_SOUNDS_CATEGORY: AACCategory = {
 
 export const SOUNDS_PHRASES: AACPhrase[] = [
   // Animal sounds
-  { id: 'snd-woof', text: 'woof', spokenText: 'woof woof', imageUrl: ARASAAC(5257), categoryId: 'sounds' },
+  { id: 'snd-woof', text: 'woof', spokenText: 'woof woof', imageUrl: ARASAAC(2517), categoryId: 'sounds' },
   { id: 'snd-meow', text: 'meow', spokenText: 'meow', imageUrl: ARASAAC(2466), categoryId: 'sounds' },
   { id: 'snd-moo', text: 'moo', spokenText: 'mooo', imageUrl: ARASAAC(2353), categoryId: 'sounds' },
   { id: 'snd-baa', text: 'baa', spokenText: 'baaaa', imageUrl: ARASAAC(2475), categoryId: 'sounds' },
@@ -517,7 +517,7 @@ export const SOUNDS_PHRASES: AACPhrase[] = [
   { id: 'snd-choo', text: 'choo choo', spokenText: 'choo choo', imageUrl: ARASAAC(3004), categoryId: 'sounds' },
   // Silly sounds
   { id: 'snd-boing', text: 'boing', spokenText: 'boing', imageUrl: ARASAAC(3241), categoryId: 'sounds' },
-  { id: 'snd-splash', text: 'splash', spokenText: 'splash', imageUrl: ARASAAC(3228), categoryId: 'sounds' },
+  { id: 'snd-splash', text: 'splash', spokenText: 'splash', imageUrl: ARASAAC(37903), categoryId: 'sounds' },
   { id: 'snd-pop', text: 'pop', spokenText: 'pop', imageUrl: ARASAAC(2881), categoryId: 'sounds' },
   { id: 'snd-whoosh', text: 'whoosh', spokenText: 'whoooosh', imageUrl: ARASAAC(8142), categoryId: 'sounds' },
 ];

@@ -29,6 +29,7 @@ import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
 import { logWord } from '@/lib/session-logger';
 import { speak as elevenLabsSpeak } from '@/lib/tts';
 import { SharedSentenceBar } from '@/components/SharedSentenceBar';
+import { useSentence } from '@/hooks/useSentence';
 
 // =============================================================================
 // Fitzgerald Key Color Definitions (mapped from shared vocabulary system)
@@ -210,7 +211,7 @@ export interface SupercoreGridProps {
 }
 
 export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
-  const [sentence, setSentence] = useState<CoreWord[]>([]);
+  const { words: sentence, addWord, removeWord, clear } = useSentence();
   const [cols, setCols] = useState(10);
   const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [engineFallback, setEngineFallback] = useState(false);
@@ -236,9 +237,13 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
 
   const handleWordTap = useCallback((word: CoreWord) => {
     speakText(word.label);
-    setSentence(prev => [...prev, word]);
+    addWord({
+      label: word.label,
+      imageUrl: word.arasaacId ? ARASAAC_IMG(word.arasaacId) : undefined,
+      className: `${FITZGERALD_CLASSES[word.category].bg} ${FITZGERALD_CLASSES[word.category].text} ${FITZGERALD_CLASSES[word.category].border}`,
+    });
     logWord(word.label);
-  }, [speakText]);
+  }, [speakText, addWord]);
 
   const handleSpeakAll = useCallback(() => {
     if (sentence.length === 0) return;
@@ -260,7 +265,6 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
         const improved = data.improved || data.sentence || words.join(' ');
         speakText(improved);
       } else {
-        // Fallback: just speak the raw words
         speakText(sentence.map(w => w.label).join(' '));
       }
     } catch {
@@ -271,13 +275,9 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   }, [sentence, speakText]);
 
   const handleClear = useCallback(() => {
-    setSentence([]);
+    clear();
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
-  }, []);
-
-  const handleRemoveWord = useCallback((index: number) => {
-    setSentence(prev => prev.filter((_, i) => i !== index));
-  }, []);
+  }, [clear]);
 
   const legendItems: { category: FitzgeraldCategory; label: string }[] = [
     { category: 'people', label: 'people' },
@@ -294,15 +294,12 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
     <div className="flex flex-col h-screen min-h-[100dvh] bg-gray-50 font-sans">
       {/* Sentence Strip */}
       <SharedSentenceBar
-        words={sentence.map(w => ({
-          label: w.label,
-          className: `${FITZGERALD_CLASSES[w.category].bg} ${FITZGERALD_CLASSES[w.category].text} ${FITZGERALD_CLASSES[w.category].border}`,
-        }))}
+        words={sentence}
         onSpeak={handleSpeakAll}
         onMagic={handleMagicSpeak}
         isMagicLoading={isMagicLoading}
         onClear={handleClear}
-        onRemoveWord={handleRemoveWord}
+        onRemoveWord={removeWord}
         engineFallback={engineFallback}
       />
 

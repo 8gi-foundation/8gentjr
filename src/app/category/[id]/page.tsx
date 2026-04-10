@@ -14,6 +14,7 @@ import { useState, useCallback, useMemo } from "react";
 import { AAC_CATEGORIES, getPhrasesByCategory } from "@/lib/vocabulary";
 import { speak } from "@/lib/tts";
 import { SharedSentenceBar } from "@/components/SharedSentenceBar";
+import { useSentence } from "@/hooks/useSentence";
 
 export default function CategoryDetailPage() {
   const params = useParams();
@@ -23,26 +24,33 @@ export default function CategoryDetailPage() {
   const category = AAC_CATEGORIES.find((c) => c.id === categoryId);
   const phrases = useMemo(() => getPhrasesByCategory(categoryId), [categoryId]);
 
-  const [selectedWords, setSelectedWords] = useState<string[]>([]);
+  const { words: sentenceWords, addWord, removeWord, clear } = useSentence();
   const [engineFallback, setEngineFallback] = useState(false);
 
-  const handleTap = useCallback(async (text: string) => {
-    setSelectedWords((prev) => [...prev, text]);
+  const handleTap = useCallback(async (text: string, imageUrl?: string) => {
+    addWord({
+      label: text,
+      imageUrl,
+      style: category ? {
+        backgroundColor: category.color + "33",
+        borderColor: category.color,
+        color: category.color,
+      } : undefined,
+    });
     const engine = await speak({ text });
     setEngineFallback(engine === 'browser');
-  }, []);
+  }, [addWord, category]);
 
   const handleSpeak = useCallback(async () => {
-    if (selectedWords.length === 0) return;
-    const engine = await speak({ text: selectedWords.join(" ") });
+    if (sentenceWords.length === 0) return;
+    const engine = await speak({ text: sentenceWords.map(w => w.label).join(" ") });
     setEngineFallback(engine === 'browser');
-  }, [selectedWords]);
+  }, [sentenceWords]);
 
-  const handleClear = () => setSelectedWords([]);
-
-  const handleRemoveWord = useCallback((index: number) => {
-    setSelectedWords((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  const handleClear = useCallback(() => {
+    clear();
+    if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
+  }, [clear]);
 
   if (!category) {
     return (
@@ -81,19 +89,12 @@ export default function CategoryDetailPage() {
         <h1 className="text-xl font-bold text-white">{category.name}</h1>
       </div>
 
-      {/* Sentence strip — shared design */}
+      {/* Sentence strip — shared persistent store */}
       <SharedSentenceBar
-        words={selectedWords.map((word) => ({
-          label: word,
-          style: {
-            backgroundColor: category.color + "33",
-            borderColor: category.color,
-            color: category.color,
-          },
-        }))}
+        words={sentenceWords}
         onSpeak={handleSpeak}
         onClear={handleClear}
-        onRemoveWord={handleRemoveWord}
+        onRemoveWord={removeWord}
         engineFallback={engineFallback}
       />
 
@@ -109,7 +110,7 @@ export default function CategoryDetailPage() {
             {phrases.map((phrase) => (
               <button
                 key={phrase.id}
-                onClick={() => handleTap(phrase.text)}
+                onClick={() => handleTap(phrase.text, phrase.imageUrl)}
                 className="flex flex-col items-center justify-center gap-1.5 p-3 bg-white rounded-xl border-2 min-h-[100px] active:scale-95 transition-transform hover:shadow-md"
                 style={{ borderColor: category.color + "50" }}
               >

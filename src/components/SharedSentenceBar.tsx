@@ -15,6 +15,8 @@ import { useRef, useEffect, useState } from 'react';
 
 export interface SentenceChip {
   label: string;
+  /** Optional ARASAAC or other pictogram URL */
+  imageUrl?: string;
   /** Optional Tailwind classes for chip background/text/border (Fitzgerald Key) */
   className?: string;
   /** Optional inline styles for chip (category colour overrides) */
@@ -118,13 +120,17 @@ export function SharedSentenceBar({
               key={`${chip.label}-${index}`}
               onClick={() => onRemoveWord?.(index)}
               disabled={!onRemoveWord}
-              className={`shrink-0 px-3 py-1.5 rounded-lg font-bold text-sm border-2 transition-transform active:scale-95 ${
+              className={`shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-lg font-bold text-sm border-2 transition-transform active:scale-95 ${
                 onRemoveWord ? 'cursor-pointer' : 'cursor-default'
               } ${chip.className ?? 'bg-gray-600 text-white border-gray-500'}`}
               style={chip.style}
               aria-label={onRemoveWord ? `Remove ${chip.label}` : chip.label}
             >
-              {chip.label}
+              {chip.imageUrl && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={chip.imageUrl} alt="" className="w-7 h-7 object-contain shrink-0" />
+              )}
+              <span>{chip.label}</span>
             </button>
           ))
         )}
