@@ -5,12 +5,14 @@ import { useState, useCallback, useRef, useEffect } from "react";
 /* ── Chladni modes — note colors map to visible light spectrum ── */
 
 const MODES = [
-  { n: 1, m: 2, note: "C", freq: 130.81, label: "Cross",   color: "#FF3333" },
-  { n: 2, m: 3, note: "D", freq: 146.83, label: "Diamond", color: "#FF8C00" },
-  { n: 3, m: 5, note: "E", freq: 164.81, label: "Star",    color: "#FFD700" },
-  { n: 1, m: 4, note: "F", freq: 174.61, label: "Lines",   color: "#00CC66" },
-  { n: 4, m: 5, note: "G", freq: 196.0,  label: "Web",     color: "#00BFFF" },
-  { n: 2, m: 5, note: "A", freq: 220.0,  label: "Flower",  color: "#8B5CF6" },
+  { n: 1, m: 2, note: "C",  freq: 130.81, label: "Cross",   color: "#FF3333" },
+  { n: 2, m: 3, note: "D",  freq: 146.83, label: "Diamond", color: "#FF8C00" },
+  { n: 3, m: 5, note: "E",  freq: 164.81, label: "Star",    color: "#FFD700" },
+  { n: 1, m: 4, note: "F",  freq: 174.61, label: "Lines",   color: "#00CC66" },
+  { n: 4, m: 5, note: "G",  freq: 196.0,  label: "Web",     color: "#00BFFF" },
+  { n: 2, m: 5, note: "A",  freq: 220.0,  label: "Flower",  color: "#4169E1" },
+  { n: 3, m: 4, note: "B",  freq: 246.94, label: "Grid",    color: "#8B5CF6" },
+  { n: 5, m: 6, note: "C2", freq: 261.63, label: "Jewel",   color: "#E040FB" },
 ] as const;
 
 /* ── Ambient noise presets ──────────────────────────────────── */
