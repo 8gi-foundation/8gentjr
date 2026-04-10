@@ -199,7 +199,7 @@ export default function SongCreator() {
               <button
                 key={s}
                 onClick={() => setPrompt(s)}
-                className="px-3 py-1.5 rounded-full bg-[#f0e6d6] text-[13px] text-[#8a7e70] font-medium border-none cursor-pointer hover:bg-[#e8dcc8] active:scale-95 transition-all"
+                className="px-3 py-1.5 rounded-full bg-[#f0e6d6] text-[13px] text-[#8a7e70] font-medium border-none cursor-pointer hover:bg-[#e8dcc8] active:scale-[0.93] transition-all duration-100"
               >
                 {s}
               </button>
@@ -215,7 +215,7 @@ export default function SongCreator() {
           <button
             onClick={handleCreate}
             disabled={!prompt.trim()}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#10B981] to-[#059669] text-white font-bold text-lg shadow-lg border-none cursor-pointer active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#10B981] to-[#059669] text-white font-bold text-lg shadow-lg border-none cursor-pointer active:scale-[0.96] transition-transform duration-100 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Create My Song
           </button>
@@ -300,7 +300,7 @@ export default function SongCreator() {
           {/* Create another */}
           <button
             onClick={handleReset}
-            className="w-full py-3 rounded-2xl bg-[#f0e6d6] text-[#1a1a2e] font-bold text-base border-none cursor-pointer active:scale-95 transition-transform"
+            className="w-full py-3 rounded-2xl bg-[#f0e6d6] text-[#1a1a2e] font-bold text-base border-none cursor-pointer active:scale-[0.96] transition-transform duration-100"
           >
             Create Another Song
           </button>

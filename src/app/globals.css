@@ -115,14 +115,24 @@
   --warm-text-placeholder: #5C544A;
 }
 
-/* Global styles */
+/* ── iOS-native feel ──────────────────────────────────── */
+
 * {
   box-sizing: border-box;
+  /* Remove iOS default tap highlight (gray flash) */
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  /* Prevent pull-to-refresh and overscroll bounce */
+  overscroll-behavior: none;
+  /* Use dynamic viewport for iOS Safari address bar */
+  height: 100dvh;
 }
 
 html,
 body {
-  min-height: 100%;
+  min-height: 100dvh;
   touch-action: manipulation;
 }
 
@@ -132,6 +142,37 @@ body {
   color: hsl(var(--foreground));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Prevent overscroll bounce on body */
+  overscroll-behavior-y: contain;
+  /* Prevent text selection on non-input elements */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Re-enable text selection on inputs and textareas */
+input, textarea, [contenteditable] {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* iOS-native button/interactive feel */
+button, a, [role="button"] {
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+/* Hide scrollbars globally (iOS style — scroll without visible bars) */
+.no-scrollbar::-webkit-scrollbar,
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* iOS-style momentum scrolling on scroll containers */
+[class*="overflow-auto"],
+[class*="overflow-x-auto"],
+[class*="overflow-y-auto"],
+[class*="overflow-scroll"] {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Safe area support for notched devices */
@@ -173,6 +214,34 @@ body {
 .touch-target {
   min-height: 44px;
   min-width: 44px;
+}
+
+/* iOS-style press feedback — spring scale with fast attack, bouncy release */
+.ios-press {
+  transition: transform 0.1s cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: transform;
+}
+.ios-press:active {
+  transform: scale(0.92);
+  transition-duration: 0.05s;
+}
+
+/* Lighter press for small elements (chips, pills) */
+.ios-press-light {
+  transition: transform 0.1s cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: transform;
+}
+.ios-press-light:active {
+  transform: scale(0.95);
+  transition-duration: 0.05s;
+}
+
+/* Spring release animation (applied after active state releases) */
+@keyframes spring-release {
+  0% { transform: scale(0.92); }
+  40% { transform: scale(1.02); }
+  70% { transform: scale(0.99); }
+  100% { transform: scale(1); }
 }
 
 /* Reduce motion for accessibility */

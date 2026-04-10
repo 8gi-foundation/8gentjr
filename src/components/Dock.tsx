@@ -238,7 +238,7 @@ export default function Dock({ primaryColor = '#E8610A' }: DockProps) {
                   key={item.id}
                   href={item.href}
                   onClick={() => setMoreOpen(false)}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl min-h-[48px] transition-colors hover:bg-[var(--brand-bg-accent)]"
+                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl min-h-[48px] transition-all duration-100 hover:bg-[var(--brand-bg-accent)] active:scale-[0.96] active:bg-[var(--brand-bg-accent)]"
                 >
                   <item.icon color={active ? primaryColor : '#9A9088'} />
                   <span
@@ -254,10 +254,14 @@ export default function Dock({ primaryColor = '#E8610A' }: DockProps) {
         </>
       )}
 
-      {/* CSS keyframes */}
+      {/* CSS keyframes — iOS-style spring animations */}
       <style>{`
         @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes slideUp { from { transform: translateY(12px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+        @keyframes slideUp {
+          0%   { transform: translateY(16px) scale(0.95); opacity: 0 }
+          60%  { transform: translateY(-2px) scale(1.01); opacity: 1 }
+          100% { transform: translateY(0) scale(1); opacity: 1 }
+        }
       `}</style>
 
       {/* Dock bar */}
@@ -275,7 +279,7 @@ export default function Dock({ primaryColor = '#E8610A' }: DockProps) {
               <Link
                 key={item.id}
                 href={item.href}
-                className="flex flex-col items-center justify-center min-w-[72px] min-h-[48px] py-1.5 transition-transform active:scale-90"
+                className="flex flex-col items-center justify-center min-w-[72px] min-h-[48px] py-1.5 transition-transform duration-100 active:scale-[0.85]"
                 aria-current={active ? 'page' : undefined}
               >
                 <span className={`mb-0.5 transition-transform ${active ? 'scale-110' : ''}`}>
@@ -294,7 +298,7 @@ export default function Dock({ primaryColor = '#E8610A' }: DockProps) {
           {/* More button */}
           <button
             onClick={() => setMoreOpen((v) => !v)}
-            className="flex flex-col items-center justify-center min-w-[72px] min-h-[48px] py-1.5 transition-transform active:scale-90 bg-transparent border-none cursor-pointer"
+            className="flex flex-col items-center justify-center min-w-[72px] min-h-[48px] py-1.5 transition-transform duration-100 active:scale-[0.85] bg-transparent border-none cursor-pointer"
             aria-label="More options"
             aria-expanded={moreOpen}
           >

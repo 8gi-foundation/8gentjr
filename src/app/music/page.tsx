@@ -136,7 +136,7 @@ function InstrumentsPanel() {
           <button
             key={t.id}
             onClick={() => setInstrument(t.id)}
-            className={`px-4 py-1.5 border-none rounded-[8px] font-bold text-[13px] cursor-pointer transition-all duration-150 ${
+            className={`px-4 py-1.5 border-none rounded-[8px] font-bold text-[13px] cursor-pointer transition-all duration-100 active:scale-95 ${
               instrument === t.id
                 ? 'bg-white text-[#1a1a2e] shadow-md'
                 : 'bg-transparent text-[#8a7e70]'
@@ -156,13 +156,13 @@ export default function MusicHubPage() {
 
   return (
     <div className="min-h-dvh flex flex-col items-center bg-[#FFF8F0] pb-24">
-      {/* Tab bar */}
+      {/* Tab bar — iOS segmented control style */}
       <div className="flex gap-1.5 mt-5 mb-5 p-1 rounded-[14px] bg-[#f0e6d6]">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-3 py-2 border-none rounded-[10px] font-bold text-[13px] cursor-pointer transition-all duration-150 whitespace-nowrap ${
+            className={`px-3 py-2 border-none rounded-[10px] font-bold text-[13px] cursor-pointer transition-all duration-100 whitespace-nowrap active:scale-95 ${
               tab === t.id
                 ? 'bg-white text-[#1a1a2e] shadow-md'
                 : 'bg-transparent text-[#8a7e70]'

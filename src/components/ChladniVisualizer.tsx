@@ -425,16 +425,16 @@ export function ChladniVisualizer() {
         </div>
       </div>
 
-      {/* Note buttons — colored by frequency-to-light mapping */}
-      <div className="grid grid-cols-6 gap-1.5 w-full">
+      {/* Note buttons — 8 notes, full octave C to C2 */}
+      <div className="grid grid-cols-4 gap-1.5 w-full">
         {MODES.map((m, i) => {
           const active = activeIdx === i;
           return (
             <button
               key={i}
               onClick={() => selectMode(i)}
-              className={`flex flex-col items-center py-2.5 rounded-xl border-2 font-bold cursor-pointer transition-all duration-200 select-none active:scale-90 ${
-                active ? "scale-[1.06]" : ""
+              className={`flex flex-col items-center py-2.5 rounded-xl border-2 font-bold cursor-pointer transition-all duration-100 select-none active:scale-[0.88] ${
+                active ? "scale-[1.04]" : ""
               }`}
               style={{
                 backgroundColor: active ? m.color : `${m.color}18`,
@@ -467,7 +467,7 @@ export function ChladniVisualizer() {
               <button
                 key={a.id}
                 onClick={() => toggleAmbient(a.id)}
-                className={`py-2 rounded-xl border font-semibold text-xs cursor-pointer transition-all duration-200 select-none active:scale-90 ${
+                className={`py-2 rounded-xl border font-semibold text-xs cursor-pointer transition-all duration-100 select-none active:scale-[0.9] ${
                   active
                     ? "bg-[#1a1a2e] text-white border-[#1a1a2e] shadow-md"
                     : "bg-white/80 text-[#8a7e70] border-[#f0e6d6] hover:border-[#d0c6b6]"
