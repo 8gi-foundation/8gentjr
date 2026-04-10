@@ -2,10 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Fraunces } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
-import { OfflineBanner } from '../components/OfflineBanner';
-import Dock from '../components/Dock';
-import { LockScreenGate } from '../components/LockScreenGate';
-import { InstallPrompt } from '../components/InstallPrompt';
+import { AppChrome } from '../components/AppChrome';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -55,12 +52,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${fraunces.variable}`} data-theme="light">
       <body className="antialiased">
         <Providers>
-          <LockScreenGate>
-            <OfflineBanner />
-            <InstallPrompt />
-            <main className="pb-safe-dock">{children}</main>
-            <Dock />
-          </LockScreenGate>
+          <AppChrome>{children}</AppChrome>
         </Providers>
       </body>
     </html>
