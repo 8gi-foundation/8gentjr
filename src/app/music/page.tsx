@@ -128,11 +128,8 @@ export default function MusicHubPage() {
 
   return (
     <div className="min-h-dvh flex flex-col items-center bg-[#FFF8F0] pb-24">
-      {/* Header */}
-      <h1 className="text-[22px] font-extrabold mt-5 mb-1 text-[#1a1a2e]">Music</h1>
-
       {/* Tab bar */}
-      <div className="flex gap-1.5 my-3 mb-5 p-1 rounded-[14px] bg-[#f0e6d6]">
+      <div className="flex gap-1.5 mt-5 mb-5 p-1 rounded-[14px] bg-[#f0e6d6]">
         {TABS.map((t) => (
           <button
             key={t.id}
