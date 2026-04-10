@@ -3,11 +3,13 @@
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
 import SongCreator from '@/components/SongCreator';
+import { ChladniVisualizer } from '@/components/ChladniVisualizer';
 
 const TABS = [
   { id: 'songs',       label: 'My Songs',   icon: '🎵' },
   { id: 'create',      label: 'Create',     icon: '✨' },
   { id: 'instruments', label: 'Instruments', icon: '🎹' },
+  { id: 'soundart',    label: 'Sound Art',  icon: '✦' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -160,6 +162,7 @@ export default function MusicHubPage() {
           </Link>
         </div>
       )}
+      {tab === 'soundart' && <ChladniVisualizer />}
     </div>
   );
 }
