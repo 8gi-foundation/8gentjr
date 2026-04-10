@@ -30,6 +30,9 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: '8gent Jr',
   },
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+  },
   category: 'Education',
 };
 

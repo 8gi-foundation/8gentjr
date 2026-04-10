@@ -124,7 +124,7 @@ export default function SongCreator() {
 
       if (data.error) {
         setPhase('error');
-        setErrorMsg('Could not create song. Try again!');
+        setErrorMsg(data.error || 'Could not create song. Try again!');
         return;
       }
 
