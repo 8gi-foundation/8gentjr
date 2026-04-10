@@ -358,125 +358,131 @@ export function ChladniVisualizer() {
   /* ── Render ──────────────────────────────────────────── */
 
   return (
-    <div className="flex flex-col items-center gap-3 w-full max-w-md px-3">
-      {/* Chladni plate canvas */}
-      <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-xl">
-        <canvas
-          ref={canvasRef}
-          className="w-full h-full block"
-          style={{ touchAction: "none" }}
-        />
-        {activeIdx === null && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-2">
-            <span className="text-3xl opacity-40">✦</span>
-            <p className="text-white/30 text-sm font-medium text-center px-8 leading-relaxed">
-              Tap a note to see
-              <br />
-              sound become art
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Sliders row: Color + Volume */}
-      <div className="flex flex-col gap-2 w-full">
-        {/* Color slider */}
-        <div className="flex items-center gap-2.5 w-full px-1">
-          <span className="text-xs text-[#8a7e70] font-semibold shrink-0 w-10">
-            Color
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={360}
-            value={hue}
-            onChange={(e) => setHue(Number(e.target.value))}
-            className="flex-1 h-2.5 rounded-full appearance-none cursor-pointer outline-none"
-            style={{
-              background:
-                "linear-gradient(to right, hsl(0,80%,60%), hsl(60,80%,60%), hsl(120,80%,60%), hsl(180,80%,60%), hsl(240,80%,60%), hsl(300,80%,60%), hsl(360,80%,60%))",
-            }}
+    <div className="w-full px-3 md:px-6 lg:px-8">
+      {/* Responsive layout: stacked on phone, side-by-side on tablet+ */}
+      <div className="flex flex-col md:flex-row md:items-start md:gap-6 lg:gap-8 gap-3 max-w-5xl mx-auto">
+        {/* Chladni plate canvas — grows on larger screens */}
+        <div className="relative w-full md:flex-1 md:max-w-[560px] aspect-square rounded-2xl overflow-hidden shadow-xl shrink-0">
+          <canvas
+            ref={canvasRef}
+            className="w-full h-full block"
+            style={{ touchAction: "none" }}
           />
-          <div
-            className="w-5 h-5 rounded-full border-2 border-white/20 shadow-sm shrink-0"
-            style={{ backgroundColor: `hsl(${hue}, 80%, 60%)` }}
-          />
+          {activeIdx === null && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-2">
+              <span className="text-3xl opacity-40">✦</span>
+              <p className="text-white/30 text-sm font-medium text-center px-8 leading-relaxed">
+                Tap a note to see
+                <br />
+                sound become art
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Volume slider */}
-        <div className="flex items-center gap-2.5 w-full px-1">
-          <span className="text-xs text-[#8a7e70] font-semibold shrink-0 w-10">
-            Vol
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
-            className="flex-1 h-2.5 rounded-full appearance-none cursor-pointer outline-none"
-            style={{
-              background: `linear-gradient(to right, #1a1a2e ${volume}%, #f0e6d6 ${volume}%)`,
-            }}
-          />
-          <span className="text-xs text-[#8a7e70] font-semibold shrink-0 w-7 text-right tabular-nums">
-            {volume}%
-          </span>
-        </div>
-      </div>
-
-      {/* Note buttons — 8 notes, full octave C to C2 */}
-      <div className="grid grid-cols-4 gap-1.5 w-full">
-        {MODES.map((m, i) => {
-          const active = activeIdx === i;
-          return (
-            <button
-              key={i}
-              onClick={() => selectMode(i)}
-              className={`flex flex-col items-center py-2.5 rounded-xl border-2 font-bold cursor-pointer transition-all duration-100 select-none active:scale-[0.88] ${
-                active ? "scale-[1.04]" : ""
-              }`}
-              style={{
-                backgroundColor: active ? m.color : `${m.color}18`,
-                borderColor: active ? m.color : `${m.color}40`,
-                color: active ? "#fff" : m.color,
-                boxShadow: active
-                  ? `0 0 18px ${m.color}50`
-                  : "none",
-                textShadow: active ? "0 1px 2px rgba(0,0,0,0.4)" : "none",
-              }}
-            >
-              <span className="text-base leading-none">{m.note}</span>
-              <span className="text-[9px] mt-0.5 opacity-70 leading-none">
-                {m.label}
+        {/* Controls panel — beside canvas on tablet+ */}
+        <div className="flex flex-col gap-3 w-full md:flex-1 md:py-2">
+          {/* Sliders row: Color + Volume */}
+          <div className="flex flex-col gap-2 w-full">
+            {/* Color slider */}
+            <div className="flex items-center gap-2.5 w-full px-1">
+              <span className="text-xs text-[#8a7e70] font-semibold shrink-0 w-10">
+                Color
               </span>
-            </button>
-          );
-        })}
-      </div>
+              <input
+                type="range"
+                min={0}
+                max={360}
+                value={hue}
+                onChange={(e) => setHue(Number(e.target.value))}
+                className="flex-1 h-2.5 rounded-full appearance-none cursor-pointer outline-none"
+                style={{
+                  background:
+                    "linear-gradient(to right, hsl(0,80%,60%), hsl(60,80%,60%), hsl(120,80%,60%), hsl(180,80%,60%), hsl(240,80%,60%), hsl(300,80%,60%), hsl(360,80%,60%))",
+                }}
+              />
+              <div
+                className="w-5 h-5 rounded-full border-2 border-white/20 shadow-sm shrink-0"
+                style={{ backgroundColor: `hsl(${hue}, 80%, 60%)` }}
+              />
+            </div>
 
-      {/* Ambient noise tracks */}
-      <div className="w-full">
-        <p className="text-[10px] text-[#8a7e70] font-semibold uppercase tracking-wider mb-1.5 px-1">
-          Ambient
-        </p>
-        <div className="grid grid-cols-5 gap-1.5 w-full">
-          {AMBIENT.map((a) => {
-            const active = activeAmbient === a.id;
-            return (
-              <button
-                key={a.id}
-                onClick={() => toggleAmbient(a.id)}
-                className={`py-2 rounded-xl border font-semibold text-xs cursor-pointer transition-all duration-100 select-none active:scale-[0.9] ${
-                  active
-                    ? "bg-[#1a1a2e] text-white border-[#1a1a2e] shadow-md"
-                    : "bg-white/80 text-[#8a7e70] border-[#f0e6d6] hover:border-[#d0c6b6]"
-                }`}
-              >
-                {a.label}
-              </button>
-            );
-          })}
+            {/* Volume slider */}
+            <div className="flex items-center gap-2.5 w-full px-1">
+              <span className="text-xs text-[#8a7e70] font-semibold shrink-0 w-10">
+                Vol
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={volume}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                className="flex-1 h-2.5 rounded-full appearance-none cursor-pointer outline-none"
+                style={{
+                  background: `linear-gradient(to right, #1a1a2e ${volume}%, #f0e6d6 ${volume}%)`,
+                }}
+              />
+              <span className="text-xs text-[#8a7e70] font-semibold shrink-0 w-7 text-right tabular-nums">
+                {volume}%
+              </span>
+            </div>
+          </div>
+
+          {/* Note buttons — 8 notes, full octave C to C2 */}
+          <div className="grid grid-cols-4 md:grid-cols-8 gap-1.5 w-full">
+            {MODES.map((m, i) => {
+              const active = activeIdx === i;
+              return (
+                <button
+                  key={i}
+                  onClick={() => selectMode(i)}
+                  className={`flex flex-col items-center py-2.5 md:py-3 rounded-xl border-2 font-bold cursor-pointer transition-all duration-100 select-none active:scale-[0.88] ${
+                    active ? "scale-[1.04]" : ""
+                  }`}
+                  style={{
+                    backgroundColor: active ? m.color : `${m.color}18`,
+                    borderColor: active ? m.color : `${m.color}40`,
+                    color: active ? "#fff" : m.color,
+                    boxShadow: active
+                      ? `0 0 18px ${m.color}50`
+                      : "none",
+                    textShadow: active ? "0 1px 2px rgba(0,0,0,0.4)" : "none",
+                  }}
+                >
+                  <span className="text-base leading-none">{m.note}</span>
+                  <span className="text-[9px] mt-0.5 opacity-70 leading-none">
+                    {m.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Ambient noise tracks */}
+          <div className="w-full">
+            <p className="text-[10px] text-[#8a7e70] font-semibold uppercase tracking-wider mb-1.5 px-1">
+              Ambient
+            </p>
+            <div className="grid grid-cols-5 gap-1.5 w-full">
+              {AMBIENT.map((a) => {
+                const active = activeAmbient === a.id;
+                return (
+                  <button
+                    key={a.id}
+                    onClick={() => toggleAmbient(a.id)}
+                    className={`py-2 md:py-2.5 rounded-xl border font-semibold text-xs cursor-pointer transition-all duration-100 select-none active:scale-[0.9] ${
+                      active
+                        ? "bg-[#1a1a2e] text-white border-[#1a1a2e] shadow-md"
+                        : "bg-white/80 text-[#8a7e70] border-[#f0e6d6] hover:border-[#d0c6b6]"
+                    }`}
+                  >
+                    {a.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>

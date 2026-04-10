@@ -77,7 +77,7 @@ function MySongsTab() {
   }
 
   return (
-    <div className="w-full max-w-md px-4 flex flex-col gap-2">
+    <div className="w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 md:px-6 flex flex-col gap-2">
       <p className="text-xs text-[#8a7e70] font-medium mb-1">{songs.length} song{songs.length !== 1 ? 's' : ''}</p>
       {songs.map((song) => {
         const isPlaying = playingId === song.id;
@@ -127,7 +127,7 @@ function MySongsTab() {
 function InstrumentsPanel() {
   const [instrument, setInstrument] = useState<'drums' | 'xylophone'>('drums');
   return (
-    <div className="flex flex-col items-center gap-3 w-full max-w-md px-4">
+    <div className="flex flex-col items-center gap-3 w-full max-w-md md:max-w-2xl lg:max-w-4xl px-4 md:px-6">
       <div className="flex gap-2 p-1 rounded-[12px] bg-[#f0e6d6]">
         {[
           { id: 'drums' as const, label: 'Drums', icon: '🥁' },
@@ -162,7 +162,7 @@ export default function MusicHubPage() {
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-3 py-2 border-none rounded-[10px] font-bold text-[13px] cursor-pointer transition-all duration-100 whitespace-nowrap active:scale-95 ${
+            className={`px-3 py-2 md:px-5 md:py-2.5 border-none rounded-[10px] font-bold text-[13px] md:text-sm cursor-pointer transition-all duration-100 whitespace-nowrap active:scale-95 ${
               tab === t.id
                 ? 'bg-white text-[#1a1a2e] shadow-md'
                 : 'bg-transparent text-[#8a7e70]'
@@ -173,11 +173,13 @@ export default function MusicHubPage() {
         ))}
       </div>
 
-      {/* Tab content */}
-      {tab === 'songs' && <MySongsTab />}
-      {tab === 'create' && <SongCreator />}
-      {tab === 'instruments' && <InstrumentsPanel />}
-      {tab === 'soundart' && <ChladniVisualizer />}
+      {/* Tab content — full width, each tab handles its own responsive layout */}
+      <div className="w-full flex flex-col items-center">
+        {tab === 'songs' && <MySongsTab />}
+        {tab === 'create' && <SongCreator />}
+        {tab === 'instruments' && <InstrumentsPanel />}
+        {tab === 'soundart' && <ChladniVisualizer />}
+      </div>
     </div>
   );
 }

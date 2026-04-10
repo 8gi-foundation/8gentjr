@@ -176,7 +176,7 @@ export default function SongCreator() {
   /* ── Render ────────────────────────────────────────────── */
 
   return (
-    <div className="w-full max-w-md px-4 flex flex-col gap-4">
+    <div className="w-full max-w-md md:max-w-2xl px-4 md:px-6 flex flex-col gap-4">
       {/* Prompt input (idle or error) */}
       {(phase === 'idle' || phase === 'error') && (
         <>

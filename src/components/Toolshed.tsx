@@ -76,7 +76,7 @@ export function Toolshed() {
 
 function CategoryGrid({ onCategoryTap }: { onCategoryTap: (c: ToolCategory) => void }) {
   return (
-    <div className="grid grid-cols-2 gap-4 max-w-lg mx-auto">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto">
       {TOOL_CATEGORIES.map((cat) => {
         const tools = getToolsByCategory(cat.id);
         const unlocked = tools.filter((t) => t.unlocked).length;
@@ -103,7 +103,7 @@ function CategoryGrid({ onCategoryTap }: { onCategoryTap: (c: ToolCategory) => v
 
 function ToolGrid({ tools, onToolTap }: { tools: Tool[]; onToolTap: (t: Tool) => void }) {
   return (
-    <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
+    <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto">
       {tools.map((tool) => (
         <button
           key={tool.id}

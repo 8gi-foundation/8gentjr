@@ -11,13 +11,13 @@ import ReelsFeed from "@/components/schooltube/ReelsFeed";
 
 export default function GamesPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-cyan-400 via-purple-400 to-pink-400">
+    <div className="min-h-dvh bg-gradient-to-b from-cyan-400 via-purple-400 to-pink-400">
       {/* Header */}
-      <div className="px-4 pt-6 pb-2">
-        <h1 className="text-3xl font-extrabold text-white text-center drop-shadow-md">
+      <div className="px-4 md:px-6 pt-6 pb-2">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-white text-center drop-shadow-md">
           Games
         </h1>
-        <p className="text-center text-white/80 text-sm mt-1">
+        <p className="text-center text-white/80 text-sm md:text-base mt-1">
           Learn through play!
         </p>
       </div>
