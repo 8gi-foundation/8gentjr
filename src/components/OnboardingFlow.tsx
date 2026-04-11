@@ -261,6 +261,7 @@ function StepProfile({
             color: 'var(--brand-text)',
             backgroundColor: 'white',
           }}
+          maxLength={50}
           autoComplete="given-name"
           aria-required="true"
         />
@@ -330,8 +331,11 @@ export default function OnboardingFlow() {
 
   const handleComplete = useCallback(
     (childName: string) => {
+      // SEC-J1: Sanitize child name — strip HTML tags, cap length
+      const sanitized = childName.replace(/<[^>]*>/g, '').slice(0, 50).trim();
+      if (!sanitized) return;
       updateSettings({
-        childName,
+        childName: sanitized,
         hasCompletedOnboarding: true,
       });
       router.replace('/talk');
