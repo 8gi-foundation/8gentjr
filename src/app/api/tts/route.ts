@@ -16,6 +16,11 @@ const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 const DEFAULT_VOICE_ID = process.env.ELEVENLABS_JR_VOICE_ID ?? 'IKne3meq5aSn9XLyUdCD';
 
 export async function GET(request: NextRequest) {
+  // engine=browser signals client wants browser TTS — no server work needed
+  if (request.nextUrl.searchParams.get('engine') === 'browser') {
+    return new NextResponse(null, { status: 204 });
+  }
+
   const text = request.nextUrl.searchParams.get('text')?.trim();
   const voiceId = request.nextUrl.searchParams.get('voice') || DEFAULT_VOICE_ID;
 
