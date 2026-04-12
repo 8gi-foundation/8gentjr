@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import Groq from 'groq-sdk';
+import { createAIProviderWithFallback } from '@/lib/ai-provider';
 
 /**
  * 8gent Jr — Parent Chat API
@@ -8,10 +8,8 @@ import Groq from 'groq-sdk';
  * their child's communication, vocabulary, and AAC strategy using
  * specialist knowledge. Not generalised — grounded in AAC research.
  *
- * Stack: Groq / llama-3.3-70b-versatile (more capable than 8b for nuanced Q&A)
+ * Stack: Ollama (local) → Groq / llama-3.3-70b-versatile (cloud fallback)
  */
-
-export const runtime = 'edge';
 
 const SYSTEM_PROMPT = `You are an expert AAC (Augmentative and Alternative Communication) specialist and speech-language pathologist advisor embedded in 8gent Jr, a communication app for children.
 
@@ -54,14 +52,6 @@ interface ChatRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const groqKey = process.env.GROQ_API_KEY;
-    if (!groqKey) {
-      return new Response(JSON.stringify({ error: 'GROQ_API_KEY not configured' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
     const body: ChatRequest = await request.json();
     const { messages } = body;
 
@@ -72,18 +62,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const groq = new Groq({ apiKey: groqKey });
+    const provider = await createAIProviderWithFallback('llama-3.3-70b-versatile');
 
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      max_tokens: 1024,
-      messages: [
-        { role: 'system', content: SYSTEM_PROMPT },
-        ...messages,
-      ],
-    });
+    if (!provider) {
+      return new Response(
+        JSON.stringify({
+          reply:
+            'AI unavailable offline — check AAC resources at aac.8gentjr.com',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
-    const content = completion.choices?.[0]?.message?.content ?? '';
+    const content = await provider.chat(
+      [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
+      { max_tokens: 1024 }
+    );
 
     return new Response(JSON.stringify({ reply: content }), {
       status: 200,

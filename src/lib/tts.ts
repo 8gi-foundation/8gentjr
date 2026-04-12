@@ -1,14 +1,15 @@
 /**
- * 8gent Jr — ElevenLabs TTS with Web Speech API fallback
+ * 8gent Jr — TTS
  *
- * Uses the /api/tts proxy endpoint for ElevenLabs synthesis.
- * Falls back to browser SpeechSynthesis when:
- *   - ElevenLabs API key is not configured
- *   - Server returns non-200
- *   - Network is offline
+ * Web Speech API is primary (free, local, offline-capable).
+ * ElevenLabs is opt-in premium — enable by:
+ *   - passing `useElevenLabs: true` in TTSOptions, OR
+ *   - setting NEXT_PUBLIC_USE_ELEVENLABS=true in the environment
  *
  * Issue: #53
  */
+
+import { getBestVoice } from './voice-selector';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -19,14 +20,16 @@ export interface TTSOptions {
   text: string;
   /** ElevenLabs voice ID (optional — server uses default if omitted) */
   voiceId?: string;
-  /** Speech rate 0.5–2.0 (default 1.0) */
+  /** Speech rate 0.5-2.0 (default 1.0) */
   rate?: number;
-  /** Volume 0.0–1.0 (default 1.0) */
+  /** Volume 0.0-1.0 (default 1.0) */
   volume?: number;
-  /** Stability 0.0–1.0 for ElevenLabs (default 0.5) */
+  /** Stability 0.0-1.0 for ElevenLabs (default 0.5) */
   stability?: number;
-  /** Similarity boost 0.0–1.0 for ElevenLabs (default 0.75) */
+  /** Similarity boost 0.0-1.0 for ElevenLabs (default 0.75) */
   similarityBoost?: number;
+  /** Opt-in to ElevenLabs premium TTS (default: false — uses browser TTS) */
+  useElevenLabs?: boolean;
 }
 
 export type TTSEngine = 'elevenlabs' | 'browser' | 'none';
@@ -69,14 +72,20 @@ export function isSpeaking(): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Detect available engine
+// Preferred engine
 // ---------------------------------------------------------------------------
 
-export function getAvailableEngine(): TTSEngine {
+export function getPreferredEngine(): TTSEngine {
   if (typeof window === 'undefined') return 'none';
-  // ElevenLabs is always available via proxy — actual availability
-  // is determined at call time by server response
-  return 'elevenlabs';
+  const envFlag = process.env.NEXT_PUBLIC_USE_ELEVENLABS === 'true';
+  if (envFlag) return 'elevenlabs';
+  if (window.speechSynthesis) return 'browser';
+  return 'none';
+}
+
+/** @deprecated Use getPreferredEngine() instead */
+export function getAvailableEngine(): TTSEngine {
+  return getPreferredEngine();
 }
 
 // ---------------------------------------------------------------------------
@@ -84,27 +93,40 @@ export function getAvailableEngine(): TTSEngine {
 // ---------------------------------------------------------------------------
 
 export async function speak(options: TTSOptions): Promise<TTSEngine> {
-  const { text, voiceId, rate = 1.0, volume = 1.0, stability = 0.5, similarityBoost = 0.75 } = options;
+  const {
+    text,
+    voiceId,
+    rate = 1.0,
+    volume = 1.0,
+    stability = 0.5,
+    similarityBoost = 0.75,
+    useElevenLabs = false,
+  } = options;
 
   if (!text || typeof window === 'undefined') return 'none';
 
   // Stop anything currently playing
   stopSpeaking();
 
-  // Try ElevenLabs first
-  try {
-    const engine = await speakElevenLabs(text, { voiceId, stability, similarityBoost, volume });
-    if (engine === 'elevenlabs') return 'elevenlabs';
-  } catch {
-    // Fall through to browser TTS
+  const elevenLabsEnabled =
+    useElevenLabs || process.env.NEXT_PUBLIC_USE_ELEVENLABS === 'true';
+
+  if (elevenLabsEnabled) {
+    // Premium path: try ElevenLabs, fall back to browser on failure
+    try {
+      const engine = await speakElevenLabs(text, { voiceId, stability, similarityBoost, volume });
+      if (engine === 'elevenlabs') return 'elevenlabs';
+    } catch {
+      // Fall through to browser TTS
+    }
   }
 
-  // Fallback: Web Speech API (caller should signal this to the user)
+  // Default primary path: Web Speech API (free, local, offline)
   return speakBrowser(text, { rate, volume });
 }
 
 // ---------------------------------------------------------------------------
-// ElevenLabs via /api/tts proxy
+// ElevenLabs via /api/tts proxy (premium opt-in)
 // ---------------------------------------------------------------------------
 
 async function speakElevenLabs(
@@ -118,11 +140,11 @@ async function speakElevenLabs(
   // 204 = not configured — fall back to browser TTS
   if (res.status === 204) return 'none';
 
-  // Other error — ElevenLabs is configured but failed; fail silently, no robot fallback
+  // Other error — ElevenLabs is configured but failed; fail silently
   if (!res.ok) return 'elevenlabs';
 
   const blob = await res.blob();
-  // Empty blob — configured but silent failure; don't trigger robot voice
+  // Empty blob — configured but silent failure
   if (blob.size === 0) return 'elevenlabs';
 
   const url = URL.createObjectURL(blob);
@@ -140,12 +162,9 @@ async function speakElevenLabs(
       audio.src = '';
       URL.revokeObjectURL(url);
       currentAudio = null;
-      // Don't resolve 'none' — would trigger browser TTS while ElevenLabs may still be audible
       resolve('elevenlabs');
     };
     audio.play().catch(() => {
-      // iOS Safari can reject play() after user gesture context expires during fetch.
-      // Resolve 'elevenlabs' to prevent robot voice from firing on top.
       audio.src = '';
       URL.revokeObjectURL(url);
       currentAudio = null;
@@ -155,7 +174,7 @@ async function speakElevenLabs(
 }
 
 // ---------------------------------------------------------------------------
-// Browser Web Speech API fallback
+// Browser Web Speech API (primary — free, local, offline)
 // ---------------------------------------------------------------------------
 
 function speakBrowser(
@@ -172,6 +191,11 @@ function speakBrowser(
     utterance.rate = Math.max(0.5, Math.min(2, opts.rate));
     utterance.volume = Math.max(0, Math.min(1, opts.volume));
     utterance.lang = 'en-US';
+
+    // Use best available child-friendly voice
+    const voice = getBestVoice();
+    if (voice) utterance.voice = voice;
+
     currentUtterance = utterance;
 
     utterance.onend = () => {
