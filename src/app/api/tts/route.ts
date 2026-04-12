@@ -53,7 +53,8 @@ export async function GET(request: NextRequest) {
     if (!res.ok) {
       const errText = await res.text().catch(() => 'Unknown error');
       console.error(`[TTS] ElevenLabs ${res.status}: ${errText}`);
-      return new NextResponse(null, { status: 204 });
+      // 503 = configured but failed (client should NOT fall back to browser TTS)
+      return new NextResponse(null, { status: 503 });
     }
 
     const audioBuffer = await res.arrayBuffer();
@@ -69,7 +70,8 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('[TTS] Error:', error);
-    return new NextResponse(null, { status: 204 });
+    // 503 = configured but network/fetch failed (client should NOT fall back to browser TTS)
+    return new NextResponse(null, { status: 503 });
   }
 }
 

@@ -16,15 +16,34 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 
+// ── Skip button — fixed bottom-right on every step ─────────
+
+function SkipButton({ onSkip }: { onSkip: () => void }) {
+  return (
+    <button
+      onClick={onSkip}
+      className="fixed bottom-6 right-5 z-50 px-5 py-3 rounded-2xl text-base font-semibold
+                 bg-white/90 backdrop-blur-sm border-2 shadow-md
+                 ios-press touch-target transition-all active:scale-95"
+      style={{ borderColor: 'var(--brand-border)', color: 'var(--brand-text-soft)' }}
+      aria-label="Skip onboarding"
+    >
+      Skip
+    </button>
+  );
+}
+
 // ── Step 1: The emotional hook ──────────────────────────
 
-function StepEmpathy({ onNext }: { onNext: () => void }) {
+function StepEmpathy({ onNext, onSkip }: { onNext: () => void; onSkip: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh px-6 text-center">
       {/* Soft background glow */}
       <div className="absolute inset-0 bg-gradient-to-b from-amber-50 via-orange-50 to-rose-50 -z-10" />
 
-      {/* Illustration: child reaching out */}
+      <SkipButton onSkip={onSkip} />
+
+      {/* Illustration: child communicating */}
       <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-amber-100 border-4 border-amber-200/60 flex items-center justify-center mb-8 shadow-lg shadow-amber-100/50">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
@@ -71,10 +90,12 @@ function StepEmpathy({ onNext }: { onNext: () => void }) {
 
 // ── Step 2: AAC as the bridge ───────────────────────────
 
-function StepSolution({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
+function StepSolution({ onNext, onBack, onSkip }: { onNext: () => void; onBack: () => void; onSkip: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh px-6 text-center">
       <div className="absolute inset-0 bg-gradient-to-b from-sky-50 via-blue-50 to-indigo-50 -z-10" />
+
+      <SkipButton onSkip={onSkip} />
 
       {/* Before / After visual */}
       <div className="flex items-center gap-4 mb-8">
@@ -83,11 +104,11 @@ function StepSolution({ onNext, onBack }: { onNext: () => void; onBack: () => vo
           <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="https://static.arasaac.org/pictograms/7340/7340_300.png"
+              src="https://static.arasaac.org/pictograms/35539/35539_300.png"
               alt="Child feeling frustrated"
               width={72}
               height={72}
-              className="w-16 h-16 sm:w-20 sm:h-20 object-contain opacity-60"
+              className="w-16 h-16 sm:w-20 sm:h-20 object-contain opacity-70"
             />
           </div>
           <span className="text-xs font-medium" style={{ color: 'var(--brand-text-muted)' }}>Before</span>
@@ -131,9 +152,9 @@ function StepSolution({ onNext, onBack }: { onNext: () => void; onBack: () => vo
       {/* Mini demo: 3 example AAC cards */}
       <div className="mt-6 flex gap-3" role="img" aria-label="Example AAC cards: I want, drink, please">
         {[
-          { label: 'I want', picto: '6579', bg: '#FFF59D', border: '#F59E0B' },
-          { label: 'drink', picto: '2410', bg: '#FFCC80', border: '#F97316' },
-          { label: 'please', picto: '5765', bg: '#A5D6A7', border: '#10B981' },
+          { label: 'I want', picto: '5441', bg: '#FFF59D', border: '#F59E0B' },
+          { label: 'drink',  picto: '6061', bg: '#FFCC80', border: '#F97316' },
+          { label: 'please', picto: '8195', bg: '#A5D6A7', border: '#10B981' },
         ].map((card) => (
           <div
             key={card.label}
@@ -190,16 +211,17 @@ function StepSolution({ onNext, onBack }: { onNext: () => void; onBack: () => vo
 function StepProfile({
   onComplete,
   onBack,
+  onSkip,
 }: {
   onComplete: (name: string) => void;
   onBack: () => void;
+  onSkip: () => void;
 }) {
   const [name, setName] = useState('');
   const [consent, setConsent] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Focus the name input when this step mounts
     nameRef.current?.focus();
   }, []);
 
@@ -214,6 +236,8 @@ function StepProfile({
   return (
     <div className="flex flex-col items-center justify-center min-h-dvh px-6 text-center">
       <div className="absolute inset-0 bg-gradient-to-b from-green-50 via-emerald-50 to-teal-50 -z-10" />
+
+      <SkipButton onSkip={onSkip} />
 
       {/* Welcome icon */}
       <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-emerald-100 border-4 border-emerald-200/60 flex items-center justify-center mb-6 shadow-lg shadow-emerald-100/50">
@@ -329,6 +353,11 @@ export default function OnboardingFlow() {
   const { updateSettings } = useApp();
   const router = useRouter();
 
+  const handleSkip = useCallback(() => {
+    updateSettings({ hasCompletedOnboarding: true });
+    router.replace('/talk');
+  }, [updateSettings, router]);
+
   const handleComplete = useCallback(
     (childName: string) => {
       // SEC-J1: Sanitize child name — strip HTML tags, cap length
@@ -345,9 +374,9 @@ export default function OnboardingFlow() {
 
   return (
     <div className="relative overflow-hidden">
-      {step === 0 && <StepEmpathy onNext={() => setStep(1)} />}
-      {step === 1 && <StepSolution onNext={() => setStep(2)} onBack={() => setStep(0)} />}
-      {step === 2 && <StepProfile onComplete={handleComplete} onBack={() => setStep(1)} />}
+      {step === 0 && <StepEmpathy onNext={() => setStep(1)} onSkip={handleSkip} />}
+      {step === 1 && <StepSolution onNext={() => setStep(2)} onBack={() => setStep(0)} onSkip={handleSkip} />}
+      {step === 2 && <StepProfile onComplete={handleComplete} onBack={() => setStep(1)} onSkip={handleSkip} />}
     </div>
   );
 }

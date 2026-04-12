@@ -37,12 +37,18 @@ export type TTSEngine = 'elevenlabs' | 'browser' | 'none';
 
 let currentAudio: HTMLAudioElement | null = null;
 let currentUtterance: SpeechSynthesisUtterance | null = null;
+let currentAbortController: AbortController | null = null;
 
 // ---------------------------------------------------------------------------
 // Stop any playing audio
 // ---------------------------------------------------------------------------
 
 export function stopSpeaking(): void {
+  // Cancel any in-flight ElevenLabs fetch
+  if (currentAbortController) {
+    currentAbortController.abort();
+    currentAbortController = null;
+  }
   if (currentAudio) {
     currentAudio.pause();
     currentAudio.src = '';
@@ -113,12 +119,24 @@ async function speakElevenLabs(
 ): Promise<TTSEngine> {
   const params = new URLSearchParams({ text });
   if (opts.voiceId) params.set('voice', opts.voiceId);
-  const res = await fetch(`/api/tts?${params.toString()}`);
+
+  const controller = new AbortController();
+  currentAbortController = controller;
+
+  let res: Response;
+  try {
+    res = await fetch(`/api/tts?${params.toString()}`, { signal: controller.signal });
+  } catch (err) {
+    // AbortError = user tapped something else — stay silent, don't trigger browser TTS
+    return 'elevenlabs';
+  } finally {
+    if (currentAbortController === controller) currentAbortController = null;
+  }
 
   // 204 = not configured — fall back to browser TTS
   if (res.status === 204) return 'none';
 
-  // Other error — ElevenLabs is configured but failed; fail silently, no robot fallback
+  // 503 = configured but failed — stay silent, no robot fallback
   if (!res.ok) return 'elevenlabs';
 
   const blob = await res.blob();
