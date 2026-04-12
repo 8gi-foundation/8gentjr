@@ -3,6 +3,7 @@ import { Inter, Fraunces } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 import { AppChrome } from '../components/AppChrome';
+import { ServiceWorkerRegistration } from '../components/ServiceWorkerRegistration';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -52,6 +53,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${fraunces.variable}`} data-theme="light">
       <body className="antialiased">
         <Providers>
+          <ServiceWorkerRegistration />
           <AppChrome>{children}</AppChrome>
         </Providers>
       </body>
