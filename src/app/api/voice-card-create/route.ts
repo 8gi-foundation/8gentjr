@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import Groq from 'groq-sdk';
+import { createAIProviderWithFallback } from '@/lib/ai-provider';
 
 /**
  * POST /api/voice-card-create
@@ -7,14 +7,12 @@ import Groq from 'groq-sdk';
  * Takes a parent's spoken request and returns a ready-to-render AAC card.
  *
  * Flow:
- *   1. Groq (llama-3.3-70b) extracts: label, ARASAAC search term, Fitzgerald category
+ *   1. Ollama (local) or Groq (llama-3.3-70b) extracts: label, ARASAAC search term, Fitzgerald category
  *   2. ARASAAC public API finds the best matching pictogram
  *   3. Returns structured card data — client animates the card into view
  *
- * Stack: Groq / llama-3.3-70b-versatile + ARASAAC public API (no key needed)
+ * Stack: Ollama (local, free) → Groq / llama-3.3-70b-versatile (cloud fallback) + ARASAAC public API (no key needed)
  */
-
-export const runtime = 'edge';
 
 const SYSTEM_PROMPT = `You are an AAC (Augmentative and Alternative Communication) vocabulary specialist.
 
@@ -74,14 +72,6 @@ async function findArasaacPictogram(searchTerm: string): Promise<{ id: number; i
 
 export async function POST(request: NextRequest) {
   try {
-    const groqKey = process.env.GROQ_API_KEY;
-    if (!groqKey) {
-      return new Response(JSON.stringify({ error: 'GROQ_API_KEY not configured' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
     const body: CardRequest = await request.json();
     const { speech } = body;
 
@@ -92,19 +82,22 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const groq = new Groq({ apiKey: groqKey });
+    const provider = await createAIProviderWithFallback('llama-3.3-70b-versatile');
 
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.3-70b-versatile',
-      max_tokens: 200,
-      temperature: 0.1, // deterministic — same request should return same card
-      messages: [
+    if (!provider) {
+      return new Response(
+        JSON.stringify({ error: 'AI unavailable — no local or cloud provider configured' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const raw = await provider.chat(
+      [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: speech.trim() },
       ],
-    });
-
-    const raw = completion.choices?.[0]?.message?.content ?? '';
+      { max_tokens: 200, temperature: 0.1 }
+    );
 
     // Parse JSON from response — model is instructed to return only JSON
     let parsed: { label: string; searchTerm: string; category: string; rationale?: string };

@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import Groq from 'groq-sdk';
+import { createAIProviderWithFallback } from '@/lib/ai-provider';
 
 /**
  * 8gent Jr — Autocomplete API
  *
- * Uses Groq (fast, free) for AI-powered word suggestions.
+ * Uses local Ollama (free) with Groq (free tier) as cloud fallback for AI-powered word suggestions.
  * Ported from NickOS autocomplete endpoint, adapted for 8gent Jr AAC.
  *
  * Issue: #53
  */
-
-export const runtime = 'edge';
 
 interface AutocompleteRequest {
   input: string;
@@ -19,14 +17,6 @@ interface AutocompleteRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const groqKey = process.env.GROQ_API_KEY;
-    if (!groqKey) {
-      return NextResponse.json(
-        { error: 'GROQ_API_KEY not configured', suggestions: [] },
-        { status: 500 }
-      );
-    }
-
     const body: AutocompleteRequest = await request.json();
     const { input, existingWords = [] } = body;
 
@@ -34,7 +24,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    const groq = new Groq({ apiKey: groqKey });
+    const provider = await createAIProviderWithFallback('llama-3.1-8b-instant');
+
+    if (!provider) {
+      return NextResponse.json({ suggestions: [], offline: true });
+    }
 
     const prompt = `You are an AAC (Augmentative and Alternative Communication) word suggestion assistant for a 7-year-old child.
 
@@ -50,13 +44,7 @@ Suggest 5 words that:
 
 Return ONLY a JSON array of 5 words, no explanation. Example: ["hello", "help", "happy", "home", "hungry"]`;
 
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 128,
-    });
-
-    const text = completion.choices?.[0]?.message?.content ?? '';
+    const text = await provider.chat([{ role: 'user', content: prompt }], { max_tokens: 128 });
 
     // Parse the response — expecting a JSON array
     let suggestions: string[] = [];

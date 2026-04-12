@@ -1,17 +1,15 @@
 import { NextRequest } from 'next/server';
-import Groq from 'groq-sdk';
+import { createAIProviderWithFallback } from '@/lib/ai-provider';
 
 /**
  * 8gent Jr — Sentence Improvement API (Magic Button)
  *
  * Takes raw AAC card words and returns a grammatically improved sentence.
- * Uses Groq (free, fast) for LLM-powered grammar correction.
+ * Uses local Ollama (free) with Groq (free tier) as cloud fallback.
  * Ported from NickOS improve-sentence endpoint.
  *
  * Issue: #53
  */
-
-export const runtime = 'edge';
 
 const SYSTEM_PROMPT = `You are an AAC sentence improver for children. Your job is to take words from communication cards and form natural sentences.
 
@@ -62,29 +60,30 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const groqKey = process.env.GROQ_API_KEY;
-
-    if (!groqKey) {
-      return new Response(JSON.stringify({ error: 'GROQ_API_KEY not configured' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const provider = await createAIProviderWithFallback('llama-3.1-8b-instant');
 
     const rawSentence = body.cards.join(' ');
 
-    const groq = new Groq({ apiKey: groqKey });
+    if (!provider) {
+      // Graceful degradation: return the raw sentence unchanged
+      return new Response(
+        JSON.stringify({
+          original: rawSentence,
+          improved: rawSentence,
+          explanation: 'AI unavailable — sentence returned as-is',
+          missing: [],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
-    const completion = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
-      max_tokens: 512,
-      messages: [
+    const content = await provider.chat(
+      [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: `Improve this AAC sentence: "${rawSentence}"` },
       ],
-    });
-
-    const content = completion.choices?.[0]?.message?.content;
+      { max_tokens: 512 }
+    );
 
     if (content) {
       return parseAndRespond(content, rawSentence);
