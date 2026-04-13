@@ -178,6 +178,16 @@ function IconParentChat({ color }: { color: string }) {
   );
 }
 
+function IconQuestion({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12.01" y2="17" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function IconSettings({ color }: { color: string }) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -198,6 +208,7 @@ const MORE_ITEMS: MoreItem[] = [
   { id: 'vsd', label: 'Scenes', icon: IconImage, href: '/vsd' },
   { id: 'parent-chat', label: 'Parent Chat', icon: IconParentChat, href: '/parent-chat' },
   { id: 'add', label: 'Add Card', icon: IconPlus, href: '/add' },
+  { id: 'help', label: 'Help', icon: IconQuestion, href: '/help' },
   { id: 'settings', label: 'My Stuff', icon: IconSettings, href: '/settings' },
 ];
 

@@ -9,14 +9,13 @@
 
 import { usePathname } from 'next/navigation';
 import { type ReactNode } from 'react';
-import { OfflineBanner } from './OfflineBanner';
 import Dock from './Dock';
 import { LockScreenGate } from './LockScreenGate';
 import { InstallPrompt } from './InstallPrompt';
 import { ParentalGate } from './ParentalGate';
 
 const CHROMELESS_ROUTES = ['/onboarding'];
-const UNGATED_ROUTES = ['/privacy', '/terms'];
+const UNGATED_ROUTES = ['/privacy', '/terms', '/help'];
 
 export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -31,7 +30,6 @@ export function AppChrome({ children }: { children: ReactNode }) {
   if (isChromeless) {
     return (
       <ParentalGate>
-        <OfflineBanner />
         <main>{children}</main>
       </ParentalGate>
     );
@@ -40,7 +38,6 @@ export function AppChrome({ children }: { children: ReactNode }) {
   return (
     <ParentalGate>
       <LockScreenGate>
-        <OfflineBanner />
         <InstallPrompt />
         <main className="pb-safe-dock">{children}</main>
         <Dock />
