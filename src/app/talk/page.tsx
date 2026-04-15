@@ -34,7 +34,10 @@ export default function TalkPage() {
     : undefined;
 
   return (
-    <div className="h-dvh flex flex-col bg-gray-50 overflow-hidden">
+    <div
+      className="flex flex-col bg-gray-50 overflow-hidden"
+      style={{ height: 'calc(100dvh - 72px - env(safe-area-inset-bottom, 0px))' }}
+    >
 
       {/* ── Tab bar ──────────────────────────────────────── */}
       <div className="flex shrink-0 bg-gray-800" role="tablist" aria-label="Talk sections">

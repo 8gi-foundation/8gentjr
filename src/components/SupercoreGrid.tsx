@@ -291,7 +291,10 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   ];
 
   return (
-    <div className="flex flex-col h-screen min-h-[100dvh] bg-gray-50 font-sans">
+    <div
+      className="flex flex-col bg-gray-50 font-sans"
+      style={{ height: 'calc(100dvh - 72px - env(safe-area-inset-bottom, 0px))' }}
+    >
       {/* Sentence Strip */}
       <SharedSentenceBar
         words={sentence}
