@@ -224,14 +224,27 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
       )}
 
       {/* ── Phrases list ─────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto px-3 pt-3 pb-2">
+      <div className="flex-1 overflow-y-auto px-3 pt-3 pb-4 min-h-0">
         {phrases.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-14 text-center px-4">
-            <span className="text-5xl">💬</span>
-            <p className="font-bold text-[#1a1a2e] text-lg">No phrases saved</p>
-            <p className="text-[#8a7e70] text-sm max-w-[260px] leading-relaxed">
-              Save sentences you use often. Tap to speak any time, without rebuilding it.
+          <div className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center">
+            <p className="font-bold text-[#1a1a2e] text-xl leading-snug">
+              Save your favourite sayings here
             </p>
+            <p className="text-[#8a7e70] text-sm max-w-[240px] leading-relaxed">
+              One tap to speak — no building needed
+            </p>
+            <button
+              onClick={() => {
+                setInputMode("text");
+                setTimeout(() => inputRef.current?.focus(), 100);
+              }}
+              className="w-24 h-24 rounded-full bg-[#E8610A] text-white flex items-center justify-center shadow-xl active:scale-90 transition-transform mt-2"
+              aria-label="Add a phrase"
+              style={{ fontSize: 56, lineHeight: 1 }}
+            >
+              +
+            </button>
+            <p className="text-xs text-[#8a7e70] font-medium">Tap to add a phrase</p>
           </div>
         ) : (
           Object.entries(grouped).map(([cat, items]) => (

@@ -57,7 +57,7 @@ export default function TalkPage() {
       </div>
 
       {/* ── Main content ─────────────────────────────────── */}
-      <div className="flex-1 overflow-hidden" role="tabpanel">
+      <div className="flex-1 overflow-hidden min-h-0" role="tabpanel">
         {viewMode === "core"    && <SupercoreGrid />}
         {viewMode === "browse"  && <AACHome />}
         {viewMode === "phrases" && <QuickPhrases currentSentence={sentenceText} />}
