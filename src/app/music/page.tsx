@@ -5,11 +5,13 @@ import SongCreator from '@/components/SongCreator';
 import { ChladniVisualizer } from '@/components/ChladniVisualizer';
 import { DrumPads } from '@/components/DrumPads';
 import { XylophoneKeys } from '@/components/XylophoneKeys';
+import { SoundDetective } from '@/components/SoundDetective';
 
 const TABS = [
   { id: 'songs',       label: 'My Songs',   icon: '🎵' },
   { id: 'create',      label: 'Create',     icon: '✨' },
   { id: 'instruments', label: 'Instruments', icon: '🎹' },
+  { id: 'listen',      label: 'Listen',     icon: '👂' },
   { id: 'soundart',    label: 'Sound Art',  icon: '✦' },
 ] as const;
 
@@ -178,6 +180,7 @@ export default function MusicHubPage() {
         {tab === 'songs' && <MySongsTab />}
         {tab === 'create' && <SongCreator />}
         {tab === 'instruments' && <InstrumentsPanel />}
+        {tab === 'listen' && <SoundDetective />}
         {tab === 'soundart' && <ChladniVisualizer />}
       </div>
     </div>
