@@ -158,13 +158,13 @@ export default function MusicHubPage() {
 
   return (
     <div className="min-h-dvh flex flex-col items-center bg-[#FFF8F0] pb-24">
-      {/* Tab bar — iOS segmented control style */}
-      <div className="flex gap-1.5 mt-5 mb-5 p-1 rounded-[14px] bg-[#f0e6d6]">
+      {/* Tab bar — scrollable on mobile, iOS segmented control style */}
+      <div className="flex gap-1.5 mt-5 mb-5 p-1 rounded-[14px] bg-[#f0e6d6] overflow-x-auto scrollbar-none w-[calc(100%-2rem)] max-w-2xl">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-3 py-2 md:px-5 md:py-2.5 border-none rounded-[10px] font-bold text-[13px] md:text-sm cursor-pointer transition-all duration-100 whitespace-nowrap active:scale-95 ${
+            className={`shrink-0 px-3 py-2 md:px-5 md:py-2.5 border-none rounded-[10px] font-bold text-[13px] md:text-sm cursor-pointer transition-all duration-100 whitespace-nowrap active:scale-95 min-h-[44px] ${
               tab === t.id
                 ? 'bg-white text-[#1a1a2e] shadow-md'
                 : 'bg-transparent text-[#8a7e70]'

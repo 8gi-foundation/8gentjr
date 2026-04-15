@@ -362,7 +362,7 @@ export function ChladniVisualizer() {
       {/* Responsive layout: stacked on phone, side-by-side on tablet+ */}
       <div className="flex flex-col md:flex-row md:items-start md:gap-6 lg:gap-8 gap-3 max-w-5xl mx-auto">
         {/* Chladni plate canvas — grows on larger screens */}
-        <div className="relative w-full md:flex-1 md:max-w-[560px] aspect-square rounded-2xl overflow-hidden shadow-xl shrink-0">
+        <div className="relative w-full md:flex-1 md:max-w-[560px] aspect-square max-h-[42vh] md:max-h-none rounded-2xl overflow-hidden shadow-xl shrink-0">
           <canvas
             ref={canvasRef}
             className="w-full h-full block"

@@ -3,55 +3,67 @@
 /**
  * Talk Page — main AAC communication hub for 8gent Jr.
  *
- * Primary view: SupercoreGrid — 50 core words, fixed Fitzgerald Key layout.
- * Secondary: Browse Topics (category grid → word grid).
- *
- * Issue #20: SupercoreGrid is the foundation of speech therapy motor planning.
+ * Three views:
+ *   core    — SupercoreGrid (50 fixed core words, Fitzgerald Key)
+ *   browse  — AACHome (category grid → word grid)
+ *   phrases — QuickPhrases (saved sentences, 4 input methods)
  */
 
 import { useState } from "react";
 import { SupercoreGrid } from "@/components/SupercoreGrid";
 import AACHome from "@/components/AACHome";
 import { VoiceCardCreator } from "@/components/VoiceCardCreator";
+import { QuickPhrases } from "@/components/QuickPhrases";
+import { useSentence } from "@/hooks/useSentence";
 
-type ViewMode = "core" | "browse";
+type ViewMode = "core" | "browse" | "phrases";
+
+const TABS: { id: ViewMode; label: string; icon: string }[] = [
+  { id: "core",    label: "Core",    icon: "⊞" },
+  { id: "browse",  label: "Browse",  icon: "🗂" },
+  { id: "phrases", label: "Phrases", icon: "💬" },
+];
 
 export default function TalkPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("core");
+  const { words: sentence } = useSentence();
+
+  // Sentence text for QuickPhrases "save current sentence" prompt
+  const sentenceText = sentence.length > 0
+    ? sentence.map(w => w.label).join(" ")
+    : undefined;
 
   return (
-    <div className="min-h-dvh flex flex-col bg-gray-50">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-3 pb-2 bg-gray-800 shrink-0">
-        <button
-          onClick={() => setViewMode("core")}
-          className={`flex items-center gap-1 text-white/70 hover:text-white transition-all duration-100 active:scale-90 ${viewMode === "core" ? "invisible" : ""}`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          <span className="text-base font-medium">Core</span>
-        </button>
+    <div className="h-dvh flex flex-col bg-gray-50 overflow-hidden">
 
-        <h1 className="text-white text-lg font-bold">
-          {viewMode === "core" ? "Talk" : "Browse Topics"}
-        </h1>
-
-        <button
-          onClick={() => setViewMode(viewMode === "core" ? "browse" : "core")}
-          className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition-all duration-100 active:scale-90"
-        >
-          {viewMode === "core" ? "Browse" : "Core"}
-        </button>
+      {/* ── Tab bar ──────────────────────────────────────── */}
+      <div className="flex shrink-0 bg-gray-800" role="tablist" aria-label="Talk sections">
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            role="tab"
+            aria-selected={viewMode === tab.id}
+            onClick={() => setViewMode(tab.id)}
+            className={`flex-1 flex flex-col items-center justify-center gap-0.5 py-3 min-h-[60px] border-b-[3px] transition-colors duration-100 ${
+              viewMode === tab.id
+                ? "text-white border-[#E8610A]"
+                : "text-white/45 border-transparent"
+            }`}
+          >
+            <span className="text-xl leading-none" aria-hidden="true">{tab.icon}</span>
+            <span className="text-[11px] font-bold tracking-wide">{tab.label}</span>
+          </button>
+        ))}
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 overflow-hidden">
-        {viewMode === "core" && <SupercoreGrid />}
-        {viewMode === "browse" && <AACHome />}
+      {/* ── Main content ─────────────────────────────────── */}
+      <div className="flex-1 overflow-hidden" role="tabpanel">
+        {viewMode === "core"    && <SupercoreGrid />}
+        {viewMode === "browse"  && <AACHome />}
+        {viewMode === "phrases" && <QuickPhrases currentSentence={sentenceText} />}
       </div>
 
-      {/* Parent voice card creator — floating mic, bottom-left */}
+      {/* ── Parent voice card creator — floating mic ─────── */}
       <VoiceCardCreator />
     </div>
   );
