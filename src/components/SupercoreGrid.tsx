@@ -30,6 +30,7 @@ import { logWord } from '@/lib/session-logger';
 import { speak as elevenLabsSpeak } from '@/lib/tts';
 import { SharedSentenceBar } from '@/components/SharedSentenceBar';
 import { useSentence } from '@/hooks/useSentence';
+import { useApp } from '@/context/AppContext';
 
 // =============================================================================
 // Fitzgerald Key Color Definitions (mapped from shared vocabulary system)
@@ -181,7 +182,7 @@ function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) 
       onPointerUp={() => { setPressed(false); onTap(word); }}
       onPointerLeave={() => setPressed(false)}
       className={`flex flex-col items-center justify-center rounded-xl border-[3px] cursor-pointer select-none touch-manipulation py-1.5 px-0.5 text-center leading-tight transition-transform duration-100 ${cls.bg} ${cls.text} ${cls.border} ${pressed ? 'scale-[0.92]' : 'scale-100'}`}
-      style={{ minHeight: 72 }}
+      style={{ minHeight: 80 }}
       aria-label={word.label}
       role="button"
     >
@@ -196,7 +197,47 @@ function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) 
           loading="lazy"
         />
       )}
-      <span className="font-bold text-[14px] leading-none mt-0.5 w-full truncate px-0.5">{word.label}</span>
+      <span className="font-bold text-[14px] leading-none mt-0.5 w-full line-clamp-2 px-0.5">{word.label}</span>
+    </button>
+  );
+}
+
+// =============================================================================
+// Intro Card Button — for personalised greeting cards
+// =============================================================================
+
+function IntroCardButton({
+  label,
+  arasaacId,
+  onTap,
+}: {
+  label: string;
+  arasaacId?: number;
+  onTap: () => void;
+}) {
+  const cls = FITZGERALD_CLASSES['social'];
+  const [pressed, setPressed] = useState(false);
+  return (
+    <button
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={() => { setPressed(false); onTap(); }}
+      onPointerLeave={() => setPressed(false)}
+      className={`flex flex-col items-center justify-center rounded-xl border-[3px] cursor-pointer select-none touch-manipulation py-1.5 px-1 text-center leading-tight transition-transform duration-100 ${cls.bg} ${cls.text} ${cls.border} ${pressed ? 'scale-[0.92]' : 'scale-100'}`}
+      style={{ minHeight: 80 }}
+      aria-label={label}
+    >
+      {arasaacId && (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={ARASAAC_IMG(arasaacId)}
+          alt=""
+          width={44}
+          height={44}
+          className="w-[44px] h-[44px] object-contain pointer-events-none"
+          loading="lazy"
+        />
+      )}
+      <span className="font-bold text-[12px] leading-tight mt-0.5 w-full line-clamp-2 px-0.5">{label}</span>
     </button>
   );
 }
@@ -212,6 +253,8 @@ export interface SupercoreGridProps {
 
 export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const { words: sentence, addWord, removeWord, clear } = useSentence();
+  const { settings } = useApp();
+  const childName = settings.childName?.trim() || '';
   const [cols, setCols] = useState(10);
   const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [engineFallback, setEngineFallback] = useState(false);
@@ -279,6 +322,25 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
     if (typeof window !== 'undefined') window.speechSynthesis?.cancel();
   }, [clear]);
 
+  const handleIntroTap = useCallback((label: string, arasaacId?: number) => {
+    speakText(label);
+    addWord({
+      label,
+      imageUrl: arasaacId ? ARASAAC_IMG(arasaacId) : undefined,
+      className: `${FITZGERALD_CLASSES['social'].bg} ${FITZGERALD_CLASSES['social'].text} ${FITZGERALD_CLASSES['social'].border}`,
+    });
+    logWord(label);
+  }, [speakText, addWord]);
+
+  // Intro cards — only when child name is known
+  const introCols = Math.min(cols, 4);
+  const introCards: { label: string; arasaacId?: number }[] = childName ? [
+    { label: `Hi! I'm ${childName}`, arasaacId: 27507 },
+    { label: `My name is ${childName}`, arasaacId: 9853 },
+    { label: 'Nice to meet you!', arasaacId: 11554 },
+    { label: 'Hello!', arasaacId: 6449 },
+  ] : [];
+
   const legendItems: { category: FitzgeraldCategory; label: string }[] = [
     { category: 'people', label: 'people' },
     { category: 'verbs', label: 'verbs' },
@@ -321,14 +383,38 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
         })}
       </div>
 
-      {/* Core Word Grid */}
-      <div
-        className="flex-1 grid gap-1 px-1.5 pb-2 pt-1 overflow-auto"
-        style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
-      >
-        {SUPERCORE_50.map(word => (
-          <CoreWordButton key={word.id} word={word} onTap={handleWordTap} />
-        ))}
+      {/* Scrollable grid area */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+
+        {/* Personalised intro row */}
+        {introCards.length > 0 && (
+          <div className="px-1.5 pt-2 pb-1">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 px-0.5">
+              Say hello — {childName}
+            </p>
+            <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${introCols}, 1fr)` }}>
+              {introCards.map((card, i) => (
+                <IntroCardButton
+                  key={i}
+                  label={card.label}
+                  arasaacId={card.arasaacId}
+                  onTap={() => handleIntroTap(card.label, card.arasaacId)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Core Word Grid */}
+        <div
+          className="grid gap-1 px-1.5 pb-2 pt-1"
+          style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
+        >
+          {SUPERCORE_50.map(word => (
+            <CoreWordButton key={word.id} word={word} onTap={handleWordTap} />
+          ))}
+        </div>
+
       </div>
     </div>
   );
