@@ -35,28 +35,56 @@ export type TTSEngine = 'elevenlabs' | 'browser' | 'none';
 // State
 // ---------------------------------------------------------------------------
 
-let currentAudio: HTMLAudioElement | null = null;
+// Single pooled Audio element reused across taps. iOS Safari throttles / kills
+// tabs that rapidly create many Audio + Blob URLs; reusing one element prevents
+// the "crash + refresh" that happens when a child taps cards very fast.
+let pooledAudio: HTMLAudioElement | null = null;
+let currentBlobUrl: string | null = null;
+let currentResolve: ((engine: TTSEngine) => void) | null = null;
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 let currentAbortController: AbortController | null = null;
 
 /** Client-side blob cache: text -> audio Blob. Avoids re-fetching for repeated words. */
 const audioCache = new Map<string, Blob>();
 
+function getPooledAudio(): HTMLAudioElement {
+  if (!pooledAudio) pooledAudio = new Audio();
+  return pooledAudio;
+}
+
+function revokeCurrentBlobUrl() {
+  if (currentBlobUrl) {
+    URL.revokeObjectURL(currentBlobUrl);
+    currentBlobUrl = null;
+  }
+}
+
+function resolvePending() {
+  if (currentResolve) {
+    const r = currentResolve;
+    currentResolve = null;
+    r('elevenlabs');
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Stop any playing audio
 // ---------------------------------------------------------------------------
 
 export function stopSpeaking(): void {
-  // Cancel any in-flight ElevenLabs fetch
   if (currentAbortController) {
     currentAbortController.abort();
     currentAbortController = null;
   }
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio.src = '';
-    currentAudio = null;
+  if (pooledAudio) {
+    pooledAudio.pause();
+    // NOTE: do NOT reset pooledAudio.src here. On iOS Safari, assigning
+    // src = '' puts the element into a broken state where the next .src
+    // assignment fails silently — the first tap speaks, the rest don't.
+    // playCachedBlob will overwrite src cleanly on the next tap.
   }
+  revokeCurrentBlobUrl();
+  resolvePending();
   if (typeof window !== 'undefined' && window.speechSynthesis) {
     window.speechSynthesis.cancel();
   }
@@ -68,7 +96,7 @@ export function stopSpeaking(): void {
 // ---------------------------------------------------------------------------
 
 export function isSpeaking(): boolean {
-  if (currentAudio && !currentAudio.paused && !currentAudio.ended) {
+  if (pooledAudio && !pooledAudio.paused && !pooledAudio.ended) {
     return true;
   }
   if (typeof window !== 'undefined' && window.speechSynthesis?.speaking) {
@@ -116,31 +144,34 @@ export async function speak(options: TTSOptions): Promise<TTSEngine> {
 // ElevenLabs via /api/tts proxy
 // ---------------------------------------------------------------------------
 
-/** Play a cached blob — creates a fresh Audio element each time */
+/** Play a cached blob via the pooled Audio element — safe for rapid taps */
 function playCachedBlob(blob: Blob, volume: number): Promise<TTSEngine> {
+  // Resolve any still-pending promise from the previous tap before reassigning handlers
+  resolvePending();
+  revokeCurrentBlobUrl();
+
+  const audio = getPooledAudio();
+  audio.pause();
   const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
+  currentBlobUrl = url;
+  audio.src = url;
   audio.volume = Math.max(0, Math.min(1, volume));
-  currentAudio = audio;
 
   return new Promise<TTSEngine>((resolve) => {
-    audio.onended = () => {
-      URL.revokeObjectURL(url);
-      currentAudio = null;
-      resolve('elevenlabs');
+    currentResolve = resolve;
+    const done = () => {
+      if (currentResolve === resolve) {
+        currentResolve = null;
+        if (currentBlobUrl === url) {
+          URL.revokeObjectURL(url);
+          currentBlobUrl = null;
+        }
+        resolve('elevenlabs');
+      }
     };
-    audio.onerror = () => {
-      audio.src = '';
-      URL.revokeObjectURL(url);
-      currentAudio = null;
-      resolve('elevenlabs');
-    };
-    audio.play().catch(() => {
-      audio.src = '';
-      URL.revokeObjectURL(url);
-      currentAudio = null;
-      resolve('elevenlabs');
-    });
+    audio.onended = done;
+    audio.onerror = done;
+    audio.play().catch(done);
   });
 }
 

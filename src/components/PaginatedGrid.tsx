@@ -17,6 +17,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { TapCard } from '@/components/TapCard';
 
 // =============================================================================
 // Types
@@ -140,18 +141,6 @@ export default function PaginatedGrid({
     return () => window.removeEventListener('keydown', handleKey);
   }, [currentPage, goToPage]);
 
-  // --- Card press feedback ---
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.transform = 'scale(0.93)';
-    e.currentTarget.style.borderColor = 'var(--brand-accent)';
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.transform = 'scale(1)';
-    e.currentTarget.style.borderColor = '';
-  };
-
   return (
     <div>
       {/* Swipeable track */}
@@ -187,15 +176,13 @@ export default function PaginatedGrid({
                 style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
               >
                 {pageCards.map((card) => (
-                  <button
+                  <TapCard
                     key={card.id}
-                    onClick={() => onCardTap?.(card)}
-                    onPointerDown={handlePointerDown}
-                    onPointerUp={handlePointerUp}
-                    onPointerLeave={handlePointerUp}
-                    className="flex flex-col items-center justify-center gap-1 border-2 border-gray-300 rounded-xl px-2 py-3 cursor-pointer min-h-[88px] transition-transform duration-100 select-none touch-manipulation"
+                    onTap={() => onCardTap?.(card)}
+                    ariaLabel={card.label}
+                    pressScale={0.93}
+                    className="flex flex-col items-center justify-center gap-1 border-2 border-gray-300 rounded-xl px-2 py-3 min-h-[88px]"
                     style={{ backgroundColor: card.bgColor ?? '#ffffff' }}
-                    aria-label={card.label}
                   >
                     {card.symbolUrl ? (
                       <img src={card.symbolUrl} alt={card.label} className="w-12 h-12 object-contain" />
@@ -207,7 +194,7 @@ export default function PaginatedGrid({
                     <span className="text-base font-semibold text-[var(--warm-text)] text-center leading-tight overflow-hidden line-clamp-2 break-words">
                       {card.label}
                     </span>
-                  </button>
+                  </TapCard>
                 ))}
               </div>
             </div>

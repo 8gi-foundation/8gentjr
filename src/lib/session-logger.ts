@@ -54,14 +54,46 @@ function saveEvents(events: SessionEvent[]): void {
 // Public API
 // ---------------------------------------------------------------------------
 
-/** Append an event to the log */
+// In-memory buffer so taps don't pay the cost of reading + rewriting the
+// whole event log on every call. Flushed on idle / page hide.
+let _pending: SessionEvent[] = [];
+let _flushScheduled = false;
+
+function scheduleFlush(): void {
+  if (_flushScheduled || typeof window === "undefined") return;
+  _flushScheduled = true;
+  const flush = () => {
+    _flushScheduled = false;
+    if (_pending.length === 0) return;
+    const events = getEvents();
+    events.push(..._pending);
+    _pending = [];
+    saveEvents(events);
+  };
+  const ric = (window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number })
+    .requestIdleCallback;
+  if (ric) ric(flush, { timeout: 500 });
+  else setTimeout(flush, 250);
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden" && _pending.length > 0) {
+      const events = getEvents();
+      events.push(..._pending);
+      _pending = [];
+      saveEvents(events);
+    }
+  });
+}
+
+/** Append an event to the log (batched — safe to call rapidly) */
 export function logEvent(
   type: SessionEvent["type"],
   data: Record<string, unknown> = {},
 ): void {
-  const events = getEvents();
-  events.push({ type, timestamp: Date.now(), data });
-  saveEvents(events);
+  _pending.push({ type, timestamp: Date.now(), data });
+  scheduleFlush();
 }
 
 /** Convenience: log a word usage event */
@@ -76,9 +108,9 @@ export function clearOldLogs(daysToKeep = 30): void {
   saveEvents(events);
 }
 
-/** Compute aggregate stats from stored events */
+/** Compute aggregate stats from stored events (includes unflushed pending) */
 export function getSessionStats(): SessionStats {
-  const events = getEvents();
+  const events = [...getEvents(), ..._pending];
   const now = Date.now();
 
   // --- words today ---

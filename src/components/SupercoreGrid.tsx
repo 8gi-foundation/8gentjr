@@ -29,6 +29,7 @@ import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
 import { logWord } from '@/lib/session-logger';
 import { speak as elevenLabsSpeak, preloadAudio } from '@/lib/tts';
 import { SharedSentenceBar } from '@/components/SharedSentenceBar';
+import { TapCard } from '@/components/TapCard';
 import { useSentence } from '@/hooks/useSentence';
 import { useApp } from '@/context/AppContext';
 
@@ -172,19 +173,15 @@ const SUPERCORE_50: CoreWord[] = [
 // Single Core Word Button
 // =============================================================================
 
-function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) => void }) {
+const CoreWordButton = React.memo(function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) => void }) {
   const cls = FITZGERALD_CLASSES[word.category];
-  const [pressed, setPressed] = useState(false);
-
+  const handleTap = useCallback(() => onTap(word), [onTap, word]);
   return (
-    <button
-      onPointerDown={() => setPressed(true)}
-      onPointerUp={() => { setPressed(false); onTap(word); }}
-      onPointerLeave={() => setPressed(false)}
-      className={`flex flex-col items-center justify-center rounded-xl border-[3px] cursor-pointer select-none touch-manipulation py-1.5 px-0.5 text-center leading-tight transition-transform duration-100 ${cls.bg} ${cls.text} ${cls.border} ${pressed ? 'scale-[0.92]' : 'scale-100'}`}
+    <TapCard
+      onTap={handleTap}
+      ariaLabel={word.label}
+      className={`flex flex-col items-center justify-center rounded-xl border-[3px] py-1.5 px-0.5 text-center leading-tight ${cls.bg} ${cls.text} ${cls.border}`}
       style={{ minHeight: 80 }}
-      aria-label={word.label}
-      role="button"
     >
       {word.arasaacId && (
         /* eslint-disable-next-line @next/next/no-img-element */
@@ -198,33 +195,31 @@ function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) 
         />
       )}
       <span className="font-bold text-[14px] leading-none mt-0.5 w-full line-clamp-2 px-0.5">{word.label}</span>
-    </button>
+    </TapCard>
   );
-}
+});
 
 // =============================================================================
 // Intro Card Button — for personalised greeting cards
 // =============================================================================
 
-function IntroCardButton({
+const IntroCardButton = React.memo(function IntroCardButton({
   label,
   arasaacId,
   onTap,
 }: {
   label: string;
   arasaacId?: number;
-  onTap: () => void;
+  onTap: (label: string, arasaacId?: number) => void;
 }) {
   const cls = FITZGERALD_CLASSES['social'];
-  const [pressed, setPressed] = useState(false);
+  const handleTap = useCallback(() => onTap(label, arasaacId), [onTap, label, arasaacId]);
   return (
-    <button
-      onPointerDown={() => setPressed(true)}
-      onPointerUp={() => { setPressed(false); onTap(); }}
-      onPointerLeave={() => setPressed(false)}
-      className={`flex flex-col items-center justify-center rounded-xl border-[3px] cursor-pointer select-none touch-manipulation py-1.5 px-1 text-center leading-tight transition-transform duration-100 ${cls.bg} ${cls.text} ${cls.border} ${pressed ? 'scale-[0.92]' : 'scale-100'}`}
+    <TapCard
+      onTap={handleTap}
+      ariaLabel={label}
+      className={`flex flex-col items-center justify-center rounded-xl border-[3px] py-1.5 px-1 text-center leading-tight ${cls.bg} ${cls.text} ${cls.border}`}
       style={{ minHeight: 80 }}
-      aria-label={label}
     >
       {arasaacId && (
         /* eslint-disable-next-line @next/next/no-img-element */
@@ -238,9 +233,9 @@ function IntroCardButton({
         />
       )}
       <span className="font-bold text-[12px] leading-tight mt-0.5 w-full line-clamp-2 px-0.5">{label}</span>
-    </button>
+    </TapCard>
   );
-}
+});
 
 // =============================================================================
 // Main Supercore Grid Component
@@ -403,7 +398,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
                   key={i}
                   label={card.label}
                   arasaacId={card.arasaacId}
-                  onTap={() => handleIntroTap(card.label, card.arasaacId)}
+                  onTap={handleIntroTap}
                 />
               ))}
             </div>
