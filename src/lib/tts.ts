@@ -39,6 +39,9 @@ let currentAudio: HTMLAudioElement | null = null;
 let currentUtterance: SpeechSynthesisUtterance | null = null;
 let currentAbortController: AbortController | null = null;
 
+/** Client-side blob cache: text -> audio Blob. Avoids re-fetching for repeated words. */
+const audioCache = new Map<string, Blob>();
+
 // ---------------------------------------------------------------------------
 // Stop any playing audio
 // ---------------------------------------------------------------------------
@@ -113,10 +116,46 @@ export async function speak(options: TTSOptions): Promise<TTSEngine> {
 // ElevenLabs via /api/tts proxy
 // ---------------------------------------------------------------------------
 
+/** Play a cached blob — creates a fresh Audio element each time */
+function playCachedBlob(blob: Blob, volume: number): Promise<TTSEngine> {
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url);
+  audio.volume = Math.max(0, Math.min(1, volume));
+  currentAudio = audio;
+
+  return new Promise<TTSEngine>((resolve) => {
+    audio.onended = () => {
+      URL.revokeObjectURL(url);
+      currentAudio = null;
+      resolve('elevenlabs');
+    };
+    audio.onerror = () => {
+      audio.src = '';
+      URL.revokeObjectURL(url);
+      currentAudio = null;
+      resolve('elevenlabs');
+    };
+    audio.play().catch(() => {
+      audio.src = '';
+      URL.revokeObjectURL(url);
+      currentAudio = null;
+      resolve('elevenlabs');
+    });
+  });
+}
+
 async function speakElevenLabs(
   text: string,
   opts: { voiceId?: string; stability: number; similarityBoost: number; volume: number }
 ): Promise<TTSEngine> {
+  const cacheKey = `${text}|${opts.voiceId || ''}`;
+
+  // Hit cache — instant playback, no network
+  const cached = audioCache.get(cacheKey);
+  if (cached) {
+    return playCachedBlob(cached, opts.volume);
+  }
+
   const params = new URLSearchParams({ text });
   if (opts.voiceId) params.set('voice', opts.voiceId);
 
@@ -126,7 +165,7 @@ async function speakElevenLabs(
   let res: Response;
   try {
     res = await fetch(`/api/tts?${params.toString()}`, { signal: controller.signal });
-  } catch (err) {
+  } catch {
     // AbortError = user tapped something else — stay silent, don't trigger browser TTS
     return 'elevenlabs';
   } finally {
@@ -143,33 +182,36 @@ async function speakElevenLabs(
   // Empty blob — configured but silent failure; don't trigger robot voice
   if (blob.size === 0) return 'elevenlabs';
 
-  const url = URL.createObjectURL(blob);
-  const audio = new Audio(url);
-  audio.volume = Math.max(0, Math.min(1, opts.volume));
-  currentAudio = audio;
+  // Cache the blob for instant replay
+  audioCache.set(cacheKey, blob);
 
-  return new Promise<TTSEngine>((resolve) => {
-    audio.onended = () => {
-      URL.revokeObjectURL(url);
-      currentAudio = null;
-      resolve('elevenlabs');
-    };
-    audio.onerror = () => {
-      audio.src = '';
-      URL.revokeObjectURL(url);
-      currentAudio = null;
-      // Don't resolve 'none' — would trigger browser TTS while ElevenLabs may still be audible
-      resolve('elevenlabs');
-    };
-    audio.play().catch(() => {
-      // iOS Safari can reject play() after user gesture context expires during fetch.
-      // Resolve 'elevenlabs' to prevent robot voice from firing on top.
-      audio.src = '';
-      URL.revokeObjectURL(url);
-      currentAudio = null;
-      resolve('elevenlabs');
-    });
-  });
+  return playCachedBlob(blob, opts.volume);
+}
+
+// ---------------------------------------------------------------------------
+// Preload — fetch and cache audio for a list of words (fire and forget)
+// ---------------------------------------------------------------------------
+
+export function preloadAudio(words: string[], voiceId?: string): void {
+  for (const text of words) {
+    const cacheKey = `${text}|${voiceId || ''}`;
+    if (audioCache.has(cacheKey)) continue;
+
+    const params = new URLSearchParams({ text });
+    if (voiceId) params.set('voice', voiceId);
+
+    fetch(`/api/tts?${params.toString()}`)
+      .then((res) => {
+        if (!res.ok || res.status === 204) return;
+        return res.blob();
+      })
+      .then((blob) => {
+        if (blob && blob.size > 0) audioCache.set(cacheKey, blob);
+      })
+      .catch(() => {
+        /* silent — preload is best-effort */
+      });
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -27,7 +27,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
 import { logWord } from '@/lib/session-logger';
-import { speak as elevenLabsSpeak } from '@/lib/tts';
+import { speak as elevenLabsSpeak, preloadAudio } from '@/lib/tts';
 import { SharedSentenceBar } from '@/components/SharedSentenceBar';
 import { useSentence } from '@/hooks/useSentence';
 import { useApp } from '@/context/AppContext';
@@ -270,6 +270,11 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Preload all 50 core word audio clips so taps play instantly
+  useEffect(() => {
+    preloadAudio(SUPERCORE_50.map(w => w.label));
   }, []);
 
   const speakText = useCallback(async (text: string) => {

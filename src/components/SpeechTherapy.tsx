@@ -16,34 +16,38 @@ interface Phoneme {
   category: Category;
   /** SVG path data for a simplified mouth shape */
   mouthPath: string;
+  /** ARASAAC pictogram ID for the example word */
+  arasaacId: number;
 }
+
+const ARASAAC_IMG = (id: number) => `https://static.arasaac.org/pictograms/${id}/${id}_500.png`;
 
 const PHONEMES: Phoneme[] = [
   // ── Vowels ──
-  { id: "aa", symbol: "aa", example: "cat", mouth: "Open wide, tongue flat and low", category: "vowel", mouthPath: "M 20,50 Q 50,85 80,50 Q 50,65 20,50 Z" },
-  { id: "ee", symbol: "ee", example: "tree", mouth: "Lips spread wide, tongue high and forward", category: "vowel", mouthPath: "M 15,48 Q 50,58 85,48 Q 50,52 15,48 Z" },
-  { id: "oo", symbol: "oo", example: "moon", mouth: "Lips rounded into a small circle", category: "vowel", mouthPath: "M 35,35 Q 35,65 50,65 Q 65,65 65,35 Q 65,20 50,20 Q 35,20 35,35 Z" },
-  { id: "ah", symbol: "ah", example: "car", mouth: "Mouth open wide, jaw dropped, tongue low", category: "vowel", mouthPath: "M 20,40 Q 50,90 80,40 Q 50,55 20,40 Z" },
-  { id: "eh", symbol: "eh", example: "bed", mouth: "Mouth half open, tongue mid-height", category: "vowel", mouthPath: "M 18,48 Q 50,70 82,48 Q 50,55 18,48 Z" },
+  { id: "aa", symbol: "aa", example: "cat", mouth: "Open wide, tongue flat and low", category: "vowel", mouthPath: "M 20,50 Q 50,85 80,50 Q 50,65 20,50 Z", arasaacId: 7114 },
+  { id: "ee", symbol: "ee", example: "tree", mouth: "Lips spread wide, tongue high and forward", category: "vowel", mouthPath: "M 15,48 Q 50,58 85,48 Q 50,52 15,48 Z", arasaacId: 3057 },
+  { id: "oo", symbol: "oo", example: "moon", mouth: "Lips rounded into a small circle", category: "vowel", mouthPath: "M 35,35 Q 35,65 50,65 Q 65,65 65,35 Q 65,20 50,20 Q 35,20 35,35 Z", arasaacId: 2933 },
+  { id: "ah", symbol: "ah", example: "car", mouth: "Mouth open wide, jaw dropped, tongue low", category: "vowel", mouthPath: "M 20,40 Q 50,90 80,40 Q 50,55 20,40 Z", arasaacId: 2339 },
+  { id: "eh", symbol: "eh", example: "bed", mouth: "Mouth half open, tongue mid-height", category: "vowel", mouthPath: "M 18,48 Q 50,70 82,48 Q 50,55 18,48 Z", arasaacId: 25900 },
 
   // ── Consonants ──
-  { id: "b", symbol: "b", example: "ball", mouth: "Lips pressed together then released with voice", category: "consonant", mouthPath: "M 20,48 Q 50,50 80,48 Q 50,52 20,48 Z" },
-  { id: "d", symbol: "d", example: "dog", mouth: "Tongue tip taps the ridge behind upper teeth", category: "consonant", mouthPath: "M 22,45 Q 50,60 78,45 Q 50,50 22,45 Z" },
-  { id: "f", symbol: "f", example: "fish", mouth: "Upper teeth rest gently on lower lip", category: "consonant", mouthPath: "M 20,46 L 80,46 Q 50,58 20,46 Z" },
-  { id: "k", symbol: "k", example: "kite", mouth: "Back of tongue touches soft palate, then releases", category: "consonant", mouthPath: "M 25,44 Q 50,62 75,44 Q 50,50 25,44 Z" },
-  { id: "l", symbol: "l", example: "lion", mouth: "Tongue tip behind upper teeth, air flows around sides", category: "consonant", mouthPath: "M 22,46 Q 50,58 78,46 Q 50,50 22,46 Z" },
-  { id: "m", symbol: "m", example: "mum", mouth: "Lips together, sound comes through nose", category: "consonant", mouthPath: "M 20,49 Q 50,51 80,49 Q 50,51 20,49 Z" },
-  { id: "n", symbol: "n", example: "nose", mouth: "Tongue tip on ridge, sound through nose", category: "consonant", mouthPath: "M 20,48 Q 50,54 80,48 Q 50,50 20,48 Z" },
-  { id: "p", symbol: "p", example: "pig", mouth: "Lips pressed together then popped open (no voice)", category: "consonant", mouthPath: "M 20,48 Q 50,50 80,48 Q 50,52 20,48 Z" },
-  { id: "s", symbol: "s", example: "sun", mouth: "Teeth close together, tongue behind teeth, hissing air", category: "consonant", mouthPath: "M 22,47 Q 50,53 78,47 Q 50,50 22,47 Z" },
-  { id: "t", symbol: "t", example: "top", mouth: "Tongue tip taps ridge behind teeth quickly", category: "consonant", mouthPath: "M 22,45 Q 50,58 78,45 Q 50,50 22,45 Z" },
+  { id: "b", symbol: "b", example: "ball", mouth: "Lips pressed together then released with voice", category: "consonant", mouthPath: "M 20,48 Q 50,50 80,48 Q 50,52 20,48 Z", arasaacId: 3241 },
+  { id: "d", symbol: "d", example: "dog", mouth: "Tongue tip taps the ridge behind upper teeth", category: "consonant", mouthPath: "M 22,45 Q 50,60 78,45 Q 50,50 22,45 Z", arasaacId: 7202 },
+  { id: "f", symbol: "f", example: "fish", mouth: "Upper teeth rest gently on lower lip", category: "consonant", mouthPath: "M 20,46 L 80,46 Q 50,58 20,46 Z", arasaacId: 2520 },
+  { id: "k", symbol: "k", example: "kite", mouth: "Back of tongue touches soft palate, then releases", category: "consonant", mouthPath: "M 25,44 Q 50,62 75,44 Q 50,50 25,44 Z", arasaacId: 2350 },
+  { id: "l", symbol: "l", example: "lion", mouth: "Tongue tip behind upper teeth, air flows around sides", category: "consonant", mouthPath: "M 22,46 Q 50,58 78,46 Q 50,50 22,46 Z", arasaacId: 25187 },
+  { id: "m", symbol: "m", example: "mum", mouth: "Lips together, sound comes through nose", category: "consonant", mouthPath: "M 20,49 Q 50,51 80,49 Q 50,51 20,49 Z", arasaacId: 2458 },
+  { id: "n", symbol: "n", example: "nose", mouth: "Tongue tip on ridge, sound through nose", category: "consonant", mouthPath: "M 20,48 Q 50,54 80,48 Q 50,50 20,48 Z", arasaacId: 2887 },
+  { id: "p", symbol: "p", example: "pig", mouth: "Lips pressed together then popped open (no voice)", category: "consonant", mouthPath: "M 20,48 Q 50,50 80,48 Q 50,52 20,48 Z", arasaacId: 24972 },
+  { id: "s", symbol: "s", example: "sun", mouth: "Teeth close together, tongue behind teeth, hissing air", category: "consonant", mouthPath: "M 22,47 Q 50,53 78,47 Q 50,50 22,47 Z", arasaacId: 7252 },
+  { id: "t", symbol: "t", example: "top", mouth: "Tongue tip taps ridge behind teeth quickly", category: "consonant", mouthPath: "M 22,45 Q 50,58 78,45 Q 50,50 22,45 Z", arasaacId: 16601 },
 
   // ── Blends ──
-  { id: "sh", symbol: "sh", example: "ship", mouth: "Lips pushed forward, tongue pulled back, gentle air", category: "blend", mouthPath: "M 28,40 Q 28,60 50,60 Q 72,60 72,40 Q 72,30 50,30 Q 28,30 28,40 Z" },
-  { id: "ch", symbol: "ch", example: "chip", mouth: "Tongue touches roof then releases with a burst of air", category: "blend", mouthPath: "M 30,42 Q 50,62 70,42 Q 50,48 30,42 Z" },
-  { id: "th", symbol: "th", example: "this", mouth: "Tongue tip between upper and lower teeth", category: "blend", mouthPath: "M 20,46 Q 50,56 80,46 L 50,48 Z" },
-  { id: "bl", symbol: "bl", example: "blue", mouth: "Lips press then release while tongue lifts for L", category: "blend", mouthPath: "M 22,45 Q 50,62 78,45 Q 50,52 22,45 Z" },
-  { id: "tr", symbol: "tr", example: "tree", mouth: "Tongue taps ridge then curls back for R", category: "blend", mouthPath: "M 24,44 Q 50,64 76,44 Q 50,52 24,44 Z" },
+  { id: "sh", symbol: "sh", example: "ship", mouth: "Lips pushed forward, tongue pulled back, gentle air", category: "blend", mouthPath: "M 28,40 Q 28,60 50,60 Q 72,60 72,40 Q 72,30 50,30 Q 28,30 28,40 Z", arasaacId: 10189 },
+  { id: "ch", symbol: "ch", example: "chip", mouth: "Tongue touches roof then releases with a burst of air", category: "blend", mouthPath: "M 30,42 Q 50,62 70,42 Q 50,48 30,42 Z", arasaacId: 3369 },
+  { id: "th", symbol: "th", example: "this", mouth: "Tongue tip between upper and lower teeth", category: "blend", mouthPath: "M 20,46 Q 50,56 80,46 L 50,48 Z", arasaacId: 7095 },
+  { id: "bl", symbol: "bl", example: "blue", mouth: "Lips press then release while tongue lifts for L", category: "blend", mouthPath: "M 22,45 Q 50,62 78,45 Q 50,52 22,45 Z", arasaacId: 4869 },
+  { id: "tr", symbol: "tr", example: "tree", mouth: "Tongue taps ridge then curls back for R", category: "blend", mouthPath: "M 24,44 Q 50,64 76,44 Q 50,52 24,44 Z", arasaacId: 3057 },
 ];
 
 type TabFilter = "all" | Category;
@@ -196,6 +200,15 @@ export default function SpeechTherapy() {
                 /{phoneme.symbol}/
               </span>
               <MouthVisual phoneme={phoneme} />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={ARASAAC_IMG(phoneme.arasaacId)}
+                alt={phoneme.example}
+                width={56}
+                height={56}
+                className="w-[56px] h-[56px] object-contain"
+                loading="lazy"
+              />
               <span className="text-base font-semibold text-[#1a1a2e]">&ldquo;{phoneme.example}&rdquo;</span>
               <span className="text-[13px] text-gray-500 text-center leading-tight">{phoneme.mouth}</span>
               {practiced.has(phoneme.id) && <span className="text-lg text-emerald-600 font-bold">&#10003;</span>}
