@@ -13,5 +13,3 @@ export type {
   PointDirection,
 } from "./useCompanion";
 
-export { useOffline } from "./useOffline";
-export type { OfflineState } from "./useOffline";
