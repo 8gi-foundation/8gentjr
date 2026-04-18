@@ -72,7 +72,7 @@ function MySongsTab() {
         <div className="text-5xl">🎤</div>
         <p className="font-bold text-[#1a1a2e] text-lg">No songs yet</p>
         <p className="text-[#8a7e70] text-sm leading-relaxed max-w-[280px]">
-          Head to the Create tab to make your first AI-generated song — it&apos;ll show up here.
+          Head to the Create tab to make your first AI-generated song. It&apos;ll show up here.
         </p>
       </div>
     );

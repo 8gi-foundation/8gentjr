@@ -28,7 +28,7 @@ const VIDEOS: VideoCard[] = [
     durationLabel: '~60 sec',
     steps: [
       'Open the app and tap "Talk" at the bottom.',
-      'Tap any symbol — it appears in the sentence bar at the top.',
+      'Tap any symbol and it appears in the sentence bar at the top.',
       'Keep tapping symbols to build your message.',
       'Tap the speaker icon in the sentence bar to hear it.',
       'Tap the X on any word to remove it, or swipe the bar to clear.',
@@ -44,7 +44,7 @@ const VIDEOS: VideoCard[] = [
     durationLabel: '~60 sec',
     steps: [
       'From the Talk screen, tap "Browse" to see all categories.',
-      'Choose a category — Food, Feelings, Actions, and more.',
+      'Choose a category: Food, Feelings, Actions, and more.',
       'Tap any word inside to add it to your sentence.',
       'Your sentence bar stays the same as you browse. Nothing is lost.',
       'Tap "Talk" in the dock to go back to the main screen.',
@@ -59,9 +59,9 @@ const VIDEOS: VideoCard[] = [
     youtubeId: null,
     durationLabel: '~90 sec',
     steps: [
-      'Open the app and complete the short onboarding — it takes 2 minutes.',
+      'Open the app and complete the short onboarding. It takes 2 minutes.',
       "Enter your child's name and choose a voice that feels right.",
-      'The app remembers everything — no account or login needed.',
+      'The app remembers everything. No account or login needed.',
       'Tap "More" in the dock, then "My Stuff" to change settings any time.',
       'Everything is stored on the device. No data leaves without your permission.',
     ],
@@ -78,7 +78,7 @@ const VIDEOS: VideoCard[] = [
       'Open a browser on the board and go to 8gentjr.com.',
       'If the site is blocked, ask your IT admin to whitelist 8gentjr.com.',
       'Press F11 (or the fullscreen button) for the best classroom view.',
-      'The app works without an account — just open and go.',
+      'The app works without an account. Just open and go.',
       'Tap the symbols with your finger or a stylus, same as a tablet.',
       'To reset between students, tap "More" then "My Stuff" and clear the session.',
     ],
@@ -225,7 +225,7 @@ export default function HelpPage() {
         >
           <strong>For schools:</strong> If 8gentjr.com is blocked by your network, ask your IT admin to whitelist{' '}
           <code className="bg-white/60 px-1 rounded text-xs">8gentjr.com</code>. It&apos;s a free educational tool for
-          neurodivergent children — most content filters approve it immediately.
+          neurodivergent children, and most content filters approve it immediately.
         </div>
       </div>
     </div>

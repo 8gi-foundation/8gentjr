@@ -104,7 +104,7 @@ export default function SettingsPage() {
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold" style={{ color: active ? accent : 'var(--warm-text, #1A1614)' }}>
-                      Stage {stage.id} — {stage.name}
+                      Stage {stage.id}: {stage.name}
                     </span>
                     {active && (
                       <span
@@ -227,7 +227,7 @@ export default function SettingsPage() {
 
         {/* Version footer */}
         <p className="text-center text-xs pb-4" style={{ color: 'var(--warm-text-muted, #9A9088)' }}>
-          8gent Jr v1.0 — Made with care
+          8gent Jr v1.0. Made with care.
         </p>
       </div>
     </div>
