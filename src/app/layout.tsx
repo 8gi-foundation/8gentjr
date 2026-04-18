@@ -89,13 +89,13 @@ const jsonLd = {
     },
     {
       "@type": "Organization",
-      name: "8gent",
-      url: "https://8gent.world",
+      name: "8GI Foundation",
+      url: "https://8gi.org",
       logo: "https://8gentjr.com/logo.png",
       sameAs: [
-        "https://8gent.world",
-        "https://8gentos.com",
+        "https://8gi.org",
         "https://8gent.dev",
+        "https://8gent.world",
       ],
     },
   ],
