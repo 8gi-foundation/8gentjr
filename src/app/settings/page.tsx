@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useApp, type AppSettings } from '@/context/AppContext';
 import { GLP_STAGES } from '@/lib/glp/stages';
@@ -212,6 +213,20 @@ export default function SettingsPage() {
           </div>
         </Section>
 
+        {/* ── Privacy & Consent ── */}
+        <Section title="Privacy & Consent" icon={<IconShield />}>
+          <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
+            Withdraw consent or delete everything. One tap, no friction.
+          </p>
+          <Link
+            href="/settings/privacy"
+            className="inline-flex items-center justify-center w-full py-3 rounded-xl border-2 font-semibold text-base active:scale-[0.98]"
+            style={{ borderColor: accent, color: accent, backgroundColor: 'white' }}
+          >
+            Open Privacy &amp; Consent
+          </Link>
+        </Section>
+
         {/* ── Reset ── */}
         <button
           onClick={resetDefaults}
@@ -286,6 +301,14 @@ function IconGrid() {
       <rect x="14" y="3" width="7" height="7" rx="1.5" />
       <rect x="3" y="14" width="7" height="7" rx="1.5" />
       <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+function IconShield() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2l8 4v6c0 5-3.5 9.4-8 10-4.5-.6-8-5-8-10V6l8-4z" />
     </svg>
   );
 }
