@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "prewarm": "node scripts/prewarm-tts.mjs",
-    "test": "bun test src/lib",
+    "test": "bun test",
     "privacy:pending": "node scripts/privacy-admin.mjs pending"
   },
   "dependencies": {
