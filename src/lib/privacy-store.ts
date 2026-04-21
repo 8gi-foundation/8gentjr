@@ -165,15 +165,10 @@ export async function deleteEverything(
   return proof;
 }
 
-/** SHA-256 hex. Works in browser (SubtleCrypto) and Bun/Node (webcrypto). */
+/** SHA-256 hex via Web Crypto (Node 19+, Bun, all modern browsers). */
 export async function sha256Hex(input: string): Promise<string> {
   const enc = new TextEncoder().encode(input);
-  const crypto = (globalThis as { crypto?: Crypto }).crypto;
-  if (!crypto?.subtle) {
-    const nodeCrypto = await import('node:crypto');
-    return nodeCrypto.createHash('sha256').update(input).digest('hex');
-  }
-  const buf = await crypto.subtle.digest('SHA-256', enc);
+  const buf = await globalThis.crypto.subtle.digest('SHA-256', enc);
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
@@ -181,11 +176,6 @@ export async function sha256Hex(input: string): Promise<string> {
 
 function randomReceipt(): string {
   const bytes = new Uint8Array(6);
-  const c = (globalThis as { crypto?: Crypto }).crypto;
-  if (c?.getRandomValues) {
-    c.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-  }
+  globalThis.crypto.getRandomValues(bytes);
   return 'JR-' + Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
