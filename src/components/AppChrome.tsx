@@ -14,7 +14,7 @@ import { LockScreenGate } from './LockScreenGate';
 import { InstallPrompt } from './InstallPrompt';
 import { ParentalGate } from './ParentalGate';
 
-const CHROMELESS_ROUTES = ['/onboarding'];
+const CHROMELESS_ROUTES = ['/onboarding', '/parent-email-verification'];
 const UNGATED_ROUTES = ['/privacy', '/terms', '/help'];
 
 export function AppChrome({ children }: { children: ReactNode }) {

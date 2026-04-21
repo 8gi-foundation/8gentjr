@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import type { AccountType } from '@/lib/account';
 
 /**
  * 8gent Jr App Context
@@ -18,6 +19,19 @@ export interface AppSettings {
   gridColumns: number;
   hasCompletedOnboarding: boolean;
   glpStage: number;
+  /**
+   * DPIA age gate (issue #116).
+   * accountType + birthYear are captured BEFORE account creation.
+   * Birth YEAR only (never full DOB) - band captured for compliance.
+   */
+  accountType: AccountType | null;
+  birthYear: number | null;
+  isChild: boolean;
+  carerRelationship: string | null;
+  guardianConfirmed: boolean;
+  /** Filled in by VPC flow (#117). */
+  parentEmailConfirmed: boolean;
+  gatedAt: string | null;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -29,6 +43,13 @@ const DEFAULT_SETTINGS: AppSettings = {
   gridColumns: 3,
   hasCompletedOnboarding: false,
   glpStage: 3,
+  accountType: null,
+  birthYear: null,
+  isChild: false,
+  carerRelationship: null,
+  guardianConfirmed: false,
+  parentEmailConfirmed: false,
+  gatedAt: null,
 };
 
 const STORAGE_KEY = '8gentjr-app-settings';
