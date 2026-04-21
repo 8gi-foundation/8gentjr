@@ -1,5 +1,5 @@
 /**
- * 8gent Jr — Privacy store (GDPR Art 7(3) + Art 17)
+ * 8gent Jr: Privacy store (GDPR Art 7(3) + Art 17)
  *
  * Parent-facing primitives for:
  *   1. Withdraw consent with a configurable grace period (default 30 days)
