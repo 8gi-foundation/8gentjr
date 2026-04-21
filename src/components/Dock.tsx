@@ -188,6 +188,15 @@ function IconQuestion({ color }: { color: string }) {
   );
 }
 
+function IconMegaphone({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z" />
+      <path d="M16 8a5 5 0 0 1 0 8" />
+    </svg>
+  );
+}
+
 function IconSettings({ color }: { color: string }) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -209,6 +218,7 @@ const MORE_ITEMS: MoreItem[] = [
   { id: 'parent-chat', label: 'Parent Chat', icon: IconParentChat, href: '/parent-chat' },
   { id: 'add', label: 'Add Card', icon: IconPlus, href: '/add' },
   { id: 'help', label: 'Help', icon: IconQuestion, href: '/help' },
+  { id: 'feedback', label: 'Send Feedback', icon: IconMegaphone, href: '/feedback' },
   { id: 'settings', label: 'My Stuff', icon: IconSettings, href: '/settings' },
 ];
 
