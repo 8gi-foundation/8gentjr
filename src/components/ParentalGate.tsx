@@ -351,6 +351,10 @@ function GateShell({ children }: { children: ReactNode }) {
               Terms
             </Link>
             {" | "}
+            <Link href="/feedback" className="hover:underline">
+              Feedback
+            </Link>
+            {" | "}
             <span>8GI Foundation</span>
           </p>
         </div>

@@ -15,7 +15,7 @@ import { InstallPrompt } from './InstallPrompt';
 import { ParentalGate } from './ParentalGate';
 
 const CHROMELESS_ROUTES = ['/onboarding'];
-const UNGATED_ROUTES = ['/privacy', '/terms', '/help'];
+const UNGATED_ROUTES = ['/privacy', '/terms', '/help', '/feedback'];
 
 export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
