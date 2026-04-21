@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "prewarm": "node scripts/prewarm-tts.mjs"
+    "prewarm": "node scripts/prewarm-tts.mjs",
+    "test": "bun test src/lib",
+    "privacy:pending": "node scripts/privacy-admin.mjs pending"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.37.4",
