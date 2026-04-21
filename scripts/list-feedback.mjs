@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * list-feedback — admin CLI to print recent feedback submissions.
+ * list-feedback - admin CLI to print recent feedback submissions.
  *
  * Usage: node scripts/list-feedback.mjs [limit]
  *

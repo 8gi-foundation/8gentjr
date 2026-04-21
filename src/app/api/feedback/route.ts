@@ -14,7 +14,7 @@ import {
  *
  * Public submit endpoint for the GDPR Art 35(9) feedback form.
  * No third-party captcha. Simple honeypot field + per-IP rate limit.
- * IPs are never stored raw — we keep a daily-salted truncated sha256.
+ * IPs are never stored raw. We keep a daily-salted truncated sha256.
  */
 
 export const runtime = 'nodejs';
@@ -27,7 +27,7 @@ interface Body {
   should_change?: unknown;
   contact_email?: unknown;
   consent?: unknown;
-  // honeypot — bots fill this, humans never see it
+  // honeypot: bots fill this, humans never see it
   website?: unknown;
 }
 
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  // Honeypot — silently accept so bots don't probe further.
+  // Honeypot: silently accept so bots don't probe further.
   if (typeof body.website === 'string' && body.website.trim().length > 0) {
     return NextResponse.json({ ok: true }, { status: 202 });
   }

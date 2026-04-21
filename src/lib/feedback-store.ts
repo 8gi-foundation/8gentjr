@@ -1,5 +1,5 @@
 /**
- * feedback-store — persistence + rate limiting for public feedback form.
+ * feedback-store: persistence + rate limiting for public feedback form.
  *
  * Storage: append-only JSONL at data/feedback/submissions.jsonl.
  *   - File-based, zero dependencies, matches existing data/ pattern.
@@ -63,7 +63,7 @@ export function rateLimit(ipHash: string, now: number = Date.now()): boolean {
   return true;
 }
 
-// Daily salt — prevents cross-day correlation while keeping same-day dedup.
+// Daily salt prevents cross-day correlation while keeping same-day dedup.
 function dailySalt(): string {
   const seed = process.env.FEEDBACK_IP_SALT ?? 'feedback-default-salt';
   const day = new Date().toISOString().slice(0, 10);

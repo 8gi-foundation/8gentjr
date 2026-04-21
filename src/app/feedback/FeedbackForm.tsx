@@ -107,7 +107,7 @@ export function FeedbackForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
-      {/* Honeypot — hidden from humans, bots often fill it */}
+      {/* Honeypot: hidden from humans, bots often fill it */}
       <div aria-hidden="true" className="hidden">
         <label>
           Website
