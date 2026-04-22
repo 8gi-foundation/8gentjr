@@ -13,18 +13,25 @@ import Dock from './Dock';
 import { LockScreenGate } from './LockScreenGate';
 import { InstallPrompt } from './InstallPrompt';
 import { ParentalGate } from './ParentalGate';
+import { AuthBadge } from './AuthBadge';
 
-const CHROMELESS_ROUTES = ['/onboarding', '/parent-email-verification'];
+const CHROMELESS_ROUTES = ['/onboarding', '/parent-email-verification', '/sign-in', '/sign-up'];
 const UNGATED_ROUTES = ['/privacy', '/terms', '/help', '/feedback'];
+const ADULT_AUTH_SURFACES = ['/privacy', '/terms', '/help', '/feedback', '/settings'];
 
 export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isChromeless = CHROMELESS_ROUTES.some((r) => pathname?.startsWith(r));
   const isUngated = UNGATED_ROUTES.some((r) => pathname?.startsWith(r));
+  const showAuthBadge = ADULT_AUTH_SURFACES.some((r) => pathname?.startsWith(r));
 
-  // Privacy/terms pages bypass all gates
   if (isUngated) {
-    return <main>{children}</main>;
+    return (
+      <>
+        {showAuthBadge && <AuthBadge />}
+        <main>{children}</main>
+      </>
+    );
   }
 
   if (isChromeless) {
@@ -38,6 +45,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
   return (
     <ParentalGate>
       <LockScreenGate>
+        {showAuthBadge && <AuthBadge />}
         <InstallPrompt />
         <main className="pb-safe-dock">{children}</main>
         <Dock />
