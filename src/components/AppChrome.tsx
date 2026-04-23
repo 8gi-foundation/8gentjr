@@ -15,8 +15,8 @@ import { InstallPrompt } from './InstallPrompt';
 import { ParentalGate } from './ParentalGate';
 import { AuthBadge } from './AuthBadge';
 
-const CHROMELESS_ROUTES = ['/onboarding', '/parent-email-verification', '/sign-in', '/sign-up'];
-const UNGATED_ROUTES = ['/privacy', '/terms', '/help', '/feedback'];
+const CHROMELESS_ROUTES = ['/onboarding', '/parent-email-verification'];
+const UNGATED_ROUTES = ['/privacy', '/terms', '/help', '/feedback', '/sign-in', '/sign-up'];
 const ADULT_AUTH_SURFACES = ['/privacy', '/terms', '/help', '/feedback', '/settings'];
 
 export function AppChrome({ children }: { children: ReactNode }) {
