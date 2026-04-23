@@ -1,12 +1,13 @@
 /**
  * Pluggable EmailSender
  *
- * The repo has no transactional email provider wired today. This module
- * exposes an EmailSender interface and a log-only stub that writes to
- * data/consent/outbox.jsonl plus console. Swap with Resend/Postmark later
- * by exporting a new sender from getEmailSender().
+ * Strategy at runtime (getEmailSender):
+ *   1. If AGENTMAIL_API_KEY is set, send via AgentMail REST API (no SDK dep).
+ *   2. Otherwise, LogOnlySender writes to console + data/consent/outbox.jsonl
+ *      (best-effort: swallows fs errors so it works on read-only runtimes).
  *
- * TODO (owner: james@8gi.org): wire a real provider before production.
+ * From inbox is controlled by AGENTMAIL_FROM_INBOX (default
+ * 'aijames@jamesspalding.org'). The inbox must already exist in AgentMail.
  */
 
 import { promises as fs } from 'node:fs';
@@ -27,19 +28,56 @@ export interface EmailSender {
 class LogOnlySender implements EmailSender {
   async send(msg: EmailMessage): Promise<{ id: string }> {
     const id = `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const outboxDir =
-      process.env.VPC_AUDIT_DIR ||
-      path.join(process.cwd(), 'data', 'consent');
-    await fs.mkdir(outboxDir, { recursive: true });
-    const row = { id, ts: new Date().toISOString(), ...msg };
-    await fs.appendFile(
-      path.join(outboxDir, 'outbox.jsonl'),
-      JSON.stringify(row) + '\n',
-      'utf8',
-    );
+    try {
+      const outboxDir =
+        process.env.VPC_AUDIT_DIR ||
+        path.join(process.cwd(), 'data', 'consent');
+      await fs.mkdir(outboxDir, { recursive: true });
+      const row = { id, ts: new Date().toISOString(), ...msg };
+      await fs.appendFile(
+        path.join(outboxDir, 'outbox.jsonl'),
+        JSON.stringify(row) + '\n',
+        'utf8',
+      );
+    } catch {
+      // Read-only filesystem (Vercel) — still log, just skip file.
+    }
     // eslint-disable-next-line no-console
-    console.info(`[vpc-email:stub] ${msg.tag ?? 'untagged'} -> ${msg.to} | ${msg.subject}`);
+    console.info(
+      `[vpc-email:stub] ${msg.tag ?? 'untagged'} -> ${msg.to} | ${msg.subject}`,
+    );
     return { id };
+  }
+}
+
+class AgentMailSender implements EmailSender {
+  constructor(
+    private readonly apiKey: string,
+    private readonly fromInbox: string,
+  ) {}
+
+  async send(msg: EmailMessage): Promise<{ id: string }> {
+    const url = `https://api.agentmail.to/v0/inboxes/${encodeURIComponent(this.fromInbox)}/messages/send`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${this.apiKey}`,
+      },
+      body: JSON.stringify({
+        to: msg.to,
+        subject: msg.subject,
+        text: msg.text,
+        ...(msg.html ? { html: msg.html } : {}),
+        ...(msg.tag ? { labels: [msg.tag] } : {}),
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`agentmail send failed: ${res.status} ${body}`);
+    }
+    const data = (await res.json()) as { messageId?: string; message_id?: string };
+    return { id: data.messageId ?? data.message_id ?? `agentmail-${Date.now()}` };
   }
 }
 
@@ -47,8 +85,13 @@ let singleton: EmailSender | null = null;
 
 export function getEmailSender(): EmailSender {
   if (singleton) return singleton;
-  // In future: if RESEND_API_KEY etc are set, return real sender here.
-  singleton = new LogOnlySender();
+  const key = process.env.AGENTMAIL_API_KEY;
+  if (key) {
+    const from = process.env.AGENTMAIL_FROM_INBOX || 'aijames@jamesspalding.org';
+    singleton = new AgentMailSender(key, from);
+  } else {
+    singleton = new LogOnlySender();
+  }
   return singleton;
 }
 
