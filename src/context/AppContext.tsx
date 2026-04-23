@@ -29,7 +29,7 @@ export interface AppSettings {
   isChild: boolean;
   carerRelationship: string | null;
   guardianConfirmed: boolean;
-  /** Filled in by VPC flow (#117). */
+  /** Set once both consent emails are confirmed in the VPC flow. */
   parentEmailConfirmed: boolean;
   gatedAt: string | null;
 }

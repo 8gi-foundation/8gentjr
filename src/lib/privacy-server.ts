@@ -6,7 +6,7 @@
  *
  * Storage: append-only JSONL at data/privacy/ledger.jsonl. Fine for low volume
  * and survives redeploys on Fly volumes / persistent disks. Swap for Postgres
- * when #117 adds the email-plus-VPC backend.
+ * if volume grows past what a JSONL file can scan in a regulator-facing query.
  */
 import { promises as fs } from 'node:fs';
 import path from 'node:path';

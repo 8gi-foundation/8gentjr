@@ -5,8 +5,8 @@
  *
  * Three paths:
  *   child_under_13: parent/guardian path. Collects birth year +
- *                   legal-guardian confirmation, then routes to a
- *                   VPC placeholder (#117 implements email-plus flow).
+ *                   legal-guardian confirmation, then routes into the
+ *                   email-plus Verifiable Parental Consent flow.
  *   self_13_plus:   the account subject is 13+ and using it for themselves.
  *   carer_13_plus:  the account subject is 13+ and a carer is setting it up.
  *

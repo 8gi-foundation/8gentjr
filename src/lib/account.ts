@@ -4,7 +4,8 @@
  * Three paths per issue #116:
  *   child_under_13: parent/guardian setting up for a child under 13.
  *                   Requires guardian confirmation + routes to the
- *                   email-plus Verifiable Parental Consent flow (#117).
+ *                   email-plus Verifiable Parental Consent flow
+ *                   (see src/lib/consent/).
  *   self_13_plus:   a person 13+ using it for themselves.
  *   carer_13_plus:  a person 13+ setting up for someone else who is 13+
  *                   (therapist, teacher, family carer).
@@ -31,7 +32,7 @@ export interface AccountRecord {
   gatedAt: string;
   /** Parent/guardian confirmation for the child path. */
   guardianConfirmed: boolean;
-  /** VPC flow completion (filled in by #117, placeholder here). */
+  /** VPC flow completion (set once both consent emails are confirmed). */
   parentEmailConfirmed: boolean;
 }
 
@@ -62,7 +63,7 @@ export function isUnder13(
 
 /**
  * Resolve the next route for a given account type.
- *   child_under_13 -> /parent-email-verification (VPC placeholder, #117)
+ *   child_under_13 -> /parent-email-verification (VPC flow)
  *   self_13_plus   -> /onboarding
  *   carer_13_plus  -> /onboarding
  */
