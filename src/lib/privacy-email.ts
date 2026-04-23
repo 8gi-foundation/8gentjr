@@ -1,9 +1,10 @@
 /**
- * Email stub for privacy actions.
+ * Privacy action emails (withdraw / restore / delete receipts).
  *
- * Issue #117 (email+VPC) will land the real SMTP/Resend wiring; until then we
- * log to the server console so the flow is observable in Vercel/Fly logs. The
- * interface stays when #117 swaps in a provider.
+ * Logs to stdout today. The VPC flow (src/lib/consent/email-sender.ts) already
+ * sends via AgentMail; fold this into that sender when we want parents to
+ * receive actual GDPR/COPPA receipt mail. Deferred until a parent asks for it,
+ * since the stub keeps the action auditable in Vercel logs.
  */
 export type PrivacyEmailKind = 'withdraw' | 'withdraw-restored' | 'delete';
 

@@ -185,6 +185,15 @@ Games are presented in a TikTok-style reels feed with topic filters and daily ac
 | **Parental Gate** | (system) | Consent gate protecting all content (localStorage-based) |
 | **Lock Screen** | (system) | Session-based lock screen to prevent accidental exits |
 
+## Privacy, consent & compliance
+
+Child-path accounts (under 13) are gated behind COPPA email-plus Verifiable Parental Consent. Signup routes to `/parent-email-verification`, which posts to `/api/consent/initiate` and issues two signed, single-use tokens: step 1 arrives immediately, step 2 ~10 minutes after step-1 confirmation. Child profiles stay inactive until both links are clicked. Withdrawal (Art 7(3)) and full delete (Art 17) are one-tap in Settings > Privacy & Consent, backed by an append-only JSONL audit log.
+
+- VPC flow: `src/lib/consent/`
+- Email provider: AgentMail (`privacy@8gentjr.com`). Falls back to a `LogOnlySender` when `AGENTMAIL_API_KEY` is unset.
+- Audit log: JSONL at `VPC_AUDIT_DIR` (default `./data/consent`).
+- DPIA + legal record: `8gi-foundation/8gi-governance`.
+
 ## Ecosystem
 
 8gent Jr is a product of the [8GI Foundation](https://8gi.org), a Dublin-based non-profit building free, local-first AI for people the K-shaped economy is leaving behind.
@@ -197,5 +206,8 @@ Games are presented in a TikTok-style reels feed with topic filters and daily ac
 
 ```bash
 npm install
+cp .env.example .env.local   # fill in GROQ, ELEVENLABS, VPC, AGENTMAIL keys as needed
 npm run dev
 ```
+
+Most keys are optional for local dev — the app gracefully falls back (log-only email sender, browser Web Speech TTS, Groq-less autocomplete). `VPC_TOKEN_SECRET` is required whenever you exercise the parental consent flow.
