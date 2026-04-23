@@ -2,12 +2,12 @@
  * Pluggable EmailSender
  *
  * Strategy at runtime (getEmailSender):
- *   1. If RESEND_API_KEY is set, send via Resend REST API (no SDK dep).
+ *   1. If AGENTMAIL_API_KEY is set, send via AgentMail REST API (no SDK dep).
  *   2. Otherwise, LogOnlySender writes to console + data/consent/outbox.jsonl
  *      (best-effort: swallows fs errors so it works on read-only runtimes).
  *
- * From address is controlled by RESEND_FROM_EMAIL (default
- * 'privacy@8gi.org'). Verify the domain in Resend before shipping.
+ * From inbox is controlled by AGENTMAIL_FROM_INBOX (default
+ * 'aijames@jamesspalding.org'). The inbox must already exist in AgentMail.
  */
 
 import { promises as fs } from 'node:fs';
@@ -50,34 +50,34 @@ class LogOnlySender implements EmailSender {
   }
 }
 
-class ResendSender implements EmailSender {
+class AgentMailSender implements EmailSender {
   constructor(
     private readonly apiKey: string,
-    private readonly from: string,
+    private readonly fromInbox: string,
   ) {}
 
   async send(msg: EmailMessage): Promise<{ id: string }> {
-    const res = await fetch('https://api.resend.com/emails', {
+    const url = `https://api.agentmail.to/v0/inboxes/${encodeURIComponent(this.fromInbox)}/messages/send`;
+    const res = await fetch(url, {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
         authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
-        from: this.from,
         to: msg.to,
         subject: msg.subject,
         text: msg.text,
         ...(msg.html ? { html: msg.html } : {}),
-        ...(msg.tag ? { tags: [{ name: 'category', value: msg.tag }] } : {}),
+        ...(msg.tag ? { labels: [msg.tag] } : {}),
       }),
     });
     if (!res.ok) {
       const body = await res.text().catch(() => '');
-      throw new Error(`resend send failed: ${res.status} ${body}`);
+      throw new Error(`agentmail send failed: ${res.status} ${body}`);
     }
-    const data = (await res.json()) as { id?: string };
-    return { id: data.id ?? `resend-${Date.now()}` };
+    const data = (await res.json()) as { messageId?: string; message_id?: string };
+    return { id: data.messageId ?? data.message_id ?? `agentmail-${Date.now()}` };
   }
 }
 
@@ -85,10 +85,10 @@ let singleton: EmailSender | null = null;
 
 export function getEmailSender(): EmailSender {
   if (singleton) return singleton;
-  const key = process.env.RESEND_API_KEY;
+  const key = process.env.AGENTMAIL_API_KEY;
   if (key) {
-    const from = process.env.RESEND_FROM_EMAIL || 'privacy@8gi.org';
-    singleton = new ResendSender(key, from);
+    const from = process.env.AGENTMAIL_FROM_INBOX || 'aijames@jamesspalding.org';
+    singleton = new AgentMailSender(key, from);
   } else {
     singleton = new LogOnlySender();
   }
