@@ -196,9 +196,12 @@ async function speakElevenLabs(
   let res: Response;
   try {
     res = await fetch(`/api/tts?${params.toString()}`, { signal: controller.signal });
-  } catch {
-    // AbortError = user tapped something else — stay silent, don't trigger browser TTS
-    return 'elevenlabs';
+  } catch (err) {
+    // AbortError = user tapped another card; stay silent so we don't speak
+    // the stale word on top of the new one.
+    if ((err as { name?: string })?.name === 'AbortError') return 'elevenlabs';
+    // Any other fetch failure (offline, DNS, CORS) — fall back to Web Speech.
+    return 'none';
   } finally {
     if (currentAbortController === controller) currentAbortController = null;
   }
@@ -206,12 +209,13 @@ async function speakElevenLabs(
   // 204 = not configured — fall back to browser TTS
   if (res.status === 204) return 'none';
 
-  // 503 = configured but failed — stay silent, no robot fallback
-  if (!res.ok) return 'elevenlabs';
+  // Any non-OK response (503 upstream fail, 429, 500…) — fall back so the
+  // child always hears *something* instead of silence.
+  if (!res.ok) return 'none';
 
   const blob = await res.blob();
-  // Empty blob — configured but silent failure; don't trigger robot voice
-  if (blob.size === 0) return 'elevenlabs';
+  // Empty payload — fall back rather than swallowing silently.
+  if (blob.size === 0) return 'none';
 
   // Cache the blob for instant replay
   audioCache.set(cacheKey, blob);
