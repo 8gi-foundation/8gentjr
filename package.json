@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "prewarm": "node scripts/prewarm-tts.mjs",
-    "test": "bun test",
+    "guard:no-affect-detection": "node scripts/guard-no-affect-detection.mjs",
+    "test": "bun test && node scripts/guard-no-affect-detection.mjs",
     "privacy:pending": "node scripts/privacy-admin.mjs pending"
   },
   "dependencies": {

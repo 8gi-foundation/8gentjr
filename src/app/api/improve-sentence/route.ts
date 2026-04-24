@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
           improved: rawSentence,
           explanation: 'AI unavailable — sentence returned as-is',
           missing: [],
+          aiGenerated: false,
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
@@ -116,6 +117,7 @@ function parseAndRespond(content: string, rawSentence: string): Response {
         improved: result.improved,
         explanation: result.explanation,
         missing: result.missing || [],
+        aiGenerated: true,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
@@ -126,6 +128,7 @@ function parseAndRespond(content: string, rawSentence: string): Response {
         improved: content.trim(),
         explanation: 'Grammar improved',
         missing: [],
+        aiGenerated: true,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );

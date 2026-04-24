@@ -15,6 +15,17 @@ const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 // Charlie — Young, Natural, Conversational (child voice, ElevenLabs)
 const DEFAULT_VOICE_ID = process.env.ELEVENLABS_JR_VOICE_ID ?? 'IKne3meq5aSn9XLyUdCD';
 
+/**
+ * CHILD_TTS_VENDOR_ENABLED gates the ElevenLabs call. When disabled (the
+ * default in prod), we return 204 so the client falls back to browser
+ * speech synthesis. Without a signed ElevenLabs DPA, sending child-derived
+ * text to their API is not GDPR Art 28 compliant.
+ * See 8gi-governance/docs/legal/2026-04-24-8gentjr-eu-compliance-audit.md.
+ */
+function isChildTtsVendorEnabled(): boolean {
+  return process.env.CHILD_TTS_VENDOR_ENABLED === 'true';
+}
+
 export async function GET(request: NextRequest) {
   const text = request.nextUrl.searchParams.get('text')?.trim();
   const voiceId = request.nextUrl.searchParams.get('voice') || DEFAULT_VOICE_ID;
@@ -27,7 +38,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Text too long (max 1000 chars)' }, { status: 400 });
   }
 
-  if (!ELEVENLABS_API_KEY) {
+  if (!ELEVENLABS_API_KEY || !isChildTtsVendorEnabled()) {
     return new NextResponse(null, { status: 204 });
   }
 

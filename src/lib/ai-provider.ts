@@ -3,6 +3,11 @@
  *
  * Priority: Ollama (local, free) → Groq (cloud, free tier) → null (graceful degradation)
  *
+ * CHILD_LLM_ENABLED flag (default false in prod) gates the cloud Groq fallback
+ * for any path that touches child-derived text. Without a signed DPA with
+ * Groq, sending child-derived content to their API is not GDPR Art 28
+ * compliant. See 8gi-governance/docs/legal/2026-04-24-8gentjr-eu-compliance-audit.md.
+ *
  * No new dependencies. Ollama is reached via raw fetch.
  */
 
@@ -24,6 +29,10 @@ interface OllamaResponse {
 
 interface GroqResponse {
   choices: Array<{ message: { content: string | null } }>;
+}
+
+export function isChildAIEnabled(): boolean {
+  return process.env.CHILD_LLM_ENABLED === 'true';
 }
 
 function ollamaProvider(host: string, model: string): ChatFn {
@@ -72,12 +81,6 @@ export interface AIProvider {
   model: string;
 }
 
-/**
- * Returns the best available AI provider, or null if none configured.
- *
- * @param groqModel  Groq model to use when falling back to cloud (default: llama-3.3-70b-versatile)
- * @param ollamaModel  Ollama model to use locally (default: llama3.2:3b)
- */
 export function createAIProvider(
   groqModel = 'llama-3.3-70b-versatile',
   ollamaModel = 'llama3.2:3b'
@@ -85,8 +88,6 @@ export function createAIProvider(
   const ollamaHost = process.env.OLLAMA_HOST ?? 'http://localhost:11434';
   const groqKey = process.env.GROQ_API_KEY;
 
-  // Ollama wins when OLLAMA_HOST is set (or default localhost is acceptable to try).
-  // We always prefer local — callers can set OLLAMA_HOST=disabled to skip.
   if (ollamaHost && ollamaHost !== 'disabled') {
     return {
       chat: ollamaProvider(ollamaHost, ollamaModel),
@@ -95,7 +96,7 @@ export function createAIProvider(
     };
   }
 
-  if (groqKey) {
+  if (groqKey && isChildAIEnabled()) {
     return {
       chat: groqProvider(groqKey, groqModel),
       source: 'groq',
@@ -107,8 +108,9 @@ export function createAIProvider(
 }
 
 /**
- * Tries Ollama first; if the request fails (e.g. Ollama not running), falls back to Groq.
- * This is the recommended function for server routes — handles the fallback automatically.
+ * Tries Ollama first; if the request fails (e.g. Ollama not running), falls
+ * back to Groq only when CHILD_LLM_ENABLED=true. Default is off so the app
+ * ships safe in EU/UK without a signed Groq DPA.
  */
 export async function createAIProviderWithFallback(
   groqModel = 'llama-3.3-70b-versatile',
@@ -118,7 +120,6 @@ export async function createAIProviderWithFallback(
   const groqKey = process.env.GROQ_API_KEY;
 
   if (ollamaHost && ollamaHost !== 'disabled') {
-    // Probe Ollama with a lightweight tags request
     try {
       const probe = await fetch(`${ollamaHost}/api/tags`, { signal: AbortSignal.timeout(2000) });
       if (probe.ok) {
@@ -129,11 +130,11 @@ export async function createAIProviderWithFallback(
         };
       }
     } catch {
-      // Ollama not reachable — fall through to Groq
+      // Ollama not reachable — fall through to Groq if permitted
     }
   }
 
-  if (groqKey) {
+  if (groqKey && isChildAIEnabled()) {
     return {
       chat: groqProvider(groqKey, groqModel),
       source: 'groq',

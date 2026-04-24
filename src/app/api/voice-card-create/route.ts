@@ -129,6 +129,7 @@ export async function POST(request: NextRequest) {
         imageUrl: pictogram?.imageUrl ?? null,
         rationale: parsed.rationale ?? null,
         transcript: speech.trim(),
+        aiGenerated: true,
       }),
       {
         status: 200,
