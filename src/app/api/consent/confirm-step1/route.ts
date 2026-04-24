@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     return Response.redirect(`${baseUrl}${where}`, 302);
   }
 
-  scheduleStep2Send({
+  await scheduleStep2Send({
     sid: result.sid,
     email: result.email,
     baseUrl,

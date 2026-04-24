@@ -20,10 +20,13 @@ import { findBySid, findByEmail } from '../audit-store';
 import {
   confirmStep1,
   confirmStep2,
+  drainStep2Queue,
   initiate,
+  scheduleStep2Send,
   sendStep2,
 } from '../flow';
 import { __setEmailSenderForTests, type EmailSender } from '../email-sender';
+import { __setSchedulerForTests } from '../scheduler';
 
 const CTX = { ip: '127.0.0.1', userAgent: 'test-agent' };
 
@@ -47,6 +50,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   __setEmailSenderForTests(null);
+  __setSchedulerForTests(null);
   await fs.rm(tmpDir, { recursive: true, force: true });
 });
 
@@ -196,5 +200,41 @@ describe('flow', () => {
     const res = await confirmStep1(expired, CTX);
     expect(res.ok).toBe(false);
     if (!res.ok) expect(res.error).toBe('expired_token');
+  });
+});
+
+describe('scheduler', () => {
+  test('scheduleStep2Send with delay=0 fires step-2 via InProcessScheduler', async () => {
+    const sender = new CapturingSender();
+    __setEmailSenderForTests(sender);
+
+    const init = await initiate({
+      email: 'parent@example.com',
+      childProfileId: null,
+      baseUrl: 'https://8gentjr.com',
+      ctx: CTX,
+    });
+    await confirmStep1(init.token, CTX);
+    await scheduleStep2Send({
+      sid: init.sid,
+      email: 'parent@example.com',
+      baseUrl: 'https://8gentjr.com',
+      childProfileId: null,
+      ctx: CTX,
+    });
+
+    // InProcessScheduler fires `void run()` at delay=0; wait one macrotask.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    const step2Mail = sender.sent.find((m) => m.tag === 'vpc-step-2');
+    expect(step2Mail).toBeDefined();
+    const rows = await findBySid(init.sid);
+    expect(rows.map((r) => r.event)).toContain('step2-sent');
+  });
+
+  test('drainStep2Queue is a no-op on the in-process scheduler', async () => {
+    // In-process has no durable queue; drain always reports zero.
+    const result = await drainStep2Queue();
+    expect(result).toEqual({ delivered: 0, failed: 0 });
   });
 });
