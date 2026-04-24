@@ -20,7 +20,12 @@ import {
   improveSentence as rulesImproveSentence,
   suggestNextWord as rulesSuggestNextWord,
 } from '@/lib/sentence-engine';
-import { cardLabelPrompt, extractJson } from './prompts';
+import { ALL_CORE_WORDS } from '@/lib/vocabulary';
+import { cardLabelPrompt } from './prompts';
+
+const WORD_CATEGORY = new Map<string, string>(
+  ALL_CORE_WORDS.map((w) => [w.text.toLowerCase(), w.wordType]),
+);
 
 export type LoadProgress = {
   phase: 'download' | 'init' | 'ready';
@@ -138,11 +143,35 @@ export function improveSentence(raw: string): string {
   return rulesImproveSentence(tokenize(raw));
 }
 
+function classifyLabel(label: string): string {
+  for (const tok of tokenize(label).map((w) => w.toLowerCase())) {
+    const cat = WORD_CATEGORY.get(tok);
+    if (cat) return cat;
+  }
+  return 'noun';
+}
+
+const STOPWORDS = new Set([
+  'a', 'an', 'the', 'at', 'in', 'on', 'of', 'to', 'for', 'with', 'and', 'or',
+]);
+
+function cleanLabel(raw: string): string | null {
+  const firstLine = raw.split('\n').map((s) => s.trim()).find(Boolean) ?? '';
+  const stripped = firstLine.replace(/^["']+|["':.!?]+$/g, '').trim();
+  const words = stripped.split(/\s+/).filter(Boolean);
+  const content = words.filter((w) => !STOPWORDS.has(w.toLowerCase()));
+  const picked = (content.length ? content : words).slice(0, 2);
+  if (picked.length === 0) return null;
+  return picked
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
+}
+
 export async function describeCard(
-  speech: string
+  speech: string,
 ): Promise<{ label: string; category: string } | null> {
-  const out = await generate(cardLabelPrompt(speech), 64, 0.1);
-  const parsed = extractJson<{ label?: string; category?: string }>(out);
-  if (!parsed?.label || !parsed?.category) return null;
-  return { label: parsed.label, category: parsed.category };
+  const raw = await generate(cardLabelPrompt(speech), 24, 0.1);
+  const label = cleanLabel(raw);
+  if (!label) return null;
+  return { label, category: classifyLabel(label) };
 }
