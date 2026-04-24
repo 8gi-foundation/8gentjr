@@ -17,6 +17,7 @@
     "@huggingface/transformers": "^4.2.0",
     "@remotion/media-utils": "^4.0.448",
     "@remotion/player": "^4.0.448",
+    "@vercel/blob": "^2.3.3",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
