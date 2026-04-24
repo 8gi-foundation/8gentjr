@@ -132,10 +132,10 @@ export default function PrivacyPolicy() {
           <ul className="list-disc pl-6 space-y-1">
             <li>
               <strong>AI text requests:</strong> When your child uses
-              autocomplete, sentence improvement, or the parent chat, the text
-              is sent to Groq (our AI provider) for processing. Groq does not
-              store this data after processing. We do not log or store these
-              requests.
+              autocomplete or sentence improvement, the text may be sent to
+              Groq (our AI provider) for processing, only if you enable cloud
+              AI. Groq does not store this data after processing. We do not
+              log or store these requests. Cloud AI is disabled by default.
             </li>
             <li>
               <strong>Text-to-speech requests:</strong> Text is sent to our

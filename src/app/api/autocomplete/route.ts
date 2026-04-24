@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const provider = await createAIProviderWithFallback('llama-3.1-8b-instant');
 
     if (!provider) {
-      return NextResponse.json({ suggestions: [], offline: true });
+      return NextResponse.json({ suggestions: [], offline: true, aiGenerated: false });
     }
 
     const prompt = `You are an AAC (Augmentative and Alternative Communication) word suggestion assistant for a 7-year-old child.
@@ -72,11 +72,11 @@ Return ONLY a JSON array of 5 words, no explanation. Example: ["hello", "help", 
       }
     }
 
-    return NextResponse.json({ suggestions });
+    return NextResponse.json({ suggestions, aiGenerated: true });
   } catch (error) {
     console.error('[8gent Jr Autocomplete] Error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate suggestions', suggestions: [] },
+      { error: 'Failed to generate suggestions', suggestions: [], aiGenerated: false },
       { status: 500 }
     );
   }

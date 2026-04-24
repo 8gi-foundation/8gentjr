@@ -37,7 +37,7 @@ Terminology used in this codebase and why it matters. Using the wrong term confu
 | **Supercore / Core Word Board** | A fixed-position 50-word grid following Modified Fitzgerald Key. The `/talk` route. Based on Smartbox Supercore design principles. | General symbol board |
 | **ARASAAC** | Aragonese Centre of Augmentative and Alternative Communication. Provides 46,000+ free CC BY 4.0 pictographic symbols used throughout the app. | Any paid symbol library |
 | **Neurodivergent** | Umbrella term for people whose neurological development differs from the statistical norm: autism, ADHD, dyslexia, dyspraxia, etc. Preferred by the community over "special needs". | "Special needs", "disabled" (context-dependent) |
-| **SLT / SLP** | Speech and Language Therapist (UK/IE) / Speech-Language Pathologist (US). The clinical professional who prescribes and trains AAC use. Target professional user of Parent Chat. | OT (Occupational Therapist), different role |
+| **SLT / SLP** | Speech and Language Therapist (UK/IE) / Speech-Language Pathologist (US). The clinical professional who prescribes and trains AAC use. | OT (Occupational Therapist), different role |
 | **Co-regulation** | An adult helping a child regulate their emotional/sensory state before expecting communication. A key principle: communicate when regulated, regulate before communicating. | Self-regulation (child doing it independently) |
 | **PGC** | Psychiatric Genomics Consortium. Provides large-scale GWAS (genome-wide association study) data for ADHD, autism, and other conditions. Stored in `data/resources/index.json` as a research reference. | Clinical diagnosis tool |
 
@@ -179,7 +179,6 @@ Games are presented in a TikTok-style reels feed with topic filters and daily ac
 
 | Feature | Route | Description |
 |---------|-------|-------------|
-| **Parent Chat** | `/parent-chat` | Customise your child's AAC board through AI-powered conversation |
 | **Onboarding** | `/onboarding` | Problem-first onboarding flow: learns about your child before configuring the system |
 | **Settings** | `/settings` | App preferences and child profile configuration |
 | **Parental Gate** | (system) | Consent gate protecting all content (localStorage-based) |
