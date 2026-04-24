@@ -11,6 +11,28 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
+import { describeCard, preloadModel } from '@/lib/browser-llm/client';
+import { speak } from '@/lib/tts';
+
+const VALID_CATEGORIES: WordCategory[] = [
+  'pronoun', 'verb', 'noun', 'adjective', 'preposition', 'social', 'question', 'determiner', 'adverb',
+];
+
+async function findArasaacPictogram(searchTerm: string): Promise<{ id: number; imageUrl: string } | null> {
+  try {
+    const res = await fetch(
+      `https://api.arasaac.org/v1/pictograms/en/search/${encodeURIComponent(searchTerm)}`,
+      { headers: { Accept: 'application/json' } },
+    );
+    if (!res.ok) return null;
+    const results = (await res.json()) as Array<{ _id: number }>;
+    if (!results || results.length === 0) return null;
+    const id = results[0]._id;
+    return { id, imageUrl: `https://static.arasaac.org/pictograms/${id}/${id}_500.png` };
+  } catch {
+    return null;
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -295,16 +317,28 @@ export function VoiceCardCreator({ onSaved, showTrigger = true }: VoiceCardCreat
   const generateCard = useCallback(async (text: string) => {
     setPhase('processing');
     try {
-      const res = await fetch('/api/voice-card-create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ speech: text }),
-      });
-      if (!res.ok) throw new Error('API error');
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setCard(data as GeneratedCard);
+      const extracted = await describeCard(text);
+      if (!extracted) throw new Error('empty label');
+
+      const category: WordCategory = VALID_CATEGORIES.includes(extracted.category as WordCategory)
+        ? (extracted.category as WordCategory)
+        : 'noun';
+
+      const searchTerm = extracted.label.split(' ')[0].toLowerCase();
+      const pictogram =
+        (await findArasaacPictogram(searchTerm)) ??
+        (await findArasaacPictogram(extracted.label.toLowerCase()));
+
+      const generated: GeneratedCard = {
+        label: extracted.label,
+        category,
+        arasaacId: pictogram?.id ?? null,
+        imageUrl: pictogram?.imageUrl ?? null,
+        transcript: text,
+      };
+      setCard(generated);
       setPhase('preview');
+      speak({ text: extracted.label }).catch(() => { /* playback is best-effort */ });
     } catch {
       setErrorMsg("Couldn't create the card. Try again.");
       setPhase('error');
@@ -381,6 +415,8 @@ export function VoiceCardCreator({ onSaved, showTrigger = true }: VoiceCardCreat
   const handleOpen = useCallback(() => {
     setOpen(true);
     setPhase('idle');
+    // Warm the 135M label-extraction model while the user speaks. Fire-and-forget.
+    preloadModel().catch(() => { /* download may fail, generateCard surfaces that */ });
     // Auto-start listening immediately
     requestAnimationFrame(() => startListening());
   }, [startListening]);

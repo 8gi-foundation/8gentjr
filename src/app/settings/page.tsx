@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useApp, type AppSettings } from '@/context/AppContext';
 import { GLP_STAGES } from '@/lib/glp/stages';
+import SmartSuggestionsToggle from '@/components/SmartSuggestionsToggle';
 
 /**
  * 8gent Jr Settings Page
@@ -213,6 +214,11 @@ export default function SettingsPage() {
           </div>
         </Section>
 
+        {/* ── Smart Suggestions (on-device AI) ── */}
+        <Section title="Smart Suggestions" icon={<IconSpark />}>
+          <SmartSuggestionsToggle accent={accent} />
+        </Section>
+
         {/* ── Privacy & Consent ── */}
         <Section title="Privacy & Consent" icon={<IconShield />}>
           <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
@@ -309,6 +315,15 @@ function IconShield() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 2l8 4v6c0 5-3.5 9.4-8 10-4.5-.6-8-5-8-10V6l8-4z" />
+    </svg>
+  );
+}
+
+function IconSpark() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17l-1.9-5.1L4.5 10l5.6-1.4z" />
+      <path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" />
     </svg>
   );
 }
