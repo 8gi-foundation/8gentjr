@@ -1,28 +1,7 @@
 /**
- * Task prompts for SmolLM2-135M. Narrow, structured, JSON-constrained —
- * the model is tiny so we keep the cognitive load small.
+ * Task prompts for SmolLM2-135M. Only card-label extraction uses the model —
+ * next-word and sentence improvement run on the deterministic rules engine.
  */
-
-export function nextWordPrompt(sentenceSoFar: string, categoryHint?: string): string {
-  return [
-    'You help a child build a short sentence on an AAC board.',
-    'Return ONLY a JSON array of 3 single-word suggestions. No prose.',
-    `Sentence so far: "${sentenceSoFar}"`,
-    categoryHint ? `Category hint: ${categoryHint}` : '',
-    'Example: ["happy","tired","hungry"]',
-  ]
-    .filter(Boolean)
-    .join('\n');
-}
-
-export function improveSentencePrompt(raw: string): string {
-  return [
-    'Rewrite this child\'s AAC sentence as clear, natural English.',
-    'Keep meaning identical. Keep it under 12 words. No new ideas.',
-    'Return ONLY a JSON object: {"improved":"..."}',
-    `Input: "${raw}"`,
-  ].join('\n');
-}
 
 export function cardLabelPrompt(speech: string): string {
   return [

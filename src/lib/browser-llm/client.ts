@@ -1,19 +1,26 @@
 'use client';
 
 /**
- * Main-thread facade for the SmolLM2 web worker.
+ * Main-thread facade for the on-device smart-suggestions layer.
  *
- * Singleton — keeps the model warm for the lifetime of the tab so we don't
- * pay the re-init cost on each request. Safe to import from any client
- * component; the worker is lazy-created on first use.
+ * Hybrid design:
+ *   - suggestNextWords / improveSentence → deterministic rules engine in
+ *     src/lib/sentence-engine.ts. Instant, no model call, no download.
+ *   - describeCard → SmolLM2-135M in a web worker. The only task where
+ *     rules can't extract meaning from free-form speech.
+ *
+ * We kept the bar at 135M (~80 MB q4). Anything larger belongs in a native
+ * wrapper with Apple Foundation Model / Gemini Nano — not in the browser.
+ *
+ * The worker is singleton and lazy — card-label extraction pays the load
+ * cost the first time it's called, not on page load.
  */
 
 import {
-  cardLabelPrompt,
-  extractJson,
-  improveSentencePrompt,
-  nextWordPrompt,
-} from './prompts';
+  improveSentence as rulesImproveSentence,
+  suggestNextWord as rulesSuggestNextWord,
+} from '@/lib/sentence-engine';
+import { cardLabelPrompt, extractJson } from './prompts';
 
 export type LoadProgress = {
   phase: 'download' | 'init' | 'ready';
@@ -56,7 +63,6 @@ function getWorker(): Worker {
           entry.reject(new Error(msg.message));
         }
       } else {
-        // Load error — reject everyone in flight
         pending.forEach((entry) => entry.reject(new Error(msg.message)));
         pending.clear();
       }
@@ -108,20 +114,28 @@ async function generate(prompt: string, maxNewTokens: number, temperature: numbe
   });
 }
 
-export async function suggestNextWords(
-  sentenceSoFar: string,
-  categoryHint?: string
-): Promise<string[]> {
-  const raw = await generate(nextWordPrompt(sentenceSoFar, categoryHint), 48, 0.3);
-  const parsed = extractJson<unknown[]>(raw);
-  if (!Array.isArray(parsed)) return [];
-  return parsed.filter((w): w is string => typeof w === 'string').slice(0, 3);
+export async function generateRaw(
+  prompt: string,
+  maxNewTokens = 96,
+  temperature = 0.2
+): Promise<string> {
+  await preloadModel();
+  return generate(prompt, maxNewTokens, temperature);
 }
 
-export async function improveSentence(raw: string): Promise<string | null> {
-  const out = await generate(improveSentencePrompt(raw), 64, 0.2);
-  const parsed = extractJson<{ improved?: string }>(out);
-  return parsed?.improved ?? null;
+function tokenize(sentence: string): string[] {
+  return sentence
+    .split(/\s+/)
+    .map((w) => w.replace(/[^\p{L}\p{N}'-]/gu, ''))
+    .filter(Boolean);
+}
+
+export function suggestNextWords(sentenceSoFar: string): string[] {
+  return rulesSuggestNextWord(tokenize(sentenceSoFar)).slice(0, 3);
+}
+
+export function improveSentence(raw: string): string {
+  return rulesImproveSentence(tokenize(raw));
 }
 
 export async function describeCard(

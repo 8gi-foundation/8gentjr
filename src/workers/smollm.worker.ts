@@ -3,7 +3,13 @@
  * SmolLM2-135M browser-inference worker.
  *
  * Runs entirely on-device via @huggingface/transformers (WASM/WebGPU).
- * Model: HuggingFaceTB/SmolLM2-135M-Instruct (~80 MB q4).
+ * Loads SmolLM2-135M-Instruct at q4 (~80 MB) — the ceiling viable for a web
+ * PWA. Anything larger belongs in a native wrapper with Apple Foundation
+ * Model / Gemini Nano, not in the browser.
+ *
+ * Used only for card-label extraction from free-form speech. Next-word and
+ * sentence-improvement run on the deterministic rules engine in
+ * src/lib/sentence-engine.ts — no model call needed.
  *
  * No data leaves the device. No network after model download.
  */
@@ -15,7 +21,6 @@ import {
   type ProgressInfo,
 } from '@huggingface/transformers';
 
-// Prefer local cached weights; the browser's Cache API persists across sessions.
 env.allowLocalModels = false;
 env.allowRemoteModels = true;
 env.useBrowserCache = true;
