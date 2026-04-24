@@ -32,6 +32,13 @@ export interface AppSettings {
   /** Set once both consent emails are confirmed in the VPC flow. */
   parentEmailConfirmed: boolean;
   gatedAt: string | null;
+  /**
+   * Browser-side AI (SmolLM2) opt-in. Off by default — user must explicitly
+   * enable and accept the one-time download. All inference runs on-device.
+   */
+  smartSuggestionsEnabled: boolean;
+  /** True once the model weights are cached in the browser (Cache API). */
+  smollmDownloaded: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -50,6 +57,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   guardianConfirmed: false,
   parentEmailConfirmed: false,
   gatedAt: null,
+  smartSuggestionsEnabled: false,
+  smollmDownloaded: false,
 };
 
 const STORAGE_KEY = '8gentjr-app-settings';
