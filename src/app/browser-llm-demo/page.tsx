@@ -10,6 +10,7 @@ import {
   suggestNextWords,
   type LoadProgress,
 } from '@/lib/browser-llm/client';
+import { speak } from '@/lib/tts';
 
 /**
  * Internal smoke test for the hybrid smart-suggestions stack.
@@ -64,6 +65,26 @@ export default function BrowserLlmDemo() {
       const t0 = performance.now();
       const card = await describeCard('swimming at the pool with dad');
       append(`135M card (${Math.round(performance.now() - t0)}ms): ${JSON.stringify(card)}`);
+    } catch (err) {
+      append(`✗ ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const runFullFlow = async () => {
+    setBusy(true);
+    try {
+      const speech = 'swimming at the pool with dad';
+      append(`→ full flow: "${speech}"`);
+      const t0 = performance.now();
+      const card = await describeCard(speech);
+      append(`label (${Math.round(performance.now() - t0)}ms): ${JSON.stringify(card)}`);
+      if (card) {
+        const t1 = performance.now();
+        const engine = await speak({ text: card.label });
+        append(`spoken via ${engine} (${Math.round(performance.now() - t1)}ms)`);
+      }
     } catch (err) {
       append(`✗ ${err instanceof Error ? err.message : String(err)}`);
     } finally {
@@ -133,6 +154,13 @@ export default function BrowserLlmDemo() {
           className="px-4 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
         >
           Raw model output
+        </button>
+        <button
+          onClick={runFullFlow}
+          disabled={busy}
+          className="px-4 py-2 rounded bg-fuchsia-700 text-white disabled:opacity-50"
+        >
+          Full flow (describe + speak)
         </button>
       </div>
 
