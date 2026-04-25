@@ -22,7 +22,7 @@ export default function Step1ReceivedPage() {
         </p>
         <p className="text-sm mb-6" style={{ color: 'var(--brand-text-muted)' }}>
           If it does not arrive within about 15 minutes, check spam or contact
-          {' '}<span style={{ color: 'var(--brand-accent)' }}>privacy@8gi.org</span>.
+          {' '}<a href="mailto:privacy@8gentjr.com" style={{ color: 'var(--brand-accent)' }}>privacy@8gentjr.com</a>.
         </p>
         <Link href="/" className="text-sm underline" style={{ color: 'var(--brand-accent)' }}>
           Back to 8gent Jr

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { ActivatedRedirect } from './ActivatedRedirect';
 
 export const metadata = {
   title: 'Account activated',
@@ -17,17 +17,13 @@ export default function ActivatedPage() {
           Your child&apos;s account is active
         </h1>
         <p className="text-base mb-4" style={{ color: 'var(--brand-text-soft)' }}>
-          Thank you for confirming parental consent. Your child can now use 8gent Jr.
-          We kept an audit record of both confirmations as required by COPPA.
+          Thank you for confirming parental consent. Opening 8gent Jr&hellip;
         </p>
-        <p className="text-sm mb-6" style={{ color: 'var(--brand-text-muted)' }}>
+        <p className="text-sm" style={{ color: 'var(--brand-text-muted)' }}>
           To withdraw consent at any time, email
-          {' '}<span style={{ color: 'var(--brand-accent)' }}>privacy@8gi.org</span>.
+          {' '}<a href="mailto:privacy@8gentjr.com" style={{ color: 'var(--brand-accent)' }}>privacy@8gentjr.com</a>.
         </p>
-        <Link href="/talk" className="inline-block px-6 py-3 rounded-xl text-white font-semibold"
-          style={{ backgroundColor: 'var(--brand-accent)' }}>
-          Open 8gent Jr
-        </Link>
+        <ActivatedRedirect />
       </div>
     </main>
   );
