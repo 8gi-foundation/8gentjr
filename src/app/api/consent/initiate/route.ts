@@ -57,7 +57,6 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error('[vpc:initiate] failed', err);
-    const detail = err instanceof Error ? err.message : String(err);
-    return Response.json({ error: 'internal_error', detail }, { status: 500 });
+    return Response.json({ error: 'internal_error' }, { status: 500 });
   }
 }
