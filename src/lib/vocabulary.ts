@@ -5,9 +5,9 @@
  * Fitzgerald Key color categories and GLP (Gestalt Language Processing) principles.
  *
  * Two systems combined:
- * 1. Robust Core Vocabulary — ~100 high-frequency core words (pronouns, verbs,
+ * 1. Robust Core Vocabulary - ~100 high-frequency core words (pronouns, verbs,
  *    adjectives, etc.) that cover 80% of daily communication
- * 2. Topic Vocabulary — 200+ fringe words organized by category (food, places, etc.)
+ * 2. Topic Vocabulary - 200+ fringe words organized by category (food, places, etc.)
  *
  * Total: 500+ words with ARASAAC symbol URLs, category metadata, and phrase data.
  */
@@ -115,7 +115,7 @@ export const TOPIC_FITZGERALD_COLORS = {
 } as const;
 
 // =============================================================================
-// CORE VOCABULARY — Essential Words (~100 high-frequency words)
+// CORE VOCABULARY - Essential Words (~100 high-frequency words)
 // =============================================================================
 
 export const CORE_PRONOUNS: CoreWord[] = [
@@ -253,7 +253,7 @@ export const ALL_CORE_WORDS: CoreWord[] = [
 ];
 
 // =============================================================================
-// TOPIC VOCABULARY — Fringe words organized by category (400+ words)
+// TOPIC VOCABULARY - Fringe words organized by category (400+ words)
 // =============================================================================
 
 export const AAC_CATEGORIES: AACCategory[] = [
@@ -503,7 +503,7 @@ export const HOME_PHRASES: AACPhrase[] = [
 ];
 
 // =============================================================================
-// GLP Stage 1 — Sounds (earliest communicators)
+// GLP Stage 1 - Sounds (earliest communicators)
 // =============================================================================
 
 export const GLP_STAGE1_SOUNDS_CATEGORY: AACCategory = {
@@ -609,7 +609,7 @@ export function getTotalWordCount(): number {
 }
 
 /**
- * GLP T2.6 — heuristic: phrases of 3+ tokens are treated as gestalts (whole-language
+ * GLP T2.6 - heuristic: phrases of 3+ tokens are treated as gestalts (whole-language
  * scripts) per Marge Blanc NLA. Single words and 2-word combos stay analytic.
  *
  * Tokenisation is whitespace-split after trimming punctuation that the kid wouldn't

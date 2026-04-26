@@ -22,7 +22,7 @@ export interface SentenceChip {
   /** Optional inline styles for chip (category colour overrides) */
   style?: React.CSSProperties;
   /**
-   * GLP T2.6 — when true, this chip is a gestalt (whole-language script).
+   * GLP T2.6 - when true, this chip is a gestalt (whole-language script).
    * Renders a small quote glyph in the corner. Any sentence containing a
    * gestalt chip forces the speak button to mirror mode upstream.
    */
@@ -162,7 +162,7 @@ export function SharedSentenceBar({
                 <img src={chip.imageUrl} alt="" className="w-7 h-7 object-contain shrink-0" />
               )}
               <span>{chip.label}</span>
-              {/* T2.6 — gestalt corner glyph. Subtle quote mark, no colour change.
+              {/* T2.6 - gestalt corner glyph. Subtle quote mark, no colour change.
                   Stays within Fitzgerald Key palette (no banned hues 270-350). */}
               {chip.isGestalt && (
                 <span

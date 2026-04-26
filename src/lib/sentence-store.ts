@@ -1,5 +1,5 @@
 /**
- * Persistent Sentence Store — shared across all AAC surfaces.
+ * Persistent Sentence Store - shared across all AAC surfaces.
  *
  * Words added in Core grid or Browse categories persist until
  * the user manually clears them. Backed by localStorage.
@@ -17,7 +17,7 @@ export interface SentenceWord {
   /** Inline styles for chip (category colour) */
   style?: React.CSSProperties;
   /**
-   * GLP T2.6 — gestalt flag. `true` means this chip is a whole-language script
+   * GLP T2.6 - gestalt flag. `true` means this chip is a whole-language script
    * (parent-captured via VoiceCardCreator, or a multi-word phrase from vocab).
    * Any sentence containing a gestalt chip forces mirror mode regardless of
    * glpStage and skips /api/improve-sentence. Undefined is treated as `false`.
