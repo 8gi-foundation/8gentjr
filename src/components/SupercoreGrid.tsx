@@ -258,6 +258,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const showPersonalVocab = settings.showPersonalVocab !== false;
   const [cols, setCols] = useState(10);
   const [isMagicLoading, setIsMagicLoading] = useState(false);
+  const [isBlendLoading, setIsBlendLoading] = useState(false);
   const [engineFallback, setEngineFallback] = useState(false);
   const [yourWords, setYourWords] = useState<YourWordsCard[]>([]);
 
@@ -282,7 +283,22 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   // T2.6 - any gestalt chip in the sentence forces mirror at any stage.
   // glpDisabled (kill switch) overrides everything, so respect it.
   const gestaltMode = !glpDisabled && sentence.some(c => c.isGestalt);
-  const mirrorMode = stageMirrorMode || gestaltMode;
+  /**
+   * T3.8 - Blend mode (NLA stage 2 Mitigated Gestalts).
+   *
+   * Active when stage === 2 AND the sentence contains 2+ gestalt chips.
+   * Precedence (highest wins):
+   *   blendMode  -> button is "Blend" (LLM fuses gestalts).
+   *   mirrorMode -> button is "Mirror" (re-speak verbatim).
+   *   default    -> button is "Magic" (analytic improve, stage 3+).
+   *
+   * Stage 2 with only 1 gestalt + a single word still falls back to
+   * mirrorMode because stageMirrorMode (stage <= 2) covers that case.
+   * The kill switch (`!glpDisabled`) suppresses both blend and mirror.
+   */
+  const gestaltCount = sentence.filter(c => c.isGestalt).length;
+  const blendMode = !glpDisabled && stage === 2 && gestaltCount >= 2;
+  const mirrorMode = !blendMode && (stageMirrorMode || gestaltMode);
 
   // Responsive column count: 4 on phone, 5 on small tablet, 10 on desktop
   useEffect(() => {
@@ -446,6 +462,32 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
     speakText(sentence.map(w => w.label).join(' '));
   }, [sentence, speakText]);
 
+  // T3.8 - Blend handler. Calls /api/improve-sentence in 'blend' mode and
+  // speaks the fused gestalt. Falls back to plain concatenation on error.
+  const handleBlendSpeak = useCallback(async () => {
+    if (sentence.length < 2) return;
+    setIsBlendLoading(true);
+    const words = sentence.map(w => w.label);
+    try {
+      const res = await fetch('/api/improve-sentence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'blend', words }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const blended = (data.blended as string | undefined) || words.join(' ');
+        speakText(blended);
+      } else {
+        speakText(words.join(' '));
+      }
+    } catch {
+      speakText(words.join(' '));
+    } finally {
+      setIsBlendLoading(false);
+    }
+  }, [sentence, speakText]);
+
   // Intro cards - only when child name is known
   const introCols = Math.min(cols, 4);
   const introCards: { label: string; arasaacId?: number }[] = childName ? [
@@ -475,9 +517,11 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
       <SharedSentenceBar
         words={sentence}
         onSpeak={handleSpeakAll}
-        onMagic={mirrorMode ? undefined : handleMagicSpeak}
-        onMirror={mirrorMode ? handleMirrorSpeak : undefined}
+        onMagic={blendMode || mirrorMode ? undefined : handleMagicSpeak}
+        onMirror={blendMode ? undefined : (mirrorMode ? handleMirrorSpeak : undefined)}
+        onBlend={blendMode ? handleBlendSpeak : undefined}
         isMagicLoading={isMagicLoading}
+        isBlendLoading={isBlendLoading}
         onClear={handleClear}
         onRemoveWord={removeWord}
         engineFallback={engineFallback}

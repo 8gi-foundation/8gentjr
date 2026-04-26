@@ -44,6 +44,14 @@ export interface SharedSentenceBarProps {
    * If both onMagic and onMirror are provided, mirror takes precedence.
    */
   onMirror?: () => void;
+  /**
+   * Optional blend button. Replaces magic AND mirror at GLP stage 2 when the
+   * sentence contains 2+ gestalt chips. Fuses the gestalts into one coherent
+   * script via /api/improve-sentence (mode='blend'). Mutually exclusive with
+   * onMagic and onMirror - if onBlend is provided, it wins.
+   */
+  onBlend?: () => void;
+  isBlendLoading?: boolean;
   placeholder?: string;
   /**
    * Set to true briefly when browser TTS fallback fired (ElevenLabs was unavailable).
@@ -60,6 +68,8 @@ export function SharedSentenceBar({
   onMagic,
   isMagicLoading = false,
   onMirror,
+  onBlend,
+  isBlendLoading = false,
   placeholder = 'Tap words to build a sentence...',
   engineFallback = false,
 }: SharedSentenceBarProps) {
@@ -101,8 +111,27 @@ export function SharedSentenceBar({
         &#9654;
       </button>
 
-      {/* 🪞 Mirror replaces magic at GLP stages 1-2 (no LLM rewrite, just re-speak) */}
-      {onMirror ? (
+      {/*
+        Button precedence (highest first):
+        1. onBlend  - GLP stage 2 with 2+ gestalt chips. Fuses gestalts.
+        2. onMirror - GLP stages 1-2 fallback. Re-speaks verbatim.
+        3. onMagic  - GLP stage 3+. Light analytic improve.
+      */}
+      {onBlend ? (
+        <button
+          onClick={onBlend}
+          disabled={words.length < 2 || isBlendLoading}
+          className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-base font-bold transition-all ${
+            words.length >= 2 && !isBlendLoading
+              ? 'bg-sky-200 text-sky-700 hover:bg-sky-300 cursor-pointer active:scale-90 border-2 border-sky-700'
+              : 'bg-gray-600 text-white cursor-not-allowed'
+          } ${isBlendLoading ? 'animate-pulse' : ''}`}
+          aria-label="Blend sentence: fuse gestalts"
+          title="Blend: fuse phrases into one"
+        >
+          &#8753;
+        </button>
+      ) : onMirror ? (
         <button
           onClick={onMirror}
           disabled={words.length < 1}
