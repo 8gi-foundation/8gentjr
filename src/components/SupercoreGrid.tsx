@@ -2,7 +2,7 @@
 
 /**
  * Supercore 50 Core Word Grid
- * Issue #20: Fixed motor planning grid — words NEVER move.
+ * Issue #20: Fixed motor planning grid - words NEVER move.
  *
  * Fixed-position AAC grid following Smartbox Supercore design principles.
  * 50 high-frequency words covering ~40-45% of daily communication.
@@ -81,7 +81,7 @@ export function getGridCategoryColor(category: FitzgeraldCategory) {
 }
 
 // =============================================================================
-// Core Word Data — FIXED positions, NEVER reorder
+// Core Word Data - FIXED positions, NEVER reorder
 // =============================================================================
 
 interface CoreWord {
@@ -163,11 +163,11 @@ const SUPERCORE_50: CoreWord[] = [
 ];
 
 // =============================================================================
-// TTS Helper — ElevenLabs via tts.ts
+// TTS Helper - ElevenLabs via tts.ts
 // =============================================================================
 
 // =============================================================================
-// Sentence Strip — now uses SharedSentenceBar
+// Sentence Strip - now uses SharedSentenceBar
 // =============================================================================
 
 // =============================================================================
@@ -201,7 +201,7 @@ const CoreWordButton = React.memo(function CoreWordButton({ word, onTap }: { wor
 });
 
 // =============================================================================
-// Intro Card Button — for personalised greeting cards
+// Intro Card Button - for personalised greeting cards
 // =============================================================================
 
 const IntroCardButton = React.memo(function IntroCardButton({
@@ -264,7 +264,11 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   }, []);
 
   const stage = settings.glpStage ?? 3;
-  const mirrorMode = !glpDisabled && stage <= 2;
+  const stageMirrorMode = !glpDisabled && stage <= 2;
+  // T2.6 - any gestalt chip in the sentence forces mirror at any stage.
+  // glpDisabled (kill switch) overrides everything, so respect it.
+  const gestaltMode = !glpDisabled && sentence.some(c => c.isGestalt);
+  const mirrorMode = stageMirrorMode || gestaltMode;
 
   // Responsive column count: 4 on phone, 5 on small tablet, 10 on desktop
   useEffect(() => {
@@ -359,7 +363,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
     speakText(sentence.map(w => w.label).join(' '));
   }, [sentence, speakText]);
 
-  // Intro cards — only when child name is known
+  // Intro cards - only when child name is known
   const introCols = Math.min(cols, 4);
   const introCards: { label: string; arasaacId?: number }[] = childName ? [
     { label: `Hi! I'm ${childName}`, arasaacId: 27507 },
@@ -396,7 +400,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
         engineFallback={engineFallback}
       />
 
-      {/* Color Legend — single scrollable row */}
+      {/* Color Legend - single scrollable row */}
       <div className="flex gap-1 px-2 py-1 overflow-x-auto no-scrollbar shrink-0">
         {legendItems.map(({ category, label }) => {
           const cls = FITZGERALD_CLASSES[category];
@@ -423,7 +427,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
         {introCards.length > 0 && (
           <div className="px-1.5 pt-2 pb-1">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 px-0.5">
-              Say hello — {childName}
+              Say hello - {childName}
             </p>
             <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${introCols}, 1fr)` }}>
               {introCards.map((card, i) => (

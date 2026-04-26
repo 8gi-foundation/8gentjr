@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * VoiceCardCreator — parent voice-to-AAC-card builder.
+ * VoiceCardCreator - parent voice-to-AAC-card builder.
  *
  * Parent taps mic → speaks → card materialises in front of their eyes.
  * Sequence: idle → listening → processing → preview → saved
  *
- * Soft, careful, magical — deterministic output, animated reveal.
+ * Soft, careful, magical - deterministic output, animated reveal.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -46,6 +46,13 @@ interface GeneratedCard {
   arasaacId: number | null;
   imageUrl: string | null;
   transcript: string;
+  /**
+   * GLP T2.6 - parent-captured cards are gestalts by definition (Marge Blanc NLA).
+   * Always `true` for VoiceCardCreator output. Downstream surfaces that render
+   * this card into the sentence bar must propagate this flag onto the chip so
+   * the speak button cascades to mirror mode and skips /api/improve-sentence.
+   */
+  isGestalt: true;
 }
 
 interface VoiceCardCreatorProps {
@@ -64,11 +71,11 @@ function saveToLocalStorage(card: GeneratedCard) {
     const stored = JSON.parse(localStorage.getItem('8gentjr_custom_cards') || '[]');
     stored.unshift({ ...card, id: `custom-${Date.now()}`, createdAt: Date.now() });
     localStorage.setItem('8gentjr_custom_cards', JSON.stringify(stored.slice(0, 100)));
-  } catch { /* noop — localStorage not available */ }
+  } catch { /* noop - localStorage not available */ }
 }
 
 // ---------------------------------------------------------------------------
-// Listening Ring — pulsing red circle during speech recognition
+// Listening Ring - pulsing red circle during speech recognition
 // ---------------------------------------------------------------------------
 
 function ListeningRing({ transcript }: { transcript: string }) {
@@ -100,7 +107,7 @@ function ListeningRing({ transcript }: { transcript: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Processing Skeleton — card shape building itself
+// Processing Skeleton - card shape building itself
 // ---------------------------------------------------------------------------
 
 function ProcessingSkeleton() {
@@ -126,7 +133,7 @@ function ProcessingSkeleton() {
 }
 
 // ---------------------------------------------------------------------------
-// Card Preview — the magical reveal
+// Card Preview - the magical reveal
 // ---------------------------------------------------------------------------
 
 function CardPreview({
@@ -144,7 +151,7 @@ function CardPreview({
   const colors = FITZGERALD_COLORS[card.category] ?? FITZGERALD_COLORS.noun;
 
   useEffect(() => {
-    // Staggered reveal — image first, then label, then buttons
+    // Staggered reveal - image first, then label, then buttons
     const t1 = setTimeout(() => setImgVisible(true), 80);
     const t2 = setTimeout(() => setLabelVisible(true), 280);
     const t3 = setTimeout(() => setButtonsVisible(true), 480);
@@ -158,7 +165,7 @@ function CardPreview({
         className="w-44 h-52 rounded-3xl shadow-2xl flex flex-col items-center justify-between py-5 px-3 border-4 relative overflow-hidden animate-card-appear"
         style={{ backgroundColor: colors.bg, borderColor: colors.border }}
       >
-        {/* Category label — top-right chip */}
+        {/* Category label - top-right chip */}
         <div
           className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide opacity-70"
           style={{ backgroundColor: colors.border, color: colors.bg === '#FFEB3B' ? '#000' : '#fff' }}
@@ -335,6 +342,8 @@ export function VoiceCardCreator({ onSaved, showTrigger = true }: VoiceCardCreat
         arasaacId: pictogram?.id ?? null,
         imageUrl: pictogram?.imageUrl ?? null,
         transcript: text,
+        // T2.6 - parent voice-captured = gestalt, always.
+        isGestalt: true,
       };
       setCard(generated);
       setPhase('preview');
