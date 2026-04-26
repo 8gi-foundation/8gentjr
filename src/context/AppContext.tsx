@@ -39,6 +39,12 @@ export interface AppSettings {
   smartSuggestionsEnabled: boolean;
   /** True once the model weights are cached in the browser (Cache API). */
   smollmDownloaded: boolean;
+  /**
+   * GLP Tier 2.5 - "Your Words" pinned row at the top of /talk Core.
+   * On by default. Hides the row when the child has no qualifying words yet,
+   * regardless of this flag.
+   */
+  showPersonalVocab: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -59,6 +65,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   gatedAt: null,
   smartSuggestionsEnabled: false,
   smollmDownloaded: false,
+  showPersonalVocab: true,
 };
 
 const STORAGE_KEY = '8gentjr-app-settings';

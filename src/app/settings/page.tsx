@@ -219,6 +219,40 @@ export default function SettingsPage() {
           <SmartSuggestionsToggle accent={accent} />
         </Section>
 
+        {/* ── Your Words row (GLP T2.5 personal vocab promotion) ── */}
+        <Section title="Your Words row" icon={<IconStar />}>
+          <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
+            Pin the child&apos;s most-tapped words at the top of Talk. Hidden
+            automatically until a word has been tapped 5+ times in the last 7 days.
+          </p>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={settings.showPersonalVocab !== false}
+            onClick={() => updateSettings({ showPersonalVocab: !(settings.showPersonalVocab !== false) })}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-colors active:scale-[0.98]"
+            style={{
+              borderColor: settings.showPersonalVocab !== false ? accent : 'var(--warm-border, #E8E0D6)',
+              backgroundColor: settings.showPersonalVocab !== false ? `${accent}12` : 'white',
+            }}
+          >
+            <span className="font-semibold" style={{ color: 'var(--warm-text, #1A1614)' }}>
+              {settings.showPersonalVocab !== false ? 'Showing Your Words' : 'Hidden'}
+            </span>
+            <span
+              className="relative inline-block w-11 h-6 rounded-full transition-colors"
+              style={{ backgroundColor: settings.showPersonalVocab !== false ? accent : '#CBC5BC' }}
+            >
+              <span
+                className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform"
+                style={{
+                  transform: settings.showPersonalVocab !== false ? 'translateX(20px)' : 'translateX(0)',
+                }}
+              />
+            </span>
+          </button>
+        </Section>
+
         {/* ── Privacy & Consent ── */}
         <Section title="Privacy & Consent" icon={<IconShield />}>
           <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
@@ -324,6 +358,14 @@ function IconSpark() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17l-1.9-5.1L4.5 10l5.6-1.4z" />
       <path d="M19 16l.7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z" />
+    </svg>
+  );
+}
+
+function IconStar() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.1 8.6 22 9.3 16.7 14 18.2 21 12 17.3 5.8 21 7.3 14 2 9.3 8.9 8.6 12 2" />
     </svg>
   );
 }
