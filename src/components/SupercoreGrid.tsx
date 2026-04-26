@@ -29,6 +29,7 @@ import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
 import { logWord } from '@/lib/session-logger';
 import { speak as elevenLabsSpeak, preloadAudio } from '@/lib/tts';
 import { SharedSentenceBar } from '@/components/SharedSentenceBar';
+import { SuggestedRow } from '@/components/SuggestedRow';
 import { TapCard } from '@/components/TapCard';
 import { useSentence } from '@/hooks/useSentence';
 import { useApp } from '@/context/AppContext';
@@ -254,6 +255,17 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [engineFallback, setEngineFallback] = useState(false);
 
+  // Kill-switch — read once at mount. localStorage 8gentjr-glp-disable=true
+  // hides the Suggested row and forces the magic button on regardless of stage.
+  const [glpDisabled, setGlpDisabled] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setGlpDisabled(window.localStorage.getItem('8gentjr-glp-disable') === 'true');
+  }, []);
+
+  const stage = settings.glpStage ?? 3;
+  const mirrorMode = !glpDisabled && stage <= 2;
+
   // Responsive column count: 4 on phone, 5 on small tablet, 10 on desktop
   useEffect(() => {
     const check = () => {
@@ -332,6 +344,21 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
     logWord(label);
   }, [speakText, addWord]);
 
+  const handleSuggestedTap = useCallback((text: string) => {
+    speakText(text);
+    addWord({
+      label: text,
+      // Amber chip distinguishes adaptive suggestions from locked-grid words.
+      className: 'bg-amber-100 text-amber-900 border-amber-400',
+    });
+    logWord(text);
+  }, [speakText, addWord]);
+
+  const handleMirrorSpeak = useCallback(() => {
+    if (sentence.length === 0) return;
+    speakText(sentence.map(w => w.label).join(' '));
+  }, [sentence, speakText]);
+
   // Intro cards — only when child name is known
   const introCols = Math.min(cols, 4);
   const introCards: { label: string; arasaacId?: number }[] = childName ? [
@@ -361,7 +388,8 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
       <SharedSentenceBar
         words={sentence}
         onSpeak={handleSpeakAll}
-        onMagic={handleMagicSpeak}
+        onMagic={mirrorMode ? undefined : handleMagicSpeak}
+        onMirror={mirrorMode ? handleMirrorSpeak : undefined}
         isMagicLoading={isMagicLoading}
         onClear={handleClear}
         onRemoveWord={removeWord}
@@ -385,6 +413,11 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
 
       {/* Scrollable grid area */}
       <div className="flex-1 min-h-0 overflow-y-auto">
+
+        {/* Adaptive Suggested row — sits above intro + locked grid */}
+        {!glpDisabled && (
+          <SuggestedRow glpStage={stage} cols={cols} onTap={handleSuggestedTap} />
+        )}
 
         {/* Personalised intro row */}
         {introCards.length > 0 && (

@@ -32,6 +32,12 @@ export interface SharedSentenceBarProps {
   /** Optional magic ✨ button */
   onMagic?: () => void;
   isMagicLoading?: boolean;
+  /**
+   * Optional mirror 🪞 button — re-speaks the current sentence verbatim.
+   * Replaces the magic button at GLP stages 1-2 to avoid corrective rewrites.
+   * If both onMagic and onMirror are provided, mirror takes precedence.
+   */
+  onMirror?: () => void;
   placeholder?: string;
   /**
    * Set to true briefly when browser TTS fallback fired (ElevenLabs was unavailable).
@@ -47,6 +53,7 @@ export function SharedSentenceBar({
   onRemoveWord,
   onMagic,
   isMagicLoading = false,
+  onMirror,
   placeholder = 'Tap words to build a sentence...',
   engineFallback = false,
 }: SharedSentenceBarProps) {
@@ -88,8 +95,22 @@ export function SharedSentenceBar({
         &#9654;
       </button>
 
-      {/* ✨ Magic — only rendered when onMagic is provided */}
-      {onMagic && (
+      {/* 🪞 Mirror — replaces magic at GLP stages 1-2 (no LLM rewrite, just re-speak) */}
+      {onMirror ? (
+        <button
+          onClick={onMirror}
+          disabled={words.length < 1}
+          className={`shrink-0 w-10 h-10 rounded-xl text-white flex items-center justify-center text-base font-bold transition-all ${
+            words.length >= 1
+              ? 'bg-sky-500 hover:bg-sky-400 cursor-pointer active:scale-90'
+              : 'bg-gray-600 cursor-not-allowed'
+          }`}
+          aria-label="Mirror — re-speak sentence as is"
+          title="Mirror: say it back exactly"
+        >
+          &#129690;
+        </button>
+      ) : onMagic && (
         <button
           onClick={onMagic}
           disabled={words.length < 2 || isMagicLoading}
