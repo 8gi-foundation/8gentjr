@@ -1,105 +1,145 @@
 import { NextRequest } from 'next/server';
 import { createAIProviderWithFallback } from '@/lib/ai-provider';
+import { IMPROVE_PROMPT, BLEND_PROMPT } from '@/lib/glp-prompts';
 
 /**
- * 8gent Jr — Sentence Improvement API (Magic Button)
+ * 8gent Jr - Sentence Improvement / Blend API
  *
- * Takes raw AAC card words and returns a grammatically improved sentence.
- * Uses local Ollama (free) with Groq (free tier) as cloud fallback.
- * Ported from NickOS improve-sentence endpoint.
+ * Two modes:
+ * - 'improve' (default, stage 3+): grammar clean-up of word-by-word AAC input.
+ *   Returns JSON with { improved, explanation, missing }.
+ * - 'blend' (stage 2 mix-and-match): fuses 2+ whole gestalts into a single
+ *   coherent gestalt without inventing new words. Returns JSON with
+ *   { blended, original }. Falls back to plain concatenation on any error.
  *
- * Issue: #53
+ * Same provider chain (local Ollama with Groq fallback). Same auth.
+ *
+ * Issues: #53 (improve), #142 (blend)
  */
 
-const SYSTEM_PROMPT = `You are an AAC sentence improver for children. Your job is to take words from communication cards and form natural sentences.
+type Mode = 'improve' | 'blend';
 
-Rules:
-1. Keep the meaning EXACTLY the same
-2. Add only necessary grammar (articles, prepositions, conjugations)
-3. Keep sentences simple and age-appropriate
-4. Output should sound natural when spoken aloud
-5. Do NOT add new concepts or change the intent
-
-Also detect if the sentence is missing important vocabulary. Return suggestions for cards that would help.
-
-Example:
-Input: "I want apple juice"
-Output: "I would like some apple juice, please"
-Missing: None
-
-Example:
-Input: "go park"
-Output: "I want to go to the park"
-Missing: ["I", "want"] - core vocabulary for expressing desires
-
-Respond with JSON:
-{
-  "improved": "the improved sentence",
-  "explanation": "brief explanation of changes",
-  "missing": [
-    {
-      "word": "missing word",
-      "category": "core|actions|feelings|etc",
-      "reason": "why this would help"
-    }
-  ]
-}`;
-
-interface ImproveRequest {
-  cards: string[];
+interface RequestBody {
+  // Legacy improve payload kept for back-compat with existing callers.
+  cards?: string[];
+  // Preferred shape going forward; both modes accept either field.
+  words?: string[];
+  mode?: Mode;
 }
 
 export async function POST(request: NextRequest) {
+  let body: RequestBody;
   try {
-    const body: ImproveRequest = await request.json();
+    body = (await request.json()) as RequestBody;
+  } catch {
+    return jsonError('Invalid JSON body', 400);
+  }
 
-    if (!body.cards || !Array.isArray(body.cards) || body.cards.length === 0) {
-      return new Response(JSON.stringify({ error: 'Cards array required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+  const mode: Mode = body.mode === 'blend' ? 'blend' : 'improve';
+  const words = body.words ?? body.cards ?? [];
 
+  if (!Array.isArray(words) || words.length === 0) {
+    return jsonError(
+      mode === 'blend' ? 'words array required' : 'Cards array required',
+      400
+    );
+  }
+
+  const rawSentence = words.join(' ');
+
+  try {
     const provider = await createAIProviderWithFallback('llama-3.1-8b-instant');
 
-    const rawSentence = body.cards.join(' ');
-
     if (!provider) {
-      // Graceful degradation: return the raw sentence unchanged
-      return new Response(
-        JSON.stringify({
-          original: rawSentence,
-          improved: rawSentence,
-          explanation: 'AI unavailable — sentence returned as-is',
-          missing: [],
-        }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      return mode === 'blend'
+        ? blendFallback(words, rawSentence, 'AI unavailable - joined as-is')
+        : improveFallback(rawSentence, 'AI unavailable - sentence returned as-is');
+    }
+
+    if (mode === 'blend') {
+      const content = await provider.chat(
+        [
+          { role: 'system', content: BLEND_PROMPT },
+          {
+            role: 'user',
+            content: `Fuse these gestalts into one: ${JSON.stringify(words)}`,
+          },
+        ],
+        { max_tokens: 128 }
       );
+      const blended = sanitizeBlend(content) || rawSentence;
+      return jsonOk({ original: rawSentence, blended });
     }
 
     const content = await provider.chat(
       [
-        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'system', content: IMPROVE_PROMPT },
         { role: 'user', content: `Improve this AAC sentence: "${rawSentence}"` },
       ],
       { max_tokens: 512 }
     );
 
-    if (content) {
-      return parseAndRespond(content, rawSentence);
-    }
-
-    return new Response(JSON.stringify({ error: 'No response from AI' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    if (content) return parseAndRespond(content, rawSentence);
+    return jsonError('No response from AI', 500);
   } catch (error) {
-    console.error('[8gent Jr Improve] Error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error('[8gent Jr improve-sentence] Error:', error);
+    if (mode === 'blend') {
+      return blendFallback(words, rawSentence, 'Blend failed - joined as-is');
+    }
+    return jsonError('Internal server error', 500);
   }
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function jsonOk(payload: Record<string, unknown>): Response {
+  return new Response(JSON.stringify(payload), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+function jsonError(message: string, status: number): Response {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+function blendFallback(words: string[], rawSentence: string, explanation: string): Response {
+  return jsonOk({
+    original: rawSentence,
+    blended: words.join(' '),
+    explanation,
+  });
+}
+
+function improveFallback(rawSentence: string, explanation: string): Response {
+  return jsonOk({
+    original: rawSentence,
+    improved: rawSentence,
+    explanation,
+    missing: [],
+  });
+}
+
+/**
+ * The blend prompt asks for plain text, but small models sometimes wrap
+ * the output in quotes, code fences, or trailing commentary. Strip those
+ * back to a single-line plain string before returning.
+ */
+function sanitizeBlend(content: string | null | undefined): string {
+  if (!content) return '';
+  let s = content.trim();
+  // Strip code fences if present
+  const fenceMatch = s.match(/```(?:\w+)?\s*([\s\S]*?)```/);
+  if (fenceMatch) s = fenceMatch[1].trim();
+  // Take first non-empty line
+  const firstLine = s.split('\n').map(l => l.trim()).find(Boolean) ?? '';
+  // Strip surrounding quotes
+  return firstLine.replace(/^["'`]+|["'`]+$/g, '').trim();
 }
 
 function parseAndRespond(content: string, rawSentence: string): Response {
@@ -110,24 +150,18 @@ function parseAndRespond(content: string, rawSentence: string): Response {
       jsonStr = jsonMatch[1].trim();
     }
     const result = JSON.parse(jsonStr);
-    return new Response(
-      JSON.stringify({
-        original: rawSentence,
-        improved: result.improved,
-        explanation: result.explanation,
-        missing: result.missing || [],
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return jsonOk({
+      original: rawSentence,
+      improved: result.improved,
+      explanation: result.explanation,
+      missing: result.missing || [],
+    });
   } catch {
-    return new Response(
-      JSON.stringify({
-        original: rawSentence,
-        improved: content.trim(),
-        explanation: 'Grammar improved',
-        missing: [],
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    );
+    return jsonOk({
+      original: rawSentence,
+      improved: content.trim(),
+      explanation: 'Grammar improved',
+      missing: [],
+    });
   }
 }
