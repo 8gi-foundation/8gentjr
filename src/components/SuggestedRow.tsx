@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * SuggestedRow — adaptive layer above the locked Supercore grid.
+ * SuggestedRow: adaptive layer above the locked Supercore grid.
  *
  * Cards CAN reorder/refresh between sessions. Locked grid below NEVER moves.
  * Tinted background + soft pulse border signals "these can change" to children

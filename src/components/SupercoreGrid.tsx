@@ -255,7 +255,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [engineFallback, setEngineFallback] = useState(false);
 
-  // Kill-switch — read once at mount. localStorage 8gentjr-glp-disable=true
+  // Kill-switch read once at mount. localStorage 8gentjr-glp-disable=true
   // hides the Suggested row and forces the magic button on regardless of stage.
   const [glpDisabled, setGlpDisabled] = useState(false);
   useEffect(() => {
@@ -414,7 +414,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
       {/* Scrollable grid area */}
       <div className="flex-1 min-h-0 overflow-y-auto">
 
-        {/* Adaptive Suggested row — sits above intro + locked grid */}
+        {/* Adaptive Suggested row sits above intro + locked grid */}
         {!glpDisabled && (
           <SuggestedRow glpStage={stage} cols={cols} onTap={handleSuggestedTap} />
         )}

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * SharedSentenceBar — consistent sentence display bar used across all Talk screens.
+ * SharedSentenceBar - consistent sentence display bar used across all Talk screens.
  *
  * Matches the SupercoreGrid design language:
  * - bg-gray-800 bar
@@ -33,7 +33,7 @@ export interface SharedSentenceBarProps {
   onMagic?: () => void;
   isMagicLoading?: boolean;
   /**
-   * Optional mirror 🪞 button — re-speaks the current sentence verbatim.
+   * Optional mirror 🪞 button. Re-speaks the current sentence verbatim.
    * Replaces the magic button at GLP stages 1-2 to avoid corrective rewrites.
    * If both onMagic and onMirror are provided, mirror takes precedence.
    */
@@ -81,7 +81,7 @@ export function SharedSentenceBar({
       className={`flex items-center gap-1.5 px-2 py-1.5 min-h-[56px] bg-gray-800 rounded-xl mx-2 mt-2 shrink-0 transition-shadow duration-500 ${
         showFallbackGlow ? 'ring-2 ring-amber-400/70 shadow-[0_0_12px_2px_rgba(251,191,36,0.35)]' : ''
       }`}
-      title={showFallbackGlow ? 'Using backup voice — ElevenLabs unavailable' : undefined}
+      title={showFallbackGlow ? 'Using backup voice (ElevenLabs unavailable)' : undefined}
     >
       {/* ▶ Speak */}
       <button
@@ -95,7 +95,7 @@ export function SharedSentenceBar({
         &#9654;
       </button>
 
-      {/* 🪞 Mirror — replaces magic at GLP stages 1-2 (no LLM rewrite, just re-speak) */}
+      {/* 🪞 Mirror replaces magic at GLP stages 1-2 (no LLM rewrite, just re-speak) */}
       {onMirror ? (
         <button
           onClick={onMirror}
@@ -105,7 +105,7 @@ export function SharedSentenceBar({
               ? 'bg-sky-500 hover:bg-sky-400 cursor-pointer active:scale-90'
               : 'bg-gray-600 cursor-not-allowed'
           }`}
-          aria-label="Mirror — re-speak sentence as is"
+          aria-label="Mirror: re-speak sentence as is"
           title="Mirror: say it back exactly"
         >
           &#129690;
