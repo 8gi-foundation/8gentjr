@@ -30,11 +30,13 @@ import { logWord } from '@/lib/session-logger';
 import { speak as elevenLabsSpeak, preloadAudio } from '@/lib/tts';
 import { SharedSentenceBar } from '@/components/SharedSentenceBar';
 import { SuggestedRow } from '@/components/SuggestedRow';
+import { PredictiveStrip } from '@/components/PredictiveStrip';
 import { TapCard } from '@/components/TapCard';
 import { YourWordsRow, type YourWordsCard } from '@/components/YourWordsRow';
 import { useSentence } from '@/hooks/useSentence';
 import { useApp } from '@/context/AppContext';
 import { getPersonalVocab } from '@/lib/personal-vocab';
+import { predictNext, PREDICTIVE_CARD_COUNT } from '@/lib/predictive';
 
 // =============================================================================
 // Fitzgerald Key Color Definitions (mapped from shared vocabulary system)
@@ -407,6 +409,38 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
     logWord(text);
   }, [speakText, addWord]);
 
+  // T2.4 - predictive next-word strip. Recomputes on every sentence change
+  // (sentence.length covers add/remove/clear; lastWord covers identity).
+  // The bigram read inside predictNext is O(events-today) and runs <50ms
+  // for realistic logs; keeping it inside useMemo means it never blocks
+  // the tap path itself.
+  const lastWord = sentence.length > 0 ? sentence[sentence.length - 1].label : null;
+  const predictiveCards = useMemo(() => {
+    if (glpDisabled) return [];
+    return predictNext(lastWord, stage, PREDICTIVE_CARD_COUNT);
+    // sentence.length is intentional - bigrams are derived from the event
+    // log which appends on every tap, so we want the memo to recompute on
+    // any sentence change, not just last-word identity changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [glpDisabled, stage, lastWord, sentence.length]);
+
+  const handlePredictiveTap = useCallback((text: string) => {
+    speakText(text);
+    // Predictive chips reuse the locked-grid look when the candidate maps
+    // to a Supercore word, so the sentence strip stays consistent. Otherwise
+    // fall back to a sky chip (matches the strip's visual signature).
+    const match = supercoreByLabel.get(text.toLowerCase());
+    const className = match
+      ? `${FITZGERALD_CLASSES[match.category].bg} ${FITZGERALD_CLASSES[match.category].text} ${FITZGERALD_CLASSES[match.category].border}`
+      : 'bg-sky-100 text-sky-900 border-sky-300';
+    addWord({
+      label: match ? match.label : text,
+      imageUrl: match?.arasaacId ? ARASAAC_IMG(match.arasaacId) : undefined,
+      className,
+    });
+    logWord(text);
+  }, [speakText, addWord, supercoreByLabel]);
+
   const handleMirrorSpeak = useCallback(() => {
     if (sentence.length === 0) return;
     speakText(sentence.map(w => w.label).join(' '));
@@ -466,6 +500,13 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
 
       {/* Scrollable grid area */}
       <div className="flex-1 min-h-0 overflow-y-auto">
+
+        {/* T2.4 Predictive next-word strip - 4 cards, recomputes on every
+            tap. Sits above Your Words (frequency) + Suggested (stage) +
+            locked grid. Hidden by the GLP kill switch. */}
+        {!glpDisabled && (
+          <PredictiveStrip cards={predictiveCards} cols={cols} onTap={handlePredictiveTap} />
+        )}
 
         {/* Your Words: frequency-sorted personal vocab pinned at the very top.
             Sits above SuggestedRow + intro + locked grid. Hidden entirely
