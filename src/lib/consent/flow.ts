@@ -11,7 +11,8 @@
  *   confirmStep2 - consume step-2 token, activate child profile
  *
  * Delay between step-1 confirmation and step-2 send is controlled by
- * VPC_STEP2_DELAY_MS (default 600_000 = 10 min). Set 0 in tests.
+ * VPC_STEP2_DELAY_MS (default 86_400_000 = 24h, per FTC 16 CFR 312.5(b)(2)
+ * email-plus 24-72h band). Set 0 in tests.
  */
 
 import {
@@ -72,7 +73,7 @@ export async function initiate(input: InitiateInput): Promise<InitiateOutput> {
       '',
       url,
       '',
-      'A second confirmation email will arrive within about 10 minutes. Both must be clicked for the child account to activate. Links expire in 7 days.',
+      'A second confirmation email will arrive within 24 hours. Both must be clicked for the child account to activate. Links expire in 7 days.',
       '',
       'If you did not request this, you can safely ignore the email.',
       '',
@@ -138,10 +139,12 @@ export async function confirmStep1(
 }
 
 function getStep2DelayMs(): number {
+  // Default 24h per FTC 16 CFR 312.5(b)(2) email-plus 24-72h band.
+  const DEFAULT_DELAY_MS = 24 * 60 * 60 * 1000;
   const raw = process.env.VPC_STEP2_DELAY_MS;
-  if (raw === undefined) return 10 * 60 * 1000;
+  if (raw === undefined) return DEFAULT_DELAY_MS;
   const n = Number(raw);
-  return Number.isFinite(n) && n >= 0 ? n : 10 * 60 * 1000;
+  return Number.isFinite(n) && n >= 0 ? n : DEFAULT_DELAY_MS;
 }
 
 /**
