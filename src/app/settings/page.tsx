@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useApp, type AppSettings } from '@/context/AppContext';
-import { GLP_STAGES } from '@/lib/glp/stages';
+import { GLP_STAGES, getStage } from '@/lib/glp/stages';
 import SmartSuggestionsToggle from '@/components/SmartSuggestionsToggle';
+import { estimateStage, type StageEstimate } from '@/lib/stage-estimator';
 
 /**
  * 8gent Jr Settings Page
@@ -41,6 +43,13 @@ export default function SettingsPage() {
   const { settings, updateSettings } = useApp();
 
   const accent = settings.primaryColor || '#4CAF50';
+
+  // Read-only stage estimate from on-device session-logger events (T3.7).
+  // Computed client-side after mount so SSR stays deterministic.
+  const [estimate, setEstimate] = useState<StageEstimate | null>(null);
+  useEffect(() => {
+    setEstimate(estimateStage());
+  }, []);
 
   const resetDefaults = () => {
     updateSettings(DEFAULTS);
@@ -85,6 +94,9 @@ export default function SettingsPage() {
             }}
           />
         </Section>
+
+        {/* ── Stage estimate banner (read-only, T3.7) ── */}
+        <StageEstimateBanner estimate={estimate} />
 
         {/* ── GLP Stage ── */}
         <Section title="Language Stage" icon={<IconStage />}>
@@ -285,6 +297,57 @@ export default function SettingsPage() {
           8gent Jr v1.0. Made with care.
         </p>
       </div>
+    </div>
+  );
+}
+
+/* ── Stage estimate banner (T3.7) ── */
+function StageEstimateBanner({ estimate }: { estimate: StageEstimate | null }) {
+  // Pre-mount or zero-confidence: show "not enough data yet" copy.
+  const notEnough = !estimate || estimate.confidence === 0;
+
+  const stageMeta = estimate ? getStage(estimate.stage) : null;
+
+  return (
+    <div
+      className="rounded-2xl px-4 py-3 border"
+      style={{
+        backgroundColor: '#F0F9FF', // sky-50
+        borderColor: '#BAE6FD',     // sky-200
+      }}
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-2 mb-1">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#0369A1"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4" />
+          <path d="M12 8h.01" />
+        </svg>
+        <span className="text-xs font-bold uppercase tracking-wide" style={{ color: '#0369A1' }}>
+          Suggested stage
+        </span>
+      </div>
+      {notEnough || !stageMeta ? (
+        <p className="text-sm" style={{ color: '#0C4A6E' }}>
+          Not enough activity yet to estimate a stage. Keep using Talk and we will
+          suggest one once we have more data.
+        </p>
+      ) : (
+        <p className="text-sm" style={{ color: '#0C4A6E' }}>
+          Based on recent activity, your child appears to be at Stage {stageMeta.id}: {stageMeta.name}.
+          You can override this with the slider below.
+        </p>
+      )}
     </div>
   );
 }
