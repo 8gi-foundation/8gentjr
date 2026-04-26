@@ -599,6 +599,12 @@ export function getCoreWordsForFunction(fn: CommunicationFunction): CoreWord[] {
 }
 
 /** Get core words for a GLP stage (includes all lower stages) */
+// TODO(T3.9-followup): glpStage values on entries above were authored under the
+// old analytic-developmental model (1=single word, 2=two-word combo, ...). After
+// T3.9 the stage IDs follow Marge Blanc NLA order (1=echolalia gestalts,
+// 2=mitigated gestalts, 3=single words, 4=early sentences, 5=complex grammar,
+// 6=conversation). The numeric filter below is therefore slightly mis-scaled.
+// Re-grade the 600+ vocabulary entries in a dedicated PR.
 export function getCoreWordsForGLPStage(stage: number): CoreWord[] {
   return ALL_CORE_WORDS.filter(w => w.glpStage <= stage);
 }
