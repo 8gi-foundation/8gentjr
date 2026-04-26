@@ -24,15 +24,17 @@
  * - Red:     Negation (no, don't, stop)
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
 import { logWord } from '@/lib/session-logger';
 import { speak as elevenLabsSpeak, preloadAudio } from '@/lib/tts';
 import { SharedSentenceBar } from '@/components/SharedSentenceBar';
 import { SuggestedRow } from '@/components/SuggestedRow';
 import { TapCard } from '@/components/TapCard';
+import { YourWordsRow, type YourWordsCard } from '@/components/YourWordsRow';
 import { useSentence } from '@/hooks/useSentence';
 import { useApp } from '@/context/AppContext';
+import { getPersonalVocab } from '@/lib/personal-vocab';
 
 // =============================================================================
 // Fitzgerald Key Color Definitions (mapped from shared vocabulary system)
@@ -251,9 +253,19 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const { words: sentence, addWord, removeWord, clear } = useSentence();
   const { settings } = useApp();
   const childName = settings.childName?.trim() || '';
+  const showPersonalVocab = settings.showPersonalVocab !== false;
   const [cols, setCols] = useState(10);
   const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [engineFallback, setEngineFallback] = useState(false);
+  const [yourWords, setYourWords] = useState<YourWordsCard[]>([]);
+
+  // Lowercase label -> Supercore entry, for hydrating Your Words cards with
+  // pictograms when the tapped word lives on the locked grid. Built once.
+  const supercoreByLabel = useMemo(() => {
+    const map = new Map<string, CoreWord>();
+    for (const w of SUPERCORE_50) map.set(w.label.toLowerCase(), w);
+    return map;
+  }, []);
 
   // Kill-switch read once at mount. localStorage 8gentjr-glp-disable=true
   // hides the Suggested row and forces the magic button on regardless of stage.
@@ -287,6 +299,26 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   useEffect(() => {
     preloadAudio(SUPERCORE_50.map(w => w.label));
   }, []);
+
+  // Recompute Your Words on mount and after every sentence-strip change
+  // (each tap appends a word, which may push something past the threshold).
+  // Skipped entirely when the parent has hidden the row.
+  useEffect(() => {
+    if (!showPersonalVocab) {
+      setYourWords([]);
+      return;
+    }
+    const entries = getPersonalVocab();
+    const cards: YourWordsCard[] = entries.map(({ word, count }) => {
+      const match = supercoreByLabel.get(word);
+      return {
+        word,
+        count,
+        imageUrl: match?.arasaacId ? ARASAAC_IMG(match.arasaacId) : undefined,
+      };
+    });
+    setYourWords(cards);
+  }, [showPersonalVocab, sentence.length, supercoreByLabel]);
 
   const speakText = useCallback(async (text: string) => {
     if (onSpeak) { onSpeak(text); return; }
@@ -347,6 +379,23 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
     });
     logWord(label);
   }, [speakText, addWord]);
+
+  const handleYourWordsTap = useCallback((word: string, imageUrl?: string) => {
+    speakText(word);
+    // If the word lives on the locked grid, reuse its Fitzgerald chip so the
+    // sentence strip stays consistent with grid taps. Otherwise fall back to
+    // the amber chip (matches the Your Words row's visual signature).
+    const match = supercoreByLabel.get(word);
+    const className = match
+      ? `${FITZGERALD_CLASSES[match.category].bg} ${FITZGERALD_CLASSES[match.category].text} ${FITZGERALD_CLASSES[match.category].border}`
+      : 'bg-amber-200 text-amber-950 border-amber-500';
+    addWord({
+      label: match ? match.label : word,
+      imageUrl,
+      className,
+    });
+    logWord(word);
+  }, [speakText, addWord, supercoreByLabel]);
 
   const handleSuggestedTap = useCallback((text: string) => {
     speakText(text);
@@ -417,6 +466,14 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
 
       {/* Scrollable grid area */}
       <div className="flex-1 min-h-0 overflow-y-auto">
+
+        {/* Your Words: frequency-sorted personal vocab pinned at the very top.
+            Sits above SuggestedRow + intro + locked grid. Hidden entirely
+            when the threshold yields zero qualifying words (handled inside
+            YourWordsRow via empty cards). */}
+        {showPersonalVocab && (
+          <YourWordsRow cards={yourWords} cols={cols} onTap={handleYourWordsTap} />
+        )}
 
         {/* Adaptive Suggested row sits above intro + locked grid */}
         {!glpDisabled && (

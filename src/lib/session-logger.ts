@@ -108,6 +108,16 @@ export function clearOldLogs(daysToKeep = 30): void {
   saveEvents(events);
 }
 
+/**
+ * Read all stored events plus any unflushed pending ones.
+ *
+ * Exposed so callers (e.g. personal-vocab) can apply their own time-window
+ * and threshold logic without reimplementing the localStorage read.
+ */
+export function getAllEvents(): SessionEvent[] {
+  return [...getEvents(), ..._pending];
+}
+
 /** Compute aggregate stats from stored events (includes unflushed pending) */
 export function getSessionStats(): SessionStats {
   const events = [...getEvents(), ..._pending];
