@@ -46,6 +46,13 @@ interface GeneratedCard {
   arasaacId: number | null;
   imageUrl: string | null;
   transcript: string;
+  /**
+   * GLP T2.6 — parent-captured cards are gestalts by definition (Marge Blanc NLA).
+   * Always `true` for VoiceCardCreator output. Downstream surfaces that render
+   * this card into the sentence bar must propagate this flag onto the chip so
+   * the speak button cascades to mirror mode and skips /api/improve-sentence.
+   */
+  isGestalt: true;
 }
 
 interface VoiceCardCreatorProps {
@@ -335,6 +342,8 @@ export function VoiceCardCreator({ onSaved, showTrigger = true }: VoiceCardCreat
         arasaacId: pictogram?.id ?? null,
         imageUrl: pictogram?.imageUrl ?? null,
         transcript: text,
+        // T2.6 — parent voice-captured = gestalt, always.
+        isGestalt: true,
       };
       setCard(generated);
       setPhase('preview');

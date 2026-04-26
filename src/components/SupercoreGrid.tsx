@@ -264,7 +264,11 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   }, []);
 
   const stage = settings.glpStage ?? 3;
-  const mirrorMode = !glpDisabled && stage <= 2;
+  const stageMirrorMode = !glpDisabled && stage <= 2;
+  // T2.6 — any gestalt chip in the sentence forces mirror at any stage.
+  // glpDisabled (kill switch) overrides everything, so respect it.
+  const gestaltMode = !glpDisabled && sentence.some(c => c.isGestalt);
+  const mirrorMode = stageMirrorMode || gestaltMode;
 
   // Responsive column count: 4 on phone, 5 on small tablet, 10 on desktop
   useEffect(() => {

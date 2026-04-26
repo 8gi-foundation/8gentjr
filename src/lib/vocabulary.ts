@@ -37,6 +37,15 @@ export interface AACPhrase {
   spokenText?: string; // Optional different text to speak
   imageUrl: string;
   categoryId: string;
+  /**
+   * GLP gestalt flag. When `true`, this entry represents a whole-language
+   * script (Marge Blanc NLA Stage 1-2 gestalt) and the sentence containing it
+   * must NOT be sent to /api/improve-sentence. Defaults to `false` (analytic).
+   *
+   * Auto-set to `true` for phrases of 3+ words OR captured via VoiceCardCreator
+   * (parent-recorded phrases are gestalts by definition).
+   */
+  isGestalt?: boolean;
 }
 
 /** Communication functions a word can serve */
@@ -597,4 +606,17 @@ export function getCoreWordsForGLPStage(stage: number): CoreWord[] {
 /** Total word count across both systems */
 export function getTotalWordCount(): number {
   return ALL_CORE_WORDS.length + getAllPhrases().length + SOUNDS_PHRASES.length;
+}
+
+/**
+ * GLP T2.6 — heuristic: phrases of 3+ tokens are treated as gestalts (whole-language
+ * scripts) per Marge Blanc NLA. Single words and 2-word combos stay analytic.
+ *
+ * Tokenisation is whitespace-split after trimming punctuation that the kid wouldn't
+ * naturally separate (apostrophes preserved so "don't" stays one token).
+ */
+export function isPhraseGestalt(text: string): boolean {
+  if (!text) return false;
+  const tokens = text.trim().split(/\s+/).filter(Boolean);
+  return tokens.length >= 3;
 }

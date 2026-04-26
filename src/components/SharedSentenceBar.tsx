@@ -21,6 +21,12 @@ export interface SentenceChip {
   className?: string;
   /** Optional inline styles for chip (category colour overrides) */
   style?: React.CSSProperties;
+  /**
+   * GLP T2.6 — when true, this chip is a gestalt (whole-language script).
+   * Renders a small quote glyph in the corner. Any sentence containing a
+   * gestalt chip forces the speak button to mirror mode upstream.
+   */
+  isGestalt?: boolean;
 }
 
 export interface SharedSentenceBarProps {
@@ -141,17 +147,32 @@ export function SharedSentenceBar({
               key={`${chip.label}-${index}`}
               onClick={() => onRemoveWord?.(index)}
               disabled={!onRemoveWord}
-              className={`shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-lg font-bold text-sm border-2 transition-transform active:scale-95 ${
+              className={`relative shrink-0 flex items-center gap-1.5 px-2 py-1 rounded-lg font-bold text-sm border-2 transition-transform active:scale-95 ${
                 onRemoveWord ? 'cursor-pointer' : 'cursor-default'
               } ${chip.className ?? 'bg-gray-600 text-white border-gray-500'}`}
               style={chip.style}
-              aria-label={onRemoveWord ? `Remove ${chip.label}` : chip.label}
+              aria-label={
+                onRemoveWord
+                  ? `Remove ${chip.label}${chip.isGestalt ? ' (phrase)' : ''}`
+                  : `${chip.label}${chip.isGestalt ? ' (phrase)' : ''}`
+              }
             >
               {chip.imageUrl && (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={chip.imageUrl} alt="" className="w-7 h-7 object-contain shrink-0" />
               )}
               <span>{chip.label}</span>
+              {/* T2.6 — gestalt corner glyph. Subtle quote mark, no colour change.
+                  Stays within Fitzgerald Key palette (no banned hues 270-350). */}
+              {chip.isGestalt && (
+                <span
+                  aria-hidden="true"
+                  title="Whole phrase (gestalt)"
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gray-900/85 text-white text-[10px] leading-none flex items-center justify-center font-extrabold shadow-sm"
+                >
+                  &#8220;
+                </span>
+              )}
             </button>
           ))
         )}

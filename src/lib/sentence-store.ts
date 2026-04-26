@@ -5,6 +5,8 @@
  * the user manually clears them. Backed by localStorage.
  */
 
+import { isPhraseGestalt } from './vocabulary';
+
 const STORAGE_KEY = '8gentjr_sentence';
 
 export interface SentenceWord {
@@ -14,6 +16,13 @@ export interface SentenceWord {
   className?: string;
   /** Inline styles for chip (category colour) */
   style?: React.CSSProperties;
+  /**
+   * GLP T2.6 — gestalt flag. `true` means this chip is a whole-language script
+   * (parent-captured via VoiceCardCreator, or a multi-word phrase from vocab).
+   * Any sentence containing a gestalt chip forces mirror mode regardless of
+   * glpStage and skips /api/improve-sentence. Undefined is treated as `false`.
+   */
+  isGestalt?: boolean;
 }
 
 type Listener = () => void;
@@ -53,7 +62,13 @@ export const sentenceStore = {
   },
 
   addWord(word: SentenceWord) {
-    _words = [..._words, word];
+    // Auto-flag gestalts if caller didn't set isGestalt explicitly.
+    // Multi-word phrases (3+ tokens) are gestalts by Marge Blanc NLA.
+    const flagged: SentenceWord =
+      word.isGestalt === undefined
+        ? { ...word, isGestalt: isPhraseGestalt(word.label) }
+        : word;
+    _words = [..._words, flagged];
     persist();
     notify();
   },
