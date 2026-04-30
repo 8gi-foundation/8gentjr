@@ -6,7 +6,8 @@ import ParentEmailForm from '@/components/ParentEmailForm';
  *
  * Child-path accounts land here after the age gate. The form posts to
  * /api/consent/initiate which issues a signed step-1 token and sends email
- * #1. Step 2 is scheduled ~10 minutes after step-1 confirmation.
+ * #1. Step 2 is scheduled ~24 hours after step-1 confirmation
+ * (FTC 16 CFR 312.5(b)(2) email-plus 24-72h band).
  *
  * DPIA reference:
  *   8gi-governance/docs/legal/2026-04-21-8gentjr-dpia-interim.md
