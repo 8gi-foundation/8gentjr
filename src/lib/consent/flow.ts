@@ -6,12 +6,14 @@
  *
  * Steps:
  *   initiate     - send email #1
- *   confirmStep1 - consume step-1 token, schedule step-2 send
- *   sendStep2    - send email #2 (called after configured delay)
+ *   confirmStep1 - consume step-1 token, enqueue step-2 send on the scheduler
+ *   sendStep2    - send email #2 (called by the scheduler drain, either the
+ *                  in-process setTimeout in dev or Vercel Cron + Upstash in prod)
  *   confirmStep2 - consume step-2 token, activate child profile
  *
  * Delay between step-1 confirmation and step-2 send is controlled by
- * VPC_STEP2_DELAY_MS (default 600_000 = 10 min). Set 0 in tests.
+ * VPC_STEP2_DELAY_MS (default 24h = 86_400_000 ms, within the FTC 16 CFR
+ * §312.5(b)(2) email-plus 24-72h band). Set 0 in tests.
  */
 
 import {
@@ -21,6 +23,7 @@ import {
   isStep2Confirmed,
 } from './audit-store';
 import { getEmailSender } from './email-sender';
+import { getScheduler, type Step2Payload } from './scheduler';
 import { hashToken, issueToken, newSessionId, verifyToken } from './tokens';
 
 export interface RequestContext {
@@ -72,7 +75,7 @@ export async function initiate(input: InitiateInput): Promise<InitiateOutput> {
       '',
       url,
       '',
-      'A second confirmation email will arrive within about 10 minutes. Both must be clicked for the child account to activate. Links expire in 7 days.',
+      'A second confirmation email will arrive within the next day. Both must be clicked for the child account to activate. Links expire in 7 days.',
       '',
       'If you did not request this, you can safely ignore the email.',
       '',
@@ -137,42 +140,50 @@ export async function confirmStep1(
   return { ok: true, sid: payload.sid, email: payload.email, childProfileId: null };
 }
 
+const DEFAULT_STEP2_DELAY_MS = 24 * 60 * 60 * 1000;
+
 function getStep2DelayMs(): number {
   const raw = process.env.VPC_STEP2_DELAY_MS;
-  if (raw === undefined) return 10 * 60 * 1000;
+  if (raw === undefined) return DEFAULT_STEP2_DELAY_MS;
   const n = Number(raw);
-  return Number.isFinite(n) && n >= 0 ? n : 10 * 60 * 1000;
+  return Number.isFinite(n) && n >= 0 ? n : DEFAULT_STEP2_DELAY_MS;
 }
 
 /**
- * Schedule step-2 delivery. In this stub we use setTimeout in-process.
- * In production this should be swapped for a durable queue (Cloudflare
- * Queues, Inngest, or a cron row). Good enough for the PR - behind
- * VPC_STEP2_DELAY_MS so tests set 0.
- *
- * TODO (owner: james@8gi.org): replace with durable queue before prod.
+ * Enqueue step-2 delivery on the durable scheduler. In dev/test this falls
+ * back to setTimeout (InProcessScheduler). In prod this writes to Upstash
+ * Redis; delivery happens from the Vercel Cron handler at
+ * /api/consent/process-queue which calls drainStep2Queue().
  */
-export function scheduleStep2Send(args: {
+export async function scheduleStep2Send(args: {
   sid: string;
   email: string;
   baseUrl: string;
   childProfileId: string | null;
   ctx: RequestContext;
-}): void {
+}): Promise<void> {
   const delay = getStep2DelayMs();
-  const run = async () => {
-    try {
-      await sendStep2(args);
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.error('[vpc] step-2 send failed', err);
-    }
+  const payload: Step2Payload = {
+    sid: args.sid,
+    email: args.email,
+    baseUrl: args.baseUrl,
+    childProfileId: args.childProfileId,
+    ctx: args.ctx,
   };
-  if (delay === 0) {
-    void run();
-  } else {
-    setTimeout(() => void run(), delay).unref?.();
-  }
+  await getScheduler().schedule(payload, Date.now() + delay, deliverStep2);
+}
+
+/**
+ * Cron-facing drain. Returns counts for observability.
+ */
+export async function drainStep2Queue(
+  now = Date.now(),
+): Promise<{ delivered: number; failed: number }> {
+  return getScheduler().drainDue(deliverStep2, now);
+}
+
+async function deliverStep2(payload: Step2Payload): Promise<void> {
+  await sendStep2(payload);
 }
 
 export async function sendStep2(args: {
