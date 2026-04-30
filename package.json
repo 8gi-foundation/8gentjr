@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:banned-imports": "bun run scripts/check-banned-imports.ts",
     "prewarm": "node scripts/prewarm-tts.mjs",
     "test": "bun test",
     "privacy:pending": "node scripts/privacy-admin.mjs pending"

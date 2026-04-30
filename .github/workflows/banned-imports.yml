@@ -1,0 +1,24 @@
+name: ban affect-detection
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'app/**'
+      - 'lib/**'
+      - 'components/**'
+      - 'package.json'
+      - 'scripts/check-banned-imports.ts'
+      - '.github/workflows/banned-imports.yml'
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun run scripts/check-banned-imports.ts
