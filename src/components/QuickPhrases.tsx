@@ -2,11 +2,12 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
+import { usePinnedScripts } from "@/hooks/usePinnedScripts";
 import { speak } from "@/lib/tts";
 
 /* ── Types ───────────────────────────────────────────────── */
 
-interface SavedPhrase {
+interface SavedScript {
   id: string;
   text: string;
   category: string;
@@ -104,19 +105,19 @@ function catColor(cat: string) {
 
 const STORAGE_KEY = "8gentjr_phrases";
 
-function loadPhrases(): SavedPhrase[] {
+function loadScripts(): SavedScript[] {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]"); }
   catch { return []; }
 }
 
-function persistPhrases(phrases: SavedPhrase[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(phrases)); } catch {}
+function persistScripts(scripts: SavedScript[]) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(scripts)); } catch {}
 }
 
 /* ── Component ───────────────────────────────────────────── */
 
 export function QuickPhrases({ currentSentence }: { currentSentence?: string }) {
-  const [phrases,     setPhrases]     = useState<SavedPhrase[]>([]);
+  const [scripts,     setScripts]     = useState<SavedScript[]>([]);
   const [sheetOpen,   setSheetOpen]   = useState(false);
   const [inputMode,   setInputMode]   = useState<InputMode>("choose");
   const [draft,       setDraft]       = useState("");
@@ -126,8 +127,10 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
   const inputRef                      = useRef<HTMLInputElement>(null);
   const voice                         = useVoiceInput();
   const longPressTimer                = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wasLongPress                  = useRef(false);
+  const { toggle: togglePin, isPinned } = usePinnedScripts();
 
-  useEffect(() => { setPhrases(loadPhrases()); }, []);
+  useEffect(() => { setScripts(loadScripts()); }, []);
   useEffect(() => { if (voice.transcript) setDraft(voice.transcript); }, [voice.transcript]);
 
   /* ── Sheet open/close ──────────────────────────────────── */
@@ -149,47 +152,59 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
 
   /* ── Save ──────────────────────────────────────────────── */
 
-  const savePhrase = useCallback((text: string) => {
+  const saveScript = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
-    const p: SavedPhrase = {
+    const s: SavedScript = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       text: trimmed,
       category: autoCategory(trimmed),
       createdAt: Date.now(),
     };
-    const updated = [p, ...phrases];
-    setPhrases(updated);
-    persistPhrases(updated);
+    const updated = [s, ...scripts];
+    setScripts(updated);
+    persistScripts(updated);
     closeSheet();
-  }, [phrases, closeSheet]);
+  }, [scripts, closeSheet]);
 
   /* ── Delete ────────────────────────────────────────────── */
 
-  const deletePhrase = useCallback((id: string) => {
-    const updated = phrases.filter(p => p.id !== id);
-    setPhrases(updated);
-    persistPhrases(updated);
+  const deleteScript = useCallback((id: string) => {
+    const updated = scripts.filter(s => s.id !== id);
+    setScripts(updated);
+    persistScripts(updated);
     setDeletingId(null);
-  }, [phrases]);
+  }, [scripts]);
 
   /* ── Speak ─────────────────────────────────────────────── */
 
-  const speakPhrase = useCallback(async (text: string, id: string) => {
+  const speakScript = useCallback(async (text: string, id: string) => {
     if (speakingId) return;
     setSpeakingId(id);
     try { await speak({ text }); } catch {}
     setSpeakingId(null);
   }, [speakingId]);
 
-  /* ── Long press → delete ───────────────────────────────── */
+  /* ── Long press → delete (550ms hold) ─────────────────── */
 
   const onPressStart = (id: string) => {
-    longPressTimer.current = setTimeout(() => setDeletingId(id), 550);
+    wasLongPress.current = false;
+    longPressTimer.current = setTimeout(() => {
+      wasLongPress.current = true;
+      setDeletingId(id);
+    }, 550);
   };
   const onPressEnd = () => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
   };
+
+  /* ── Card tap handler ──────────────────────────────────── */
+
+  const onCardTap = useCallback((script: SavedScript) => {
+    if (wasLongPress.current) { wasLongPress.current = false; return; }
+    if (deletingId === script.id) { setDeletingId(null); return; }
+    speakScript(script.text, script.id);
+  }, [deletingId, speakScript]);
 
   /* ── Fitzgerald word append ────────────────────────────── */
 
@@ -199,14 +214,14 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
 
   /* ── Filter / group ────────────────────────────────────── */
 
-  const allCats = ["All", ...Array.from(new Set(phrases.map(p => p.category))).sort()];
-  const filtered = activeCat === "All" ? phrases : phrases.filter(p => p.category === activeCat);
-  const grouped = filtered.reduce<Record<string, SavedPhrase[]>>((acc, p) => {
-    (acc[p.category] ??= []).push(p);
+  const allCats = ["All", ...Array.from(new Set(scripts.map(s => s.category))).sort()];
+  const filtered = activeCat === "All" ? scripts : scripts.filter(s => s.category === activeCat);
+  const grouped = filtered.reduce<Record<string, SavedScript[]>>((acc, s) => {
+    (acc[s.category] ??= []).push(s);
     return acc;
   }, {});
 
-  const isEmpty = phrases.length === 0;
+  const isEmpty = scripts.length === 0;
 
   /* ── Render ────────────────────────────────────────────── */
 
@@ -236,7 +251,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
       {currentSentence && !sheetOpen && (
         <div className="px-4 pt-2 shrink-0">
           <button
-            onClick={() => savePhrase(currentSentence)}
+            onClick={() => saveScript(currentSentence)}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white border border-[#E8610A]/30 shadow-sm active:scale-[0.98] transition-transform"
           >
             <span className="text-xl">📌</span>
@@ -248,12 +263,12 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
         </div>
       )}
 
-      {/* ── Phrase list ───────────────────────────────────── */}
+      {/* ── Script list ───────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto min-h-0 px-4 pt-3 pb-24">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center pb-16">
             <p className="text-[22px] font-semibold text-[#1a1a2e] leading-snug max-w-[260px]">
-              Your phrases will live here
+              Your scripts will live here
             </p>
             <p className="text-[15px] text-[#8a7e70] max-w-[220px] leading-relaxed">
               Tap the orange button to add your first one
@@ -266,63 +281,83 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                 {cat}
               </p>
               <div className="flex flex-col gap-2">
-                {items.map(phrase => {
-                  const isPlaying  = speakingId  === phrase.id;
-                  const isDeleting = deletingId  === phrase.id;
+                {items.map(script => {
+                  const isPlaying  = speakingId  === script.id;
+                  const isDeleting = deletingId  === script.id;
+                  const pinned     = isPinned(script.id);
+
                   return (
                     <div
-                      key={phrase.id}
-                      className={`flex items-center gap-3 px-4 py-4 bg-white rounded-2xl transition-all duration-200 ${
+                      key={script.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={isDeleting ? "Tap to cancel delete" : `Speak: ${script.text}`}
+                      className={`flex items-center gap-3 px-4 py-4 bg-white rounded-2xl transition-all duration-200 cursor-pointer select-none active:scale-[0.98] ${
                         isDeleting
                           ? "border-2 border-red-400 bg-red-50"
                           : isPlaying
                           ? "border-2 border-[#E8610A]/40 shadow-[0_0_0_4px_rgba(232,97,10,0.08)]"
                           : "border border-[#EDE8E2] shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
                       }`}
-                      onPointerDown={() => onPressStart(phrase.id)}
+                      onClick={() => onCardTap(script)}
+                      onKeyDown={e => { if (e.key === "Enter" || e.key === " ") onCardTap(script); }}
+                      onPointerDown={() => onPressStart(script.id)}
                       onPointerUp={onPressEnd}
                       onPointerLeave={onPressEnd}
                     >
-                      {/* Play button */}
-                      <button
-                        onClick={() => {
-                          if (isDeleting) { setDeletingId(null); return; }
-                          speakPhrase(phrase.text, phrase.id);
-                        }}
-                        className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 ${
+                      {/* Speaking indicator */}
+                      <div
+                        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm transition-all duration-150 ${
                           isDeleting
-                            ? "bg-red-100 text-red-500"
+                            ? "bg-red-100 text-red-400"
                             : isPlaying
                             ? "bg-[#E8610A] text-white"
                             : "bg-[#FFF3EA] text-[#E8610A]"
                         }`}
-                        aria-label={isDeleting ? "Tap to cancel delete" : `Speak: ${phrase.text}`}
+                        aria-hidden="true"
                       >
-                        <span className={`text-xl ${isPlaying ? "animate-pulse" : ""}`}>
-                          {isDeleting ? "↩" : isPlaying ? "🔊" : "▶"}
+                        <span className={isPlaying ? "animate-pulse" : ""}>
+                          {isDeleting ? "!" : isPlaying ? "▶" : "▶"}
                         </span>
-                      </button>
+                      </div>
 
                       {/* Text */}
                       <div className="flex-1 min-w-0">
                         <p className={`font-semibold text-[16px] leading-snug ${isDeleting ? "text-red-600" : "text-[#1a1a2e]"}`}>
-                          {isDeleting ? "Hold to delete" : phrase.text}
+                          {isDeleting ? "Hold to delete" : script.text}
                         </p>
                         {!isDeleting && (
-                          <p className="text-[12px] font-medium mt-0.5" style={{ color: catColor(phrase.category) }}>
-                            {phrase.category}
+                          <p className="text-[12px] font-medium mt-0.5" style={{ color: catColor(script.category) }}>
+                            {script.category}
                           </p>
                         )}
                       </div>
 
-                      {/* Delete confirm */}
-                      {isDeleting && (
+                      {/* Right action: pin or delete-confirm */}
+                      {isDeleting ? (
                         <button
-                          onClick={() => deletePhrase(phrase.id)}
-                          className="shrink-0 w-11 h-11 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-lg shadow active:scale-90 transition-transform"
+                          onClick={e => { e.stopPropagation(); deleteScript(script.id); }}
+                          className="shrink-0 w-10 h-10 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-lg shadow active:scale-90 transition-transform"
                           aria-label="Confirm delete"
                         >
                           ✕
+                        </button>
+                      ) : (
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            onPressEnd();
+                            togglePin(script.id);
+                          }}
+                          className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[13px] font-bold transition-all duration-150 active:scale-90 ${
+                            pinned
+                              ? "bg-[#E8610A] text-white"
+                              : "bg-[#F0EDE9] text-[#8a7e70]"
+                          }`}
+                          aria-label={pinned ? `Remove from Home: ${script.text}` : `Add to Home: ${script.text}`}
+                          title={pinned ? "Remove from Home" : "Add to Home"}
+                        >
+                          {pinned ? "✓" : "+"}
                         </button>
                       )}
                     </div>
@@ -339,7 +374,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
         onClick={() => openSheet("choose")}
         className="absolute bottom-6 right-5 w-16 h-16 rounded-full bg-[#E8610A] text-white flex items-center justify-center shadow-[0_4px_20px_rgba(232,97,10,0.45)] active:scale-90 transition-transform z-10"
         style={{ fontSize: 36, lineHeight: 1 }}
-        aria-label="Add a phrase"
+        aria-label="Add a script"
       >
         +
       </button>
@@ -365,12 +400,12 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
           {/* ── Choose input method ─────────────────────────── */}
           {inputMode === "choose" && (
             <>
-              <h2 className="text-[20px] font-semibold text-[#1a1a2e] mb-5">Add a phrase</h2>
+              <h2 className="text-[20px] font-semibold text-[#1a1a2e] mb-5">Add a script</h2>
 
               {/* Save from sentence strip */}
               {currentSentence && (
                 <button
-                  onClick={() => savePhrase(currentSentence)}
+                  onClick={() => saveScript(currentSentence)}
                   className="w-full flex items-center gap-3 px-4 py-3.5 mb-4 rounded-2xl bg-[#FFF3EA] border border-[#E8610A]/25 active:scale-[0.98] transition-transform text-left"
                 >
                   <span className="text-2xl">📌</span>
@@ -420,7 +455,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                   ‹
                 </button>
                 <h2 className="text-[18px] font-semibold text-[#1a1a2e]">
-                  {inputMode === "text" ? "Type your phrase" : inputMode === "voice" ? "Speak your phrase" : "Build with words"}
+                  {inputMode === "text" ? "Type your script" : inputMode === "voice" ? "Speak your script" : "Build with words"}
                 </h2>
               </div>
 
@@ -433,7 +468,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
               >
                 {draft
                   ? <p className="text-[16px] font-semibold text-[#1a1a2e] leading-relaxed">{draft}</p>
-                  : <p className="text-[15px] text-[#B0A898]">Your phrase will appear here...</p>
+                  : <p className="text-[15px] text-[#B0A898]">Your script will appear here...</p>
                 }
               </div>
 
@@ -444,7 +479,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                   type="text"
                   value={draft}
                   onChange={e => setDraft(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && draft.trim()) savePhrase(draft); }}
+                  onKeyDown={e => { if (e.key === "Enter" && draft.trim()) saveScript(draft); }}
                   placeholder="Type here..."
                   className="w-full px-4 py-3.5 rounded-2xl border-2 border-[#EDE8E2] focus:border-[#E8610A] text-[16px] font-medium text-[#1a1a2e] mb-3 outline-none transition-colors bg-white"
                   autoCapitalize="sentences"
@@ -503,7 +538,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                   </button>
                 )}
                 <button
-                  onClick={() => savePhrase(draft)}
+                  onClick={() => saveScript(draft)}
                   disabled={!draft.trim()}
                   className={`flex-1 py-3.5 rounded-2xl font-semibold text-[16px] min-h-[52px] transition-all active:scale-[0.98] ${
                     draft.trim()
@@ -511,7 +546,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                       : "bg-[#F0EDE9] text-[#B0A898]"
                   }`}
                 >
-                  Save phrase
+                  Save script
                 </button>
               </div>
             </>
