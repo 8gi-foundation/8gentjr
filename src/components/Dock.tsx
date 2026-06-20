@@ -141,6 +141,14 @@ function IconToolshed({ color }: { color: string }) {
   );
 }
 
+function IconWave({ color }: { color: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 12c2 -4 4 -4 6 0s4 4 6 0 4 -4 6 0 4 4 6 0" />
+    </svg>
+  );
+}
+
 function IconBrain({ color }: { color: string }) {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -213,6 +221,7 @@ const MORE_ITEMS: MoreItem[] = [
   { id: 'science', label: 'Science', icon: IconFlask, href: '/science' },
   { id: 'timer', label: 'Timer', icon: IconTimer, href: '/timer' },
   { id: 'toolshed', label: 'Toolshed', icon: IconToolshed, href: '/toolshed' },
+  { id: 'math', label: 'Math', icon: IconWave, href: '/math' },
   { id: 'intuition', label: 'Intuition', icon: IconBrain, href: '/intuition' },
   { id: 'vsd', label: 'Scenes', icon: IconImage, href: '/vsd' },
   { id: 'parent-chat', label: 'Parent Chat', icon: IconParentChat, href: '/parent-chat' },

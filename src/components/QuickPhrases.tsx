@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { speak } from "@/lib/tts";
+import { useApp } from "@/context/AppContext";
 
 /* ── Types ───────────────────────────────────────────────── */
 
@@ -116,6 +117,7 @@ function persistPhrases(phrases: SavedPhrase[]) {
 /* ── Component ───────────────────────────────────────────── */
 
 export function QuickPhrases({ currentSentence }: { currentSentence?: string }) {
+  const { settings } = useApp();
   const [phrases,     setPhrases]     = useState<SavedPhrase[]>([]);
   const [sheetOpen,   setSheetOpen]   = useState(false);
   const [inputMode,   setInputMode]   = useState<InputMode>("choose");
@@ -123,6 +125,8 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
   const [activeCat,   setActiveCat]   = useState("All");
   const [speakingId,  setSpeakingId]  = useState<string | null>(null);
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
+  // Id of the phrase currently being edited (vs created). null = creating.
+  const [editingId,   setEditingId]   = useState<string | null>(null);
   const inputRef                      = useRef<HTMLInputElement>(null);
   const voice                         = useVoiceInput();
   const longPressTimer                = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -142,16 +146,27 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
   const closeSheet = useCallback(() => {
     setSheetOpen(false);
     setDraft("");
+    setEditingId(null);
     voice.stop();
     voice.reset();
     setTimeout(() => setInputMode("choose"), 300);
   }, [voice]);
 
-  /* ── Save ──────────────────────────────────────────────── */
+  /* ── Save (create OR edit) ─────────────────────────────── */
 
   const savePhrase = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
+    if (editingId) {
+      // Editing an existing phrase — keep its id/createdAt, update text + category.
+      const updated = phrases.map(p =>
+        p.id === editingId ? { ...p, text: trimmed, category: autoCategory(trimmed) } : p,
+      );
+      setPhrases(updated);
+      persistPhrases(updated);
+      closeSheet();
+      return;
+    }
     const p: SavedPhrase = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       text: trimmed,
@@ -162,7 +177,18 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
     setPhrases(updated);
     persistPhrases(updated);
     closeSheet();
-  }, [phrases, closeSheet]);
+  }, [phrases, closeSheet, editingId]);
+
+  /* ── Edit ──────────────────────────────────────────────── */
+
+  const editPhrase = useCallback((p: SavedPhrase) => {
+    setDeletingId(null);
+    setEditingId(p.id);
+    setInputMode("text");
+    setDraft(p.text);
+    setSheetOpen(true);
+    setTimeout(() => inputRef.current?.focus(), 320);
+  }, []);
 
   /* ── Delete ────────────────────────────────────────────── */
 
@@ -178,11 +204,11 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
   const speakPhrase = useCallback(async (text: string, id: string) => {
     if (speakingId) return;
     setSpeakingId(id);
-    try { await speak({ text }); } catch {}
+    try { await speak({ text, voiceId: settings.selectedVoiceId ?? undefined, rate: settings.ttsRate }); } catch {}
     setSpeakingId(null);
-  }, [speakingId]);
+  }, [speakingId, settings.selectedVoiceId, settings.ttsRate]);
 
-  /* ── Long press → delete ───────────────────────────────── */
+  /* ── Long press → reveal edit / delete actions ─────────── */
 
   const onPressStart = (id: string) => {
     longPressTimer.current = setTimeout(() => setDeletingId(id), 550);
@@ -274,7 +300,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                       key={phrase.id}
                       className={`flex items-center gap-3 px-4 py-4 bg-white rounded-2xl transition-all duration-200 ${
                         isDeleting
-                          ? "border-2 border-red-400 bg-red-50"
+                          ? "border-2 border-[#E8610A]/50 bg-[#FFF7F0]"
                           : isPlaying
                           ? "border-2 border-[#E8610A]/40 shadow-[0_0_0_4px_rgba(232,97,10,0.08)]"
                           : "border border-[#EDE8E2] shadow-[0_1px_4px_rgba(0,0,0,0.06)]"
@@ -291,12 +317,12 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                         }}
                         className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 ${
                           isDeleting
-                            ? "bg-red-100 text-red-500"
+                            ? "bg-[#F0EAE3] text-[#6B6256]"
                             : isPlaying
                             ? "bg-[#E8610A] text-white"
                             : "bg-[#FFF3EA] text-[#E8610A]"
                         }`}
-                        aria-label={isDeleting ? "Tap to cancel delete" : `Speak: ${phrase.text}`}
+                        aria-label={isDeleting ? "Close menu" : `Speak: ${phrase.text}`}
                       >
                         <span className={`text-xl ${isPlaying ? "animate-pulse" : ""}`}>
                           {isDeleting ? "↩" : isPlaying ? "🔊" : "▶"}
@@ -305,25 +331,35 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
 
                       {/* Text */}
                       <div className="flex-1 min-w-0">
-                        <p className={`font-semibold text-[16px] leading-snug ${isDeleting ? "text-red-600" : "text-[#1a1a2e]"}`}>
-                          {isDeleting ? "Hold to delete" : phrase.text}
+                        <p className="font-semibold text-[16px] leading-snug text-[#1a1a2e] truncate">
+                          {phrase.text}
                         </p>
-                        {!isDeleting && (
-                          <p className="text-[12px] font-medium mt-0.5" style={{ color: catColor(phrase.category) }}>
-                            {phrase.category}
-                          </p>
-                        )}
+                        <p
+                          className="text-[12px] font-medium mt-0.5"
+                          style={{ color: isDeleting ? "#9A9088" : catColor(phrase.category) }}
+                        >
+                          {isDeleting ? "Edit or delete" : phrase.category}
+                        </p>
                       </div>
 
-                      {/* Delete confirm */}
+                      {/* Edit / delete actions (revealed on long-press) */}
                       {isDeleting && (
-                        <button
-                          onClick={() => deletePhrase(phrase.id)}
-                          className="shrink-0 w-11 h-11 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-lg shadow active:scale-90 transition-transform"
-                          aria-label="Confirm delete"
-                        >
-                          ✕
-                        </button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => editPhrase(phrase)}
+                            className="w-11 h-11 rounded-full bg-[#FFF3EA] text-[#E8610A] flex items-center justify-center text-lg active:scale-90 transition-transform"
+                            aria-label={`Edit phrase: ${phrase.text}`}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            onClick={() => deletePhrase(phrase.id)}
+                            className="w-11 h-11 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-lg shadow active:scale-90 transition-transform"
+                            aria-label={`Delete phrase: ${phrase.text}`}
+                          >
+                            ✕
+                          </button>
+                        </div>
                       )}
                     </div>
                   );
@@ -420,7 +456,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                   ‹
                 </button>
                 <h2 className="text-[18px] font-semibold text-[#1a1a2e]">
-                  {inputMode === "text" ? "Type your phrase" : inputMode === "voice" ? "Speak your phrase" : "Build with words"}
+                  {editingId ? "Edit phrase" : inputMode === "text" ? "Type your phrase" : inputMode === "voice" ? "Speak your phrase" : "Build with words"}
                 </h2>
               </div>
 
@@ -511,7 +547,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                       : "bg-[#F0EDE9] text-[#B0A898]"
                   }`}
                 >
-                  Save phrase
+                  {editingId ? "Save changes" : "Save phrase"}
                 </button>
               </div>
             </>

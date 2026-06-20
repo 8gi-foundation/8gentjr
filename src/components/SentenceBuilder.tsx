@@ -110,11 +110,11 @@ export default function SentenceBuilder() {
     if (selectedWords.length === 0 || isSpeaking) return;
     setIsSpeaking(true);
     try {
-      await speak({ text: selectedWords.join(' '), rate: settings.ttsRate });
+      await speak({ text: selectedWords.join(' '), rate: settings.ttsRate, voiceId: settings.selectedVoiceId ?? undefined });
     } finally {
       setIsSpeaking(false);
     }
-  }, [selectedWords, isSpeaking, settings.ttsRate]);
+  }, [selectedWords, isSpeaking, settings.ttsRate, settings.selectedVoiceId]);
 
   // Magic: AI-improve the sentence, then speak it via ElevenLabs
   const handleMagic = useCallback(async () => {
@@ -130,13 +130,13 @@ export default function SentenceBuilder() {
         ? (await res.json()).improved ?? selectedWords.join(' ')
         : selectedWords.join(' ');
       setMagicPreview(improved);
-      await speak({ text: improved, rate: settings.ttsRate });
+      await speak({ text: improved, rate: settings.ttsRate, voiceId: settings.selectedVoiceId ?? undefined });
     } catch {
-      await speak({ text: selectedWords.join(' '), rate: settings.ttsRate });
+      await speak({ text: selectedWords.join(' '), rate: settings.ttsRate, voiceId: settings.selectedVoiceId ?? undefined });
     } finally {
       setIsMagicking(false);
     }
-  }, [selectedWords, isMagicking, settings.ttsRate]);
+  }, [selectedWords, isMagicking, settings.ttsRate, settings.selectedVoiceId]);
 
   const hasWords = selectedWords.length > 0;
 

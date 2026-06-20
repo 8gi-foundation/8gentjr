@@ -13,6 +13,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
 import { describeCard, preloadModel } from '@/lib/browser-llm/client';
 import { speak } from '@/lib/tts';
+import { useApp } from '@/context/AppContext';
 
 const VALID_CATEGORIES: WordCategory[] = [
   'pronoun', 'verb', 'noun', 'adjective', 'preposition', 'social', 'question', 'determiner', 'adverb',
@@ -296,6 +297,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 // ---------------------------------------------------------------------------
 
 export function VoiceCardCreator({ onSaved, showTrigger = true }: VoiceCardCreatorProps) {
+  const { settings } = useApp();
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [transcript, setTranscript] = useState('');
@@ -347,7 +349,7 @@ export function VoiceCardCreator({ onSaved, showTrigger = true }: VoiceCardCreat
       };
       setCard(generated);
       setPhase('preview');
-      speak({ text: extracted.label }).catch(() => { /* playback is best-effort */ });
+      speak({ text: extracted.label, voiceId: settings.selectedVoiceId ?? undefined, rate: settings.ttsRate }).catch(() => { /* playback is best-effort */ });
     } catch {
       setErrorMsg("Couldn't create the card. Try again.");
       setPhase('error');

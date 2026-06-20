@@ -96,6 +96,54 @@ function createNoiseBuffer(ctx: AudioContext): AudioBuffer {
   return buf;
 }
 
+/* ── Live pitch detection (record button) ───────────────────
+ * Autocorrelation pitch detector — detects the fundamental of a voice or
+ * instrument from the mic, so a sung note or a guitar string shapes the
+ * sand in real time (same idea as strumsurfer). Returns Hz, or -1 if the
+ * input is too quiet / unpitched. */
+function autoCorrelate(buf: Float32Array, sampleRate: number): number {
+  const SIZE = buf.length;
+  let rms = 0;
+  for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / SIZE);
+  if (rms < 0.01) return -1; // silence gate
+
+  let r1 = 0, r2 = SIZE - 1;
+  const thres = 0.2;
+  for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buf[i]) < thres) { r1 = i; break; }
+  for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buf[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+
+  const b = buf.slice(r1, r2);
+  const n = b.length;
+  const c = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n - i; j++) c[i] += b[j] * b[j + i];
+
+  let d = 0;
+  while (d < n - 1 && c[d] > c[d + 1]) d++;
+  let maxval = -1, maxpos = -1;
+  for (let i = d; i < n; i++) if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
+  let T0 = maxpos;
+  if (T0 <= 0) return -1;
+
+  // Parabolic interpolation around the peak for sub-sample accuracy.
+  const x1 = c[T0 - 1] ?? 0, x2 = c[T0], x3 = c[T0 + 1] ?? 0;
+  const a = (x1 + x3 - 2 * x2) / 2;
+  const bb = (x3 - x1) / 2;
+  if (a) T0 = T0 - bb / (2 * a);
+  return sampleRate / T0;
+}
+
+/** Map any frequency to one of the 8 Chladni note modes by pitch class,
+ *  so notes in any octave (low guitar, high voice) still shape a pattern. */
+const PITCH_CLASS_TO_MODE = [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 6, 6]; // C C# D D# E F F# G G# A A# B
+function freqToModeIndex(freq: number): number {
+  const midi = 69 + 12 * Math.log2(freq / 440);
+  const pc = ((Math.round(midi) % 12) + 12) % 12;
+  // High C-ish notes get the "C2 / Jewel" mode (index 7) for extra variety.
+  if (pc === 0 && freq > 240) return 7;
+  return PITCH_CLASS_TO_MODE[pc];
+}
+
 /* ── Component ──────────────────────────────────────────── */
 
 export function ChladniVisualizer() {
@@ -113,11 +161,22 @@ export function ChladniVisualizer() {
   const noiseBuf = useRef<AudioBuffer | null>(null);
   const mode = useRef<{ n: number; m: number } | null>(null);
 
+  /* Live-input (record) refs */
+  const micStream = useRef<MediaStream | null>(null);
+  const micAnalyser = useRef<AnalyserNode | null>(null);
+  const micBuf = useRef<Float32Array<ArrayBuffer> | null>(null);
+  const micRAF = useRef(0);
+  const lastDetectIdx = useRef<number | null>(null);
+  const lastDetectAt = useRef(0);
+
   /* UI state */
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const [activeAmbient, setActiveAmbient] = useState<string | null>(null);
   const [hue, setHue] = useState(280);
   const [volume, setVolume] = useState(50);
+  const [listening, setListening] = useState(false);
+  const [liveNote, setLiveNote] = useState<string | null>(null);
+  const [micError, setMicError] = useState<string | null>(null);
 
   useEffect(() => { hueRef.current = hue; }, [hue]);
   useEffect(() => {
@@ -265,6 +324,76 @@ export function ChladniVisualizer() {
     [playTone],
   );
 
+  /* ── Live input: mic → pitch → pattern (record button) ── */
+
+  const stopListening = useCallback(() => {
+    cancelAnimationFrame(micRAF.current);
+    micAnalyser.current?.disconnect();
+    micAnalyser.current = null;
+    micBuf.current = null;
+    if (micStream.current) {
+      micStream.current.getTracks().forEach((t) => t.stop());
+      micStream.current = null;
+    }
+    lastDetectIdx.current = null;
+    setListening(false);
+    setLiveNote(null);
+  }, []);
+
+  const startListening = useCallback(async () => {
+    setMicError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+      });
+      micStream.current = stream;
+      const ctx = getAudio();
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      src.connect(analyser); // analyser only — we never route the mic to output
+      micAnalyser.current = analyser;
+      micBuf.current = new Float32Array(analyser.fftSize);
+      setListening(true);
+
+      const loop = () => {
+        const a = micAnalyser.current;
+        const b = micBuf.current;
+        if (!a || !b) return;
+        const now = performance.now();
+        // Throttle the O(n²) detector to ~12 Hz — plenty for note tracking,
+        // cheap enough for low-end Android.
+        if (now - lastDetectAt.current > 80) {
+          lastDetectAt.current = now;
+          a.getFloatTimeDomainData(b);
+          const freq = autoCorrelate(b, ctx.sampleRate);
+          if (freq > 0) {
+            const idx = freqToModeIndex(freq);
+            const m = MODES[idx];
+            mode.current = { n: m.n, m: m.m };
+            setHue(Math.round((idx / (MODES.length - 1)) * 300));
+            if (idx !== lastDetectIdx.current) {
+              lastDetectIdx.current = idx;
+              setActiveIdx(idx);
+              setLiveNote(m.note);
+              scatter(particles.current); // re-energise sand on a new note
+            }
+          }
+        }
+        micRAF.current = requestAnimationFrame(loop);
+      };
+      micRAF.current = requestAnimationFrame(loop);
+    } catch {
+      setMicError("Microphone access is needed to shape sand with your voice.");
+      setListening(false);
+    }
+  }, [getAudio]);
+
+  const toggleListening = useCallback(() => {
+    if (listening) stopListening();
+    else startListening();
+  }, [listening, startListening, stopListening]);
+
   /* ── Canvas animation loop ───────────────────────────── */
 
   useEffect(() => {
@@ -350,10 +479,11 @@ export function ChladniVisualizer() {
     return () => {
       stopTone();
       stopNoise();
+      stopListening();
       if (audioCtx.current && audioCtx.current.state !== "closed")
         audioCtx.current.close();
     };
-  }, [stopTone, stopNoise]);
+  }, [stopTone, stopNoise, stopListening]);
 
   /* ── Render ──────────────────────────────────────────── */
 
@@ -382,6 +512,31 @@ export function ChladniVisualizer() {
 
         {/* Controls panel — beside canvas on tablet+ */}
         <div className="flex flex-col gap-3 w-full md:flex-1 md:py-2">
+          {/* Live input — sing or play an instrument to shape the sand */}
+          <button
+            onClick={toggleListening}
+            aria-pressed={listening}
+            aria-label={listening ? "Stop listening to your voice or instrument" : "Use your voice or an instrument to shape the sand"}
+            className={`flex items-center justify-center gap-2.5 w-full py-3 rounded-2xl border-2 font-bold cursor-pointer transition-all duration-150 select-none active:scale-[0.98] ${
+              listening
+                ? "bg-[#E23B2E] text-white border-[#E23B2E] shadow-[0_0_22px_rgba(226,59,46,0.5)]"
+                : "bg-white text-[#E23B2E] border-[#E23B2E]/40 hover:border-[#E23B2E]"
+            }`}
+          >
+            <span
+              className={`w-4 h-4 rounded-full ${listening ? "bg-white animate-pulse" : "bg-[#E23B2E]"}`}
+              aria-hidden="true"
+            />
+            {listening
+              ? liveNote
+                ? `Listening — heard ${liveNote}`
+                : "Listening… make a sound"
+              : "Sing or play to shape the sand"}
+          </button>
+          {micError && (
+            <p className="text-[12px] text-[#E23B2E] font-medium px-1 -mt-1">{micError}</p>
+          )}
+
           {/* Sliders row: Color + Volume */}
           <div className="flex flex-col gap-2 w-full">
             {/* Color slider */}
