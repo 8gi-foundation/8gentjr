@@ -18,6 +18,7 @@ import {
   detectPlatform,
   type InstallPlatform,
 } from '@/lib/pwa-install';
+import { LAYOUT_PRESETS, type LayoutPreset } from '@/lib/layout-presets';
 
 /**
  * 8gent Jr Settings Page
@@ -47,6 +48,12 @@ const DEFAULTS: Partial<AppSettings> = {
   ttsRate: 1.0,
   gridColumns: 3,
   glpStage: 3,
+  // Restore the default layout (matches the "Big & Simple" preset).
+  cardSize: 'large',
+  showPredictions: false,
+  showPersonalVocab: true,
+  density: 'relaxed',
+  activeLayoutPreset: 'big-simple',
 };
 
 export default function SettingsPage() {
@@ -187,6 +194,16 @@ export default function SettingsPage() {
           </div>
         </Section>
 
+        {/* ── Layout Presets ── */}
+        <Section title="Layout" icon={<IconLayout />}>
+          <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
+            Pick a ready-made layout for the Talk screen. Choosing one sets the
+            grid size, card size and helper rows together. Tweak any of those
+            below and the layout becomes &ldquo;Custom&rdquo;.
+          </p>
+          <LayoutPresetPicker accent={accent} />
+        </Section>
+
         {/* ── Grid Columns ── */}
         <Section title="Grid Size" icon={<IconGrid />}>
           <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
@@ -198,7 +215,7 @@ export default function SettingsPage() {
               return (
                 <button
                   key={cols}
-                  onClick={() => updateSettings({ gridColumns: cols })}
+                  onClick={() => updateSettings({ gridColumns: cols, activeLayoutPreset: 'custom' })}
                   className="flex-1 py-3 rounded-xl font-bold text-lg transition-all active:scale-95"
                   style={{
                     backgroundColor: active ? accent : 'white',
@@ -260,7 +277,7 @@ export default function SettingsPage() {
             type="button"
             role="switch"
             aria-checked={settings.showPersonalVocab !== false}
-            onClick={() => updateSettings({ showPersonalVocab: !(settings.showPersonalVocab !== false) })}
+            onClick={() => updateSettings({ showPersonalVocab: !(settings.showPersonalVocab !== false), activeLayoutPreset: 'custom' })}
             className="w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-colors active:scale-[0.98]"
             style={{
               borderColor: settings.showPersonalVocab !== false ? accent : 'var(--warm-border, #E8E0D6)',
@@ -577,6 +594,124 @@ function InstallSection({ accent }: { accent: string }) {
   );
 }
 
+/* ── Layout preset picker (radiogroup) ── */
+function LayoutPresetPicker({ accent }: { accent: string }) {
+  const { settings, updateSettings } = useApp();
+  const activeId = settings.activeLayoutPreset ?? 'custom';
+
+  const applyPreset = (preset: LayoutPreset) => {
+    updateSettings({
+      gridColumns: preset.gridColumns,
+      cardSize: preset.cardSize,
+      showPredictions: preset.showPredictions,
+      showPersonalVocab: preset.showPersonalVocab,
+      density: preset.density,
+      activeLayoutPreset: preset.id,
+    });
+  };
+
+  return (
+    <div className="space-y-2" role="radiogroup" aria-label="Talk screen layout">
+      {LAYOUT_PRESETS.map((preset) => {
+        const active = activeId === preset.id;
+        return (
+          <button
+            key={preset.id}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => applyPreset(preset)}
+            className="w-full flex items-center gap-3 text-left px-3 py-3 rounded-xl border-2 transition-all active:scale-[0.98]"
+            style={{
+              borderColor: active ? accent : 'var(--warm-border, #E8E0D6)',
+              backgroundColor: active ? `${accent}12` : 'white',
+            }}
+          >
+            <PresetHint preset={preset} />
+            <span className="flex-1 min-w-0">
+              <span className="flex items-center gap-2">
+                <span className="font-bold" style={{ color: active ? accent : 'var(--warm-text, #1A1614)' }}>
+                  {preset.name}
+                </span>
+                {active && (
+                  <span
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                    style={{ backgroundColor: accent }}
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </span>
+                )}
+              </span>
+              <span className="block text-sm mt-0.5" style={{ color: 'var(--warm-text-muted, #9A9088)' }}>
+                {preset.description}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+
+      {/* Custom state row: not selectable, only reflects hand-tuned settings. */}
+      {activeId === 'custom' && (
+        <div
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl border-2"
+          style={{ borderColor: accent, backgroundColor: `${accent}12` }}
+          aria-live="polite"
+        >
+          <span
+            className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-dashed"
+            style={{ borderColor: accent, color: accent }}
+            aria-hidden="true"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="flex items-center gap-2">
+              <span className="font-bold" style={{ color: accent }}>Custom</span>
+              <span
+                className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                style={{ backgroundColor: accent }}
+                aria-hidden="true"
+              >
+                ✓
+              </span>
+            </span>
+            <span className="block text-sm mt-0.5" style={{ color: 'var(--warm-text-muted, #9A9088)' }}>
+              Your own mix. Pick a layout above to start over.
+            </span>
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* Tiny visual hint: a mini grid preview mirroring the preset's columns/density. */
+function PresetHint({ preset }: { preset: LayoutPreset }) {
+  const cells = Array.from({ length: preset.hint.cells });
+  return (
+    <span
+      className="grid gap-0.5 w-12 h-12 p-1 rounded-lg flex-shrink-0 self-start"
+      style={{
+        gridTemplateColumns: `repeat(${preset.hint.cols}, 1fr)`,
+        backgroundColor: 'var(--warm-border-light, #F0EAE3)',
+      }}
+      aria-hidden="true"
+    >
+      {cells.map((_, i) => (
+        <span
+          key={i}
+          className="rounded-[2px]"
+          style={{ backgroundColor: preset.hint.color, opacity: 0.85 }}
+        />
+      ))}
+    </span>
+  );
+}
+
 /* ── Section wrapper ── */
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -629,6 +764,16 @@ function IconGrid() {
       <rect x="14" y="3" width="7" height="7" rx="1.5" />
       <rect x="3" y="14" width="7" height="7" rx="1.5" />
       <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+function IconLayout() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M3 9h18" />
+      <path d="M9 21V9" />
     </svg>
   );
 }

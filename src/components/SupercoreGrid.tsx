@@ -37,6 +37,7 @@ import { useSentence } from '@/hooks/useSentence';
 import { useApp } from '@/context/AppContext';
 import { getPersonalVocab } from '@/lib/personal-vocab';
 import { predictNext, PREDICTIVE_CARD_COUNT } from '@/lib/predictive';
+import { CARD_SIZE_TOKENS, type CardSize } from '@/lib/layout-presets';
 
 // =============================================================================
 // Fitzgerald Key Color Definitions (mapped from shared vocabulary system)
@@ -178,28 +179,30 @@ const SUPERCORE_50: CoreWord[] = [
 // Single Core Word Button
 // =============================================================================
 
-const CoreWordButton = React.memo(function CoreWordButton({ word, onTap }: { word: CoreWord; onTap: (w: CoreWord) => void }) {
+const CoreWordButton = React.memo(function CoreWordButton({ word, onTap, cardSize }: { word: CoreWord; onTap: (w: CoreWord) => void; cardSize: CardSize }) {
   const cls = FITZGERALD_CLASSES[word.category];
+  const tok = CARD_SIZE_TOKENS[cardSize];
   const handleTap = useCallback(() => onTap(word), [onTap, word]);
   return (
     <TapCard
       onTap={handleTap}
       ariaLabel={word.label}
       className={`flex flex-col items-center justify-center rounded-xl border-[3px] py-1.5 px-0.5 text-center leading-tight ${cls.bg} ${cls.text} ${cls.border}`}
-      style={{ minHeight: 80 }}
+      style={{ minHeight: tok.minHeight }}
     >
       {word.arasaacId && (
         /* eslint-disable-next-line @next/next/no-img-element */
         <img
           src={ARASAAC_IMG(word.arasaacId)}
           alt={word.label}
-          width={52}
-          height={52}
-          className="w-[52px] h-[52px] object-contain pointer-events-none"
+          width={tok.imgPx}
+          height={tok.imgPx}
+          style={{ width: tok.imgPx, height: tok.imgPx }}
+          className="object-contain pointer-events-none"
           loading="lazy"
         />
       )}
-      <span className="font-bold text-[14px] leading-none mt-0.5 w-full line-clamp-2 px-0.5">{word.label}</span>
+      <span className="font-bold leading-none mt-0.5 w-full line-clamp-2 px-0.5" style={{ fontSize: tok.fontPx }}>{word.label}</span>
     </TapCard>
   );
 });
@@ -256,6 +259,12 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const { settings } = useApp();
   const childName = settings.childName?.trim() || '';
   const showPersonalVocab = settings.showPersonalVocab !== false;
+  // Layout preset knobs. cardSize sizes the Core grid buttons; showPredictions
+  // (default true for legacy settings without the field) toggles the next-word
+  // strip. settings.gridColumns caps the desktop column count (see below).
+  const cardSize: CardSize = settings.cardSize ?? 'medium';
+  const showPredictions = settings.showPredictions !== false;
+  const preferredCols = settings.gridColumns;
   const [cols, setCols] = useState(10);
   const [isMagicLoading, setIsMagicLoading] = useState(false);
   const [isBlendLoading, setIsBlendLoading] = useState(false);
@@ -300,18 +309,21 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   const blendMode = !glpDisabled && stage === 2 && gestaltCount >= 2;
   const mirrorMode = !blendMode && (stageMirrorMode || gestaltMode);
 
-  // Responsive column count: 4 on phone, 5 on small tablet, 10 on desktop
+  // Responsive column count. Small screens stay capped for tap-target safety;
+  // on tablet/desktop the user's chosen grid size (settings.gridColumns, set
+  // directly or via a layout preset) drives the column count. Phones never
+  // exceed the preference but also never go below a readable minimum.
   useEffect(() => {
     const check = () => {
       const w = window.innerWidth;
-      if (w < 480) setCols(4);
-      else if (w < 768) setCols(5);
-      else setCols(10);
+      // Hard ceilings per breakpoint so cards stay tappable on small screens.
+      const ceiling = w < 480 ? 4 : w < 768 ? 6 : 10;
+      setCols(Math.max(1, Math.min(preferredCols, ceiling)));
     };
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
-  }, []);
+  }, [preferredCols]);
 
   // Preload all 50 core word audio clips so taps play instantly
   useEffect(() => {
@@ -552,7 +564,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
         {/* T2.4 Predictive next-word strip - 4 cards, recomputes on every
             tap. Sits above Your Words (frequency) + Suggested (stage) +
             locked grid. Hidden by the GLP kill switch. */}
-        {!glpDisabled && (
+        {!glpDisabled && showPredictions && (
           <PredictiveStrip cards={predictiveCards} cols={cols} onTap={handlePredictiveTap} />
         )}
 
@@ -594,7 +606,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
           style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}
         >
           {SUPERCORE_50.map(word => (
-            <CoreWordButton key={word.id} word={word} onTap={handleWordTap} />
+            <CoreWordButton key={word.id} word={word} onTap={handleWordTap} cardSize={cardSize} />
           ))}
         </div>
 
