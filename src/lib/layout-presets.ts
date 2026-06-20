@@ -116,35 +116,6 @@ export const LAYOUT_PRESETS: LayoutPreset[] = [
   },
 ];
 
-/** A friendly label + description for the 'custom' state shown in the picker. */
-export const CUSTOM_PRESET: Pick<LayoutPreset, 'id' | 'name' | 'description'> = {
-  id: 'custom',
-  name: 'Custom',
-  description: 'Your own mix. Change any layout setting and it lands here.',
-};
-
-/** Look up a preset by id. Returns undefined for 'custom' or unknown ids. */
-export function getLayoutPreset(id: LayoutPresetId | undefined): LayoutPreset | undefined {
-  return LAYOUT_PRESETS.find((p) => p.id === id);
-}
-
-/**
- * Given the current layout settings, return the id of the preset that matches
- * them exactly, or 'custom' if none do. Used to keep activeLayoutPreset honest
- * when individual settings are changed outside the preset picker.
- */
-export function matchPreset(s: LayoutSettingsBundle): LayoutPresetId {
-  const found = LAYOUT_PRESETS.find(
-    (p) =>
-      p.gridColumns === s.gridColumns &&
-      p.cardSize === s.cardSize &&
-      p.showPredictions === s.showPredictions &&
-      p.showPersonalVocab === s.showPersonalVocab &&
-      p.density === s.density,
-  );
-  return found ? found.id : 'custom';
-}
-
 /** Card sizing tokens consumed by the Core grid buttons. minHeight in px,
  *  fontPx for the label, imgPx for the pictogram. Kept here so the preset
  *  system fully owns the look of card size. */
