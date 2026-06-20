@@ -275,7 +275,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
       )}
 
       {/* ── Phrase list ───────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto min-h-0 px-4 pt-3 pb-24">
+      <div className="flex-1 overflow-y-auto min-h-0 px-4 pt-3 pb-24 touch-pan-y">
         {isEmpty ? (
           <div className="flex flex-col items-center justify-center h-full gap-4 text-center pb-16">
             <p className="text-[22px] font-semibold text-[#1a1a2e] leading-snug max-w-[260px]">
@@ -308,6 +308,8 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                       onPointerDown={() => onPressStart(phrase.id)}
                       onPointerUp={onPressEnd}
                       onPointerLeave={onPressEnd}
+                      onPointerCancel={onPressEnd}
+                      style={{ touchAction: "pan-y" }}
                     >
                       {/* Play button */}
                       <button
@@ -370,9 +372,10 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
         )}
       </div>
 
-      {/* ── FAB ───────────────────────────────────────────── */}
+      {/* ── FAB — opens straight to the keyboard (the common path);
+              the sheet's back arrow still reaches voice / word-build. ── */}
       <button
-        onClick={() => openSheet("choose")}
+        onClick={() => openSheet("text")}
         className="absolute bottom-6 right-5 w-16 h-16 rounded-full bg-[#E8610A] text-white flex items-center justify-center shadow-[0_4px_20px_rgba(232,97,10,0.45)] active:scale-90 transition-transform z-10"
         style={{ fontSize: 36, lineHeight: 1 }}
         aria-label="Add a phrase"
