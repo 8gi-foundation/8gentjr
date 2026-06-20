@@ -9,6 +9,15 @@ import { speak } from '@/lib/tts';
 import { GLP_STAGES, getStage } from '@/lib/glp/stages';
 import SmartSuggestionsToggle from '@/components/SmartSuggestionsToggle';
 import { estimateStage, type StageEstimate } from '@/lib/stage-estimator';
+import {
+  initPwaInstall,
+  subscribePwaInstall,
+  hasInstallPrompt,
+  promptInstall,
+  isStandalone,
+  detectPlatform,
+  type InstallPlatform,
+} from '@/lib/pwa-install';
 
 /**
  * 8gent Jr Settings Page
@@ -275,6 +284,11 @@ export default function SettingsPage() {
           </button>
         </Section>
 
+        {/* ── Install app / Add to Home Screen ── */}
+        <Section title="Install app" icon={<IconDownload />}>
+          <InstallSection accent={accent} />
+        </Section>
+
         {/* ── Privacy & Consent ── */}
         <Section title="Privacy & Consent" icon={<IconShield />}>
           <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
@@ -446,6 +460,123 @@ function VoicePicker({ accent }: { accent: string }) {
   );
 }
 
+/* ── Install app / Add to Home Screen (PWA) ── */
+function InstallSection({ accent }: { accent: string }) {
+  const [installed, setInstalled] = useState(false);
+  const [platform, setPlatform] = useState<InstallPlatform>('other');
+  const [canPrompt, setCanPrompt] = useState(false);
+
+  useEffect(() => {
+    initPwaInstall();
+    setInstalled(isStandalone());
+    setPlatform(detectPlatform());
+    setCanPrompt(hasInstallPrompt());
+    const unsub = subscribePwaInstall(() => setCanPrompt(hasInstallPrompt()));
+    return unsub;
+  }, []);
+
+  const handleInstall = async () => {
+    const outcome = await promptInstall();
+    if (outcome === 'accepted') setInstalled(true);
+  };
+
+  // Already installed → confirmation, nothing else to do.
+  if (installed) {
+    return (
+      <div
+        className="flex items-center gap-2 rounded-xl px-4 py-3 border-2"
+        style={{ borderColor: accent, backgroundColor: `${accent}12` }}
+        aria-live="polite"
+      >
+        <span
+          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+          style={{ backgroundColor: accent }}
+          aria-hidden="true"
+        >
+          ✓
+        </span>
+        <p className="font-semibold" style={{ color: 'var(--warm-text, #1A1614)' }}>
+          Installed — running as an app
+        </p>
+      </div>
+    );
+  }
+
+  // iOS / Safari: no beforeinstallprompt — show manual steps.
+  if (platform === 'ios' || (!canPrompt && platform === 'other')) {
+    return (
+      <div>
+        <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
+          Add 8gent Jr to your Home Screen so it opens full screen, like a real app —
+          no browser bar.
+        </p>
+        <div
+          className="rounded-xl px-4 py-3 border-2 space-y-2"
+          style={{ borderColor: 'var(--warm-border, #E8E0D6)', backgroundColor: 'white' }}
+        >
+          <div className="flex items-center gap-2">
+            <span
+              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+              style={{ backgroundColor: accent }}
+              aria-hidden="true"
+            >
+              1
+            </span>
+            <p className="text-sm" style={{ color: 'var(--warm-text, #1A1614)' }}>
+              Tap the{' '}
+              <span className="font-bold" style={{ color: accent }}>Share</span> button
+              in your browser&apos;s toolbar.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+              style={{ backgroundColor: accent }}
+              aria-hidden="true"
+            >
+              2
+            </span>
+            <p className="text-sm" style={{ color: 'var(--warm-text, #1A1614)' }}>
+              Choose{' '}
+              <span className="font-bold" style={{ color: accent }}>Add to Home Screen</span>.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Android / Chromium: one-tap native install when a deferred prompt exists.
+  return (
+    <div>
+      <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
+        Install 8gent Jr as an app — opens full screen, no browser bar, works offline.
+        This is the app; there is no separate download.
+      </p>
+      <button
+        type="button"
+        onClick={handleInstall}
+        disabled={!canPrompt}
+        aria-label="Install 8gent Jr as an app"
+        className="w-full min-h-[44px] py-3 rounded-xl font-bold text-base transition-all active:scale-[0.98] disabled:opacity-60"
+        style={{
+          backgroundColor: canPrompt ? accent : 'white',
+          color: canPrompt ? 'white' : 'var(--warm-text-muted, #9A9088)',
+          border: `2px solid ${canPrompt ? accent : 'var(--warm-border, #E8E0D6)'}`,
+        }}
+      >
+        {canPrompt ? 'Add to Home Screen' : 'Install not available yet'}
+      </button>
+      {!canPrompt && (
+        <p className="text-xs mt-2" style={{ color: 'var(--warm-text-muted, #9A9088)' }}>
+          Open this page in Chrome on Android to install. If you already installed it,
+          open it from your Home Screen.
+        </p>
+      )}
+    </div>
+  );
+}
+
 /* ── Section wrapper ── */
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -523,6 +654,16 @@ function IconStar() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polygon points="12 2 15.1 8.6 22 9.3 16.7 14 18.2 21 12 17.3 5.8 21 7.3 14 2 9.3 8.9 8.6 12 2" />
+    </svg>
+  );
+}
+
+function IconDownload() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
     </svg>
   );
 }
