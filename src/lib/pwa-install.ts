@@ -27,8 +27,14 @@ function notify() {
 }
 
 /**
- * Begin capturing the deferred install prompt. Idempotent — safe to call from
+ * Begin capturing the deferred install prompt. Idempotent - safe to call from
  * multiple components; only the first call wires the window listeners.
+ *
+ * `beforeinstallprompt` fires once, early. To avoid losing it we register the
+ * listener at module-evaluation time (see the self-init at the bottom of this
+ * file), not inside a React effect. Importing this module anywhere is enough to
+ * start capturing, so the deferred event survives even when the user's first
+ * page is onboarding or sign-in.
  */
 export function initPwaInstall(): void {
   if (initialized || typeof window === "undefined") return;
@@ -45,6 +51,13 @@ export function initPwaInstall(): void {
     deferredPrompt = null;
     notify();
   });
+}
+
+// Self-initialize as soon as this module is evaluated on the client. This runs
+// before any consuming component's effect, so the one-shot install event is
+// captured at the earliest possible moment regardless of which route mounts.
+if (typeof window !== "undefined") {
+  initPwaInstall();
 }
 
 /** Subscribe to deferred-prompt availability changes. Returns an unsubscribe fn. */

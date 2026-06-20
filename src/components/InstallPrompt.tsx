@@ -33,7 +33,7 @@ export function InstallPrompt() {
     // Start capturing the deferred prompt app-wide (idempotent).
     initPwaInstall();
 
-    // Already installed as standalone — never show the banner.
+    // Already installed as standalone - never show the banner.
     if (isStandalone()) return;
 
     // User previously dismissed.
@@ -43,7 +43,7 @@ export function InstallPrompt() {
     setPlatform(detected);
 
     if (detected === "ios") {
-      // iOS has no beforeinstallprompt — show manual steps after a short delay
+      // iOS has no beforeinstallprompt - show manual steps after a short delay
       // so it doesn't flash on page load.
       const t = setTimeout(() => setShow(true), 2000);
       return () => clearTimeout(t);
@@ -87,8 +87,8 @@ export function InstallPrompt() {
             </p>
             <p className="text-[#8a7e70] text-xs mt-0.5 leading-snug">
               {platform === "ios"
-                ? "Adds 8gent Jr to your Home Screen — opens full screen, no browser bar."
-                : "Opens full screen, no browser bar — works offline. This is the app."}
+                ? "Adds 8gent Jr to your Home Screen - opens full screen, no browser bar."
+                : "Opens full screen, no browser bar - works offline. This is the app."}
             </p>
           </div>
           <button

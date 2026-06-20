@@ -496,18 +496,18 @@ function InstallSection({ accent }: { accent: string }) {
           ✓
         </span>
         <p className="font-semibold" style={{ color: 'var(--warm-text, #1A1614)' }}>
-          Installed — running as an app
+          Installed - running as an app
         </p>
       </div>
     );
   }
 
-  // iOS / Safari: no beforeinstallprompt — show manual steps.
+  // iOS / Safari: no beforeinstallprompt - show manual steps.
   if (platform === 'ios' || (!canPrompt && platform === 'other')) {
     return (
       <div>
         <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
-          Add 8gent Jr to your Home Screen so it opens full screen, like a real app —
+          Add 8gent Jr to your Home Screen so it opens full screen, like a real app -
           no browser bar.
         </p>
         <div
@@ -550,7 +550,7 @@ function InstallSection({ accent }: { accent: string }) {
   return (
     <div>
       <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
-        Install 8gent Jr as an app — opens full screen, no browser bar, works offline.
+        Install 8gent Jr as an app - opens full screen, no browser bar, works offline.
         This is the app; there is no separate download.
       </p>
       <button
