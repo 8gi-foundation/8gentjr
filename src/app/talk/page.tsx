@@ -14,14 +14,16 @@ import { SupercoreGrid } from "@/components/SupercoreGrid";
 import AACHome from "@/components/AACHome";
 import { VoiceCardCreator } from "@/components/VoiceCardCreator";
 import { QuickPhrases } from "@/components/QuickPhrases";
+import { KeyboardSurface } from "@/components/KeyboardSurface";
 import { useSentence } from "@/hooks/useSentence";
 
-type ViewMode = "core" | "browse" | "phrases";
+type ViewMode = "core" | "browse" | "phrases" | "keyboard";
 
 const TABS: { id: ViewMode; label: string; icon: string }[] = [
-  { id: "core",    label: "Core",    icon: "⊞" },
-  { id: "browse",  label: "Browse",  icon: "🗂" },
-  { id: "phrases", label: "Phrases", icon: "💬" },
+  { id: "core",     label: "Core",     icon: "⊞" },
+  { id: "browse",   label: "Browse",   icon: "🗂" },
+  { id: "phrases",  label: "Phrases",  icon: "💬" },
+  { id: "keyboard", label: "Keyboard", icon: "⌨" },
 ];
 
 export default function TalkPage() {
@@ -61,9 +63,10 @@ export default function TalkPage() {
 
       {/* ── Main content ─────────────────────────────────── */}
       <div className="flex-1 overflow-hidden min-h-0" role="tabpanel">
-        {viewMode === "core"    && <SupercoreGrid />}
-        {viewMode === "browse"  && <AACHome />}
-        {viewMode === "phrases" && <QuickPhrases currentSentence={sentenceText} />}
+        {viewMode === "core"     && <SupercoreGrid />}
+        {viewMode === "browse"   && <AACHome />}
+        {viewMode === "phrases"  && <QuickPhrases currentSentence={sentenceText} />}
+        {viewMode === "keyboard" && <KeyboardSurface />}
       </div>
 
       {/* ── Parent voice card creator — floating mic ─────── */}

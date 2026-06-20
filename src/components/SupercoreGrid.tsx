@@ -547,7 +547,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
       </div>
 
       {/* Scrollable grid area */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y">
 
         {/* T2.4 Predictive next-word strip - 4 cards, recomputes on every
             tap. Sits above Your Words (frequency) + Suggested (stage) +
