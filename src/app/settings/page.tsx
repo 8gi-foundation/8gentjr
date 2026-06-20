@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useApp, type AppSettings } from '@/context/AppContext';
+import { VOICES, DEFAULT_VOICE_ID, VOICE_SAMPLE_TEXT } from '@/lib/voices';
+import { speak } from '@/lib/tts';
 import { GLP_STAGES, getStage } from '@/lib/glp/stages';
 import SmartSuggestionsToggle from '@/components/SmartSuggestionsToggle';
 import { estimateStage, type StageEstimate } from '@/lib/stage-estimator';
@@ -136,6 +138,14 @@ export default function SettingsPage() {
               );
             })}
           </div>
+        </Section>
+
+        {/* ── Voice ── */}
+        <Section title="Voice" icon={<IconVoice />}>
+          <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
+            Pick the voice that speaks for your child. Tap a voice to choose it, or press Play to hear a sample.
+          </p>
+          <VoicePicker accent={accent} />
         </Section>
 
         {/* ── TTS Rate ── */}
@@ -348,6 +358,90 @@ function StageEstimateBanner({ estimate }: { estimate: StageEstimate | null }) {
           You can override this with the slider below.
         </p>
       )}
+    </div>
+  );
+}
+
+/* ── Voice picker ── */
+function VoicePicker({ accent }: { accent: string }) {
+  const { settings, updateSettings } = useApp();
+  const activeId = settings.selectedVoiceId ?? DEFAULT_VOICE_ID;
+  const [previewing, setPreviewing] = useState<string | null>(null);
+
+  const playSample = async (id: string) => {
+    setPreviewing(id);
+    try {
+      await speak({ text: VOICE_SAMPLE_TEXT, voiceId: id, rate: settings.ttsRate });
+    } catch {
+      /* preview is best-effort */
+    } finally {
+      setPreviewing(null);
+    }
+  };
+
+  return (
+    <div className="space-y-2" role="radiogroup" aria-label="Speaking voice">
+      {VOICES.map((voice) => {
+        const active = activeId === voice.id;
+        return (
+          <div
+            key={voice.id}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all"
+            style={{
+              borderColor: active ? accent : 'var(--warm-border, #E8E0D6)',
+              backgroundColor: active ? `${accent}12` : 'white',
+            }}
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={active}
+              onClick={() => updateSettings({ selectedVoiceId: voice.id })}
+              className="flex-1 text-left active:scale-[0.98] transition-transform"
+            >
+              <div className="flex items-center gap-2">
+                <span className="font-bold" style={{ color: active ? accent : 'var(--warm-text, #1A1614)' }}>
+                  {voice.name}
+                </span>
+                <span
+                  className="text-[10px] font-bold px-1.5 py-0.5 rounded-md"
+                  style={{ backgroundColor: 'var(--warm-border-light, #F0EAE3)', color: 'var(--warm-text-muted, #9A9088)' }}
+                >
+                  {voice.accent}
+                </span>
+              </div>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--warm-text-muted, #9A9088)' }}>
+                {voice.blurb}
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => playSample(voice.id)}
+              disabled={previewing !== null}
+              aria-label={`Play a sample of ${voice.name}`}
+              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
+              style={{ backgroundColor: `${accent}18`, color: accent }}
+            >
+              {previewing === voice.id ? (
+                <span className="block w-3 h-3 rounded-sm" style={{ backgroundColor: accent }} aria-hidden="true" />
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </button>
+            {active && (
+              <span
+                className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                style={{ backgroundColor: accent }}
+                aria-hidden="true"
+              >
+                ✓
+              </span>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

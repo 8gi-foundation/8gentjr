@@ -340,9 +340,13 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
 
   const speakText = useCallback(async (text: string) => {
     if (onSpeak) { onSpeak(text); return; }
-    const engine = await elevenLabsSpeak({ text });
+    const engine = await elevenLabsSpeak({
+      text,
+      voiceId: settings.selectedVoiceId ?? undefined,
+      rate: settings.ttsRate,
+    });
     setEngineFallback(engine === 'browser');
-  }, [onSpeak]);
+  }, [onSpeak, settings.selectedVoiceId, settings.ttsRate]);
 
   const handleWordTap = useCallback((word: CoreWord) => {
     speakText(word.label);
