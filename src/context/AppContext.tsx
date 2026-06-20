@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { AccountType } from '@/lib/account';
+import type { CardSize, LayoutDensity, LayoutPresetId } from '@/lib/layout-presets';
 
 /**
  * 8gent Jr App Context
@@ -45,6 +46,16 @@ export interface AppSettings {
    * regardless of this flag.
    */
   showPersonalVocab: boolean;
+  /**
+   * Layout preset system. cardSize + showPredictions are layout knobs bundled
+   * by presets (see src/lib/layout-presets.ts). activeLayoutPreset records the
+   * currently selected preset, or 'custom' when the user has hand-tuned any
+   * layout setting. density is advisory metadata carried alongside the bundle.
+   */
+  cardSize: CardSize;
+  showPredictions: boolean;
+  density: LayoutDensity;
+  activeLayoutPreset: LayoutPresetId;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -66,6 +77,12 @@ const DEFAULT_SETTINGS: AppSettings = {
   smartSuggestionsEnabled: false,
   smollmDownloaded: false,
   showPersonalVocab: true,
+  // Layout preset defaults match the "Big & Simple" preset (3 columns, large
+  // cards, predictions off) - the safest starting point for new communicators.
+  cardSize: 'large',
+  showPredictions: false,
+  density: 'relaxed',
+  activeLayoutPreset: 'big-simple',
 };
 
 const STORAGE_KEY = '8gentjr-app-settings';
