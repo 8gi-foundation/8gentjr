@@ -4,6 +4,14 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useVoiceInput } from "@/hooks/useVoiceInput";
 import { speak } from "@/lib/tts";
 import { useApp } from "@/context/AppContext";
+import {
+  loadFolders,
+  persistFolders,
+  addFolder,
+  removeFolder,
+  normaliseFolder,
+  isAutoFolder,
+} from "@/lib/phrase-folders";
 
 /* ── Types ───────────────────────────────────────────────── */
 
@@ -119,10 +127,15 @@ function persistPhrases(phrases: SavedPhrase[]) {
 export function QuickPhrases({ currentSentence }: { currentSentence?: string }) {
   const { settings } = useApp();
   const [phrases,     setPhrases]     = useState<SavedPhrase[]>([]);
+  const [folders,     setFolders]     = useState<string[]>([]);
   const [sheetOpen,   setSheetOpen]   = useState(false);
   const [inputMode,   setInputMode]   = useState<InputMode>("choose");
   const [draft,       setDraft]       = useState("");
   const [activeCat,   setActiveCat]   = useState("All");
+  // Folder chosen in the add/edit sheet. "" = auto-categorise (default fallback).
+  const [folderChoice, setFolderChoice] = useState("");
+  // Draft text for the "New folder…" input inside the sheet.
+  const [newFolder,    setNewFolder]    = useState("");
   const [speakingId,  setSpeakingId]  = useState<string | null>(null);
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
   // Id of the phrase currently being edited (vs created). null = creating.
@@ -131,7 +144,7 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
   const voice                         = useVoiceInput();
   const longPressTimer                = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => { setPhrases(loadPhrases()); }, []);
+  useEffect(() => { setPhrases(loadPhrases()); setFolders(loadFolders()); }, []);
   useEffect(() => { if (voice.transcript) setDraft(voice.transcript); }, [voice.transcript]);
 
   /* ── Sheet open/close ──────────────────────────────────── */
@@ -139,6 +152,8 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
   const openSheet = useCallback((mode: InputMode = "choose") => {
     setInputMode(mode);
     setDraft("");
+    setFolderChoice("");
+    setNewFolder("");
     setSheetOpen(true);
     if (mode === "text") setTimeout(() => inputRef.current?.focus(), 320);
   }, []);
@@ -147,6 +162,8 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
     setSheetOpen(false);
     setDraft("");
     setEditingId(null);
+    setFolderChoice("");
+    setNewFolder("");
     voice.stop();
     voice.reset();
     setTimeout(() => setInputMode("choose"), 300);
@@ -154,13 +171,30 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
 
   /* ── Save (create OR edit) ─────────────────────────────── */
 
+  /**
+   * Resolve the folder for the phrase being saved.
+   * Commits a typed "New folder…" name (persisting it) when present, otherwise
+   * uses the picked folder. Falls back to autoCategory when nothing is chosen.
+   */
+  const resolveFolder = useCallback((text: string): string => {
+    const typed = normaliseFolder(newFolder);
+    if (typed) {
+      const { folders: next, name } = addFolder(folders, typed);
+      if (next !== folders) { setFolders(next); persistFolders(next); }
+      return name;
+    }
+    if (folderChoice) return folderChoice;
+    return autoCategory(text);
+  }, [folders, folderChoice, newFolder]);
+
   const savePhrase = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
+    const category = resolveFolder(trimmed);
     if (editingId) {
-      // Editing an existing phrase — keep its id/createdAt, update text + category.
+      // Editing an existing phrase: keep its id/createdAt, update text + folder.
       const updated = phrases.map(p =>
-        p.id === editingId ? { ...p, text: trimmed, category: autoCategory(trimmed) } : p,
+        p.id === editingId ? { ...p, text: trimmed, category } : p,
       );
       setPhrases(updated);
       persistPhrases(updated);
@@ -170,14 +204,14 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
     const p: SavedPhrase = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       text: trimmed,
-      category: autoCategory(trimmed),
+      category,
       createdAt: Date.now(),
     };
     const updated = [p, ...phrases];
     setPhrases(updated);
     persistPhrases(updated);
     closeSheet();
-  }, [phrases, closeSheet, editingId]);
+  }, [phrases, closeSheet, editingId, resolveFolder]);
 
   /* ── Edit ──────────────────────────────────────────────── */
 
@@ -186,6 +220,8 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
     setEditingId(p.id);
     setInputMode("text");
     setDraft(p.text);
+    setFolderChoice(p.category);
+    setNewFolder("");
     setSheetOpen(true);
     setTimeout(() => inputRef.current?.focus(), 320);
   }, []);
@@ -198,6 +234,15 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
     persistPhrases(updated);
     setDeletingId(null);
   }, [phrases]);
+
+  /* ── Remove an empty custom folder ─────────────────────── */
+
+  const deleteFolder = useCallback((name: string) => {
+    const next = removeFolder(folders, name);
+    setFolders(next);
+    persistFolders(next);
+    if (activeCat === name) setActiveCat("All");
+  }, [folders, activeCat]);
 
   /* ── Speak ─────────────────────────────────────────────── */
 
@@ -225,7 +270,11 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
 
   /* ── Filter / group ────────────────────────────────────── */
 
-  const allCats = ["All", ...Array.from(new Set(phrases.map(p => p.category))).sort()];
+  // Folders that exist on phrases (auto or custom) merged with persisted
+  // custom folders, so an empty custom folder still appears as a chip.
+  const phraseCats = Array.from(new Set(phrases.map(p => p.category)));
+  const allFolders = Array.from(new Set([...phraseCats, ...folders])).sort();
+  const allCats = ["All", ...allFolders];
   const filtered = activeCat === "All" ? phrases : phrases.filter(p => p.category === activeCat);
   const grouped = filtered.reduce<Record<string, SavedPhrase[]>>((acc, p) => {
     (acc[p.category] ??= []).push(p);
@@ -242,19 +291,41 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
       {/* ── Category filter ───────────────────────────────── */}
       {!isEmpty && (
         <div className="flex gap-2 px-4 pt-3 pb-2 overflow-x-auto no-scrollbar shrink-0">
-          {allCats.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setActiveCat(cat)}
-              className={`shrink-0 px-3.5 py-1.5 rounded-full text-[13px] font-semibold border transition-all duration-150 min-h-[36px] ${
-                activeCat === cat
-                  ? "bg-[#1a1a2e] text-white border-[#1a1a2e]"
-                  : "bg-white text-[#6b6460] border-[#E8E2DA]"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          {allCats.map(cat => {
+            const active = activeCat === cat;
+            // A custom folder with no phrases can be removed inline.
+            const isEmptyCustom =
+              cat !== "All" &&
+              !isAutoFolder(cat) &&
+              !phraseCats.includes(cat);
+            return (
+              <div
+                key={cat}
+                className={`shrink-0 flex items-center gap-1 rounded-full border transition-all duration-150 min-h-[44px] ${
+                  active
+                    ? "bg-[#1a1a2e] text-white border-[#1a1a2e]"
+                    : "bg-white text-[#6b6460] border-[#E8E2DA]"
+                }`}
+              >
+                <button
+                  onClick={() => setActiveCat(cat)}
+                  aria-pressed={active}
+                  className={`px-3.5 py-1.5 text-[13px] font-semibold ${isEmptyCustom && active ? "pr-1" : ""}`}
+                >
+                  {cat}
+                </button>
+                {isEmptyCustom && active && (
+                  <button
+                    onClick={() => deleteFolder(cat)}
+                    aria-label={`Remove empty folder: ${cat}`}
+                    className="w-9 h-9 mr-1 rounded-full flex items-center justify-center text-[15px] font-bold active:scale-90 transition-transform"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -530,6 +601,54 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                   })}
                 </div>
               )}
+
+              {/* ── Folder picker ───────────────────────────── */}
+              <div className="mb-3">
+                <p className="text-[11px] font-bold text-[#8a7e70] uppercase tracking-widest mb-2">
+                  Folder
+                </p>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {/* Auto (default) */}
+                  <button
+                    onClick={() => { setFolderChoice(""); setNewFolder(""); }}
+                    aria-pressed={folderChoice === "" && !newFolder.trim()}
+                    className={`px-3.5 py-2 rounded-full text-[13px] font-semibold border min-h-[44px] active:scale-95 transition-all ${
+                      folderChoice === "" && !newFolder.trim()
+                        ? "bg-[#1a1a2e] text-white border-[#1a1a2e]"
+                        : "bg-white text-[#6b6460] border-[#E8E2DA]"
+                    }`}
+                  >
+                    Auto
+                  </button>
+                  {allFolders.map(f => {
+                    const active = folderChoice === f && !newFolder.trim();
+                    return (
+                      <button
+                        key={f}
+                        onClick={() => { setFolderChoice(f); setNewFolder(""); }}
+                        aria-pressed={active}
+                        className={`px-3.5 py-2 rounded-full text-[13px] font-semibold border min-h-[44px] active:scale-95 transition-all ${
+                          active
+                            ? "bg-[#1a1a2e] text-white border-[#1a1a2e]"
+                            : "bg-white text-[#6b6460] border-[#E8E2DA]"
+                        }`}
+                      >
+                        {f}
+                      </button>
+                    );
+                  })}
+                </div>
+                <input
+                  type="text"
+                  value={newFolder}
+                  onChange={e => { setNewFolder(e.target.value); if (e.target.value.trim()) setFolderChoice(""); }}
+                  placeholder="New folder…"
+                  aria-label="Create a new folder"
+                  className="w-full px-4 py-3 rounded-2xl border-2 border-[#EDE8E2] focus:border-[#E8610A] text-[15px] font-medium text-[#1a1a2e] min-h-[48px] outline-none transition-colors bg-white"
+                  autoCapitalize="words"
+                  autoComplete="off"
+                />
+              </div>
 
               {/* Clear + Save */}
               <div className="flex gap-2">
