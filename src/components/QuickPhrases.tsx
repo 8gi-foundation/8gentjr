@@ -20,6 +20,10 @@ interface SavedPhrase {
   text: string;
   category: string;
   createdAt: number;
+  // Explicit display order (lower = earlier). Optional for backward
+  // compatibility: phrases saved before reorder shipped have no `order`
+  // and fall back to insertion order / createdAt.
+  order?: number;
 }
 
 type InputMode = "choose" | "text" | "voice" | "fitzgerald";
@@ -113,9 +117,29 @@ function catColor(cat: string) {
 
 const STORAGE_KEY = "8gentjr_phrases";
 
+/**
+ * Normalise an array so every phrase has an explicit `order`.
+ * Phrases saved before reorder shipped have no `order`; we keep their stored
+ * sequence (newest-first array order) and assign indices, so old data renders
+ * exactly as before and reordering sticks from here on.
+ */
+function withOrder(phrases: SavedPhrase[]): SavedPhrase[] {
+  return phrases.map((p, i) => (typeof p.order === "number" ? p : { ...p, order: i }));
+}
+
+/** Stable display order: by `order` ascending, createdAt as the tie-breaker. */
+function byOrder(a: SavedPhrase, b: SavedPhrase): number {
+  const ao = a.order ?? a.createdAt;
+  const bo = b.order ?? b.createdAt;
+  if (ao !== bo) return ao - bo;
+  return a.createdAt - b.createdAt;
+}
+
 function loadPhrases(): SavedPhrase[] {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]"); }
-  catch { return []; }
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]");
+    return Array.isArray(raw) ? withOrder(raw) : [];
+  } catch { return []; }
 }
 
 function persistPhrases(phrases: SavedPhrase[]) {
@@ -201,11 +225,18 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
       closeSheet();
       return;
     }
+    // New phrases appear first, matching the prior prepend behaviour: give
+    // them an order below the current minimum.
+    const minOrder = phrases.reduce(
+      (m, q) => Math.min(m, q.order ?? q.createdAt),
+      0,
+    );
     const p: SavedPhrase = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
       text: trimmed,
       category,
       createdAt: Date.now(),
+      order: minOrder - 1,
     };
     const updated = [p, ...phrases];
     setPhrases(updated);
@@ -234,6 +265,38 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
     persistPhrases(updated);
     setDeletingId(null);
   }, [phrases]);
+
+  /* ── Reorder (accessible: Move up / Move down) ─────────── */
+
+  /**
+   * Move a phrase up or down within the list the user is currently looking at.
+   * Swaps `order` with the previous/next visible phrase in the same category
+   * group, so reordering works for switch, keyboard and screen-reader users
+   * without any drag gesture. No-op at the ends of a group.
+   */
+  const movePhrase = useCallback((id: string, dir: "up" | "down") => {
+    setPhrases(prev => {
+      const target = prev.find(p => p.id === id);
+      if (!target) return prev;
+      // The visible neighbours are the phrases in the same category group,
+      // in display order. Reordering only ever swaps within that group.
+      const group = prev
+        .filter(p => p.category === target.category)
+        .sort(byOrder);
+      const idx = group.findIndex(p => p.id === id);
+      const swapWith = dir === "up" ? group[idx - 1] : group[idx + 1];
+      if (!swapWith) return prev; // at an end: nothing to do
+      const aOrder = target.order ?? target.createdAt;
+      const bOrder = swapWith.order ?? swapWith.createdAt;
+      const updated = prev.map(p => {
+        if (p.id === target.id)   return { ...p, order: bOrder };
+        if (p.id === swapWith.id) return { ...p, order: aOrder };
+        return p;
+      });
+      persistPhrases(updated);
+      return updated;
+    });
+  }, []);
 
   /* ── Remove an empty custom folder ─────────────────────── */
 
@@ -280,6 +343,9 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
     (acc[p.category] ??= []).push(p);
     return acc;
   }, {});
+  // Each group renders in explicit display order; Move up/down swaps neighbours
+  // inside it.
+  for (const cat of Object.keys(grouped)) grouped[cat].sort(byOrder);
 
   const isEmpty = phrases.length === 0;
 
@@ -363,9 +429,11 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                 {cat}
               </p>
               <div className="flex flex-col gap-2">
-                {items.map(phrase => {
+                {items.map((phrase, idx) => {
                   const isPlaying  = speakingId  === phrase.id;
                   const isDeleting = deletingId  === phrase.id;
+                  const isFirst    = idx === 0;
+                  const isLast     = idx === items.length - 1;
                   return (
                     <div
                       key={phrase.id}
@@ -415,9 +483,28 @@ export function QuickPhrases({ currentSentence }: { currentSentence?: string }) 
                         </p>
                       </div>
 
-                      {/* Edit / delete actions (revealed on long-press) */}
+                      {/* Move / edit / delete actions (revealed on long-press).
+                          Move up/down are real buttons with aria-labels and are
+                          disabled at the ends of the list, so switch, keyboard
+                          and screen-reader users can reorder without dragging. */}
                       {isDeleting && (
                         <div className="flex items-center gap-2 shrink-0">
+                          <button
+                            onClick={() => movePhrase(phrase.id, "up")}
+                            disabled={isFirst}
+                            className="w-11 h-11 rounded-full bg-[#F0EDE9] text-[#1a1a2e] flex items-center justify-center text-lg active:scale-90 transition-transform disabled:opacity-35 disabled:active:scale-100"
+                            aria-label="Move up"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            onClick={() => movePhrase(phrase.id, "down")}
+                            disabled={isLast}
+                            className="w-11 h-11 rounded-full bg-[#F0EDE9] text-[#1a1a2e] flex items-center justify-center text-lg active:scale-90 transition-transform disabled:opacity-35 disabled:active:scale-100"
+                            aria-label="Move down"
+                          >
+                            ↓
+                          </button>
                           <button
                             onClick={() => editPhrase(phrase)}
                             className="w-11 h-11 rounded-full bg-[#FFF3EA] text-[#E8610A] flex items-center justify-center text-lg active:scale-90 transition-transform"
