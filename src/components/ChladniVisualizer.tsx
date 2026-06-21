@@ -30,6 +30,27 @@ const FORCE = 0.00002;
 const DAMPING = 0.95;
 const NOISE_PHYSICS = 0.00005;
 
+/* ── Tuner ───────────────────────────────────────────────────
+ * Chromatic note names for the live pitch tuner readout. */
+const NOTE_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const IN_TUNE_CENTS = 8; // within this many cents counts as "on the note"
+
+interface TunerReading {
+  noteName: string;
+  cents: number; // -50..+50, signed distance to the nearest note
+  inTune: boolean;
+}
+
+/** Turn a detected frequency into a tuner reading: nearest note name and
+ *  how many cents sharp (+) or flat (-) the player is. */
+function freqToTuner(freq: number): TunerReading {
+  const midi = 69 + 12 * Math.log2(freq / 440);
+  const nearest = Math.round(midi);
+  const cents = (midi - nearest) * 100;
+  const noteName = NOTE_NAMES[((nearest % 12) + 12) % 12];
+  return { noteName, cents, inTune: Math.abs(cents) < IN_TUNE_CENTS };
+}
+
 /* ── Particle type ──────────────────────────────────────── */
 
 interface Particle {
@@ -169,6 +190,15 @@ export function ChladniVisualizer() {
   const lastDetectIdx = useRef<number | null>(null);
   const lastDetectAt = useRef(0);
 
+  /* Tuner refs - targetCents is where the dot wants to be (from the last
+   * detection); smoothCents is the eased value the dot is drawn at, so the
+   * marker "dances" toward the note instead of snapping. */
+  const targetCents = useRef(0);
+  const smoothCents = useRef(0);
+  const tunerInTune = useRef(false);
+  const tunerDotRef = useRef<HTMLDivElement>(null);
+  const lastAnnouncedNote = useRef<string | null>(null);
+
   /* UI state */
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const [activeAmbient, setActiveAmbient] = useState<string | null>(null);
@@ -177,8 +207,21 @@ export function ChladniVisualizer() {
   const [listening, setListening] = useState(false);
   const [liveNote, setLiveNote] = useState<string | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
+  const [tuner, setTuner] = useState<TunerReading | null>(null);
 
   useEffect(() => { hueRef.current = hue; }, [hue]);
+
+  /* Screen-reader announcement, throttled to note-name changes only so the
+   * live region is not spammed every frame. The dot position/colour update on
+   * the ref outside React and are not announced. */
+  const [tunerAnnounce, setTunerAnnounce] = useState("");
+  useEffect(() => {
+    if (!tuner) return;
+    if (tuner.noteName !== lastAnnouncedNote.current) {
+      lastAnnouncedNote.current = tuner.noteName;
+      setTunerAnnounce(`Note ${tuner.noteName}`);
+    }
+  }, [tuner]);
   useEffect(() => {
     const v = volume / 100;
     volRef.current = v;
@@ -336,8 +379,13 @@ export function ChladniVisualizer() {
       micStream.current = null;
     }
     lastDetectIdx.current = null;
+    targetCents.current = 0;
+    smoothCents.current = 0;
+    tunerInTune.current = false;
+    lastAnnouncedNote.current = null;
     setListening(false);
     setLiveNote(null);
+    setTuner(null);
   }, []);
 
   const startListening = useCallback(async () => {
@@ -372,6 +420,13 @@ export function ChladniVisualizer() {
             const m = MODES[idx];
             mode.current = { n: m.n, m: m.m };
             setHue(Math.round((idx / (MODES.length - 1)) * 300));
+
+            // Tuner: where should the marker aim, and is it on the note?
+            const reading = freqToTuner(freq);
+            targetCents.current = reading.cents;
+            tunerInTune.current = reading.inTune;
+            setTuner(reading);
+
             if (idx !== lastDetectIdx.current) {
               lastDetectIdx.current = idx;
               setActiveIdx(idx);
@@ -380,6 +435,24 @@ export function ChladniVisualizer() {
             }
           }
         }
+
+        // Ease the tuner dot toward its target every frame so it dances
+        // smoothly rather than jumping (lerp ~0.18 reads calm, not laggy).
+        smoothCents.current += (targetCents.current - smoothCents.current) * 0.18;
+        const dot = tunerDotRef.current;
+        if (dot) {
+          const c = Math.max(-50, Math.min(50, smoothCents.current));
+          const offNess = Math.min(1, Math.abs(c) / 50); // 0 in tune, 1 far off
+          // Greener as you close in: green hue at the centre, warm amber far off.
+          const hueDeg = 140 - offNess * 95; // 140 (green) -> 45 (amber)
+          const sat = 70 - offNess * 35; // desaturate a touch when far off
+          dot.style.left = `${50 + (c / 50) * 45}%`;
+          dot.style.backgroundColor = `hsl(${hueDeg} ${sat}% 50%)`;
+          dot.style.boxShadow = tunerInTune.current
+            ? "0 0 16px hsl(140 70% 50% / 0.85), 0 0 4px hsl(140 70% 60%)"
+            : `0 0 6px hsl(${hueDeg} ${sat}% 50% / 0.4)`;
+        }
+
         micRAF.current = requestAnimationFrame(loop);
       };
       micRAF.current = requestAnimationFrame(loop);
@@ -452,9 +525,14 @@ export function ChladniVisualizer() {
       }
 
       const ch = hueRef.current;
+      // A touch of shimmer so the granules feel alive (very subtle, per-particle
+      // phase so they twinkle independently rather than pulsing in unison).
+      const tNow = performance.now() * 0.004;
       for (let i = 0; i < pts.length; i++) {
         const p = pts[i];
-        ctx.fillStyle = `hsla(${ch}, 72%, 66%, ${p.a})`;
+        const shimmer = 1 + 0.12 * Math.sin(tNow + i * 1.7);
+        const alpha = Math.min(1, p.a * shimmer);
+        ctx.fillStyle = `hsla(${ch}, 72%, 66%, ${alpha})`;
         ctx.fillRect(
           ox + pad + p.x * inner - p.r * dpr * 0.5,
           oy + pad + p.y * inner - p.r * dpr * 0.5,
@@ -535,6 +613,77 @@ export function ChladniVisualizer() {
           </button>
           {micError && (
             <p className="text-[12px] text-[#E23B2E] font-medium px-1 -mt-1">{micError}</p>
+          )}
+
+          {/* Live pitch tuner - helps the child land on the note. The marker
+              dances toward centre and turns greener as they get in tune. */}
+          {listening && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="w-full rounded-2xl bg-[#1a1a2e] px-4 py-3 flex flex-col items-center gap-2.5 select-none"
+            >
+              {/* Detected note, big and friendly */}
+              <div className="flex items-baseline gap-2 h-8">
+                {tuner ? (
+                  <span
+                    className="text-3xl font-extrabold leading-none tabular-nums transition-colors duration-200"
+                    style={{ color: tuner.inTune ? "hsl(140 70% 60%)" : "#f0e6d6" }}
+                  >
+                    {tuner.noteName}
+                  </span>
+                ) : (
+                  <span className="text-sm font-semibold text-white/40">
+                    make a sound
+                  </span>
+                )}
+                {tuner?.inTune && (
+                  <span
+                    className="text-xl leading-none"
+                    style={{ color: "hsl(140 70% 60%)" }}
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </span>
+                )}
+              </div>
+
+              {/* Flat / sharp hints + the dancing bar */}
+              <div className="flex items-center gap-2 w-full">
+                <span
+                  className="text-[11px] font-bold text-white/35 shrink-0"
+                  aria-hidden="true"
+                >
+                  ◀ flat
+                </span>
+                <div className="relative flex-1 h-3 rounded-full bg-white/10">
+                  {/* centre target line */}
+                  <div
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-3 rounded-full bg-white/30"
+                    aria-hidden="true"
+                  />
+                  {/* dancing marker - position + colour driven by the mic RAF */}
+                  <div
+                    ref={tunerDotRef}
+                    aria-hidden="true"
+                    className="absolute top-1/2 w-4 h-4 rounded-full -translate-x-1/2 -translate-y-1/2"
+                    style={{
+                      left: "50%",
+                      backgroundColor: "hsl(45 35% 50%)",
+                    }}
+                  />
+                </div>
+                <span
+                  className="text-[11px] font-bold text-white/35 shrink-0"
+                  aria-hidden="true"
+                >
+                  sharp ▶
+                </span>
+              </div>
+
+              {/* Throttled live announcement - note-name changes only */}
+              <span className="sr-only">{tunerAnnounce}</span>
+            </div>
           )}
 
           {/* Sliders row: Color + Volume */}
