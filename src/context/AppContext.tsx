@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import type { AccountType } from '@/lib/account';
 import type { CardSize, LayoutDensity, LayoutPresetId } from '@/lib/layout-presets';
+import type { LayoutPrimitiveId } from '@/lib/layout-primitives';
 
 /**
  * 8gent Jr App Context
@@ -56,6 +57,14 @@ export interface AppSettings {
   showPredictions: boolean;
   density: LayoutDensity;
   activeLayoutPreset: LayoutPresetId;
+  /**
+   * Layout primitives (structural layout dimension, see
+   * src/lib/layout-primitives.ts). Records which structural surface the Talk
+   * Core renders. Presentation-only and gated behind the layoutPrimitives
+   * feature flag - when the flag is off this value is ignored and the surface
+   * always resolves to 'alpha' (the current fixed grid). Default 'alpha'.
+   */
+  activeLayoutPrimitive: LayoutPrimitiveId;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -83,6 +92,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   showPredictions: false,
   density: 'relaxed',
   activeLayoutPreset: 'big-simple',
+  // Structural layout primitive. 'alpha' = the current fixed grid. Only has an
+  // effect when the layoutPrimitives feature flag is enabled.
+  activeLayoutPrimitive: 'alpha',
 };
 
 const STORAGE_KEY = '8gentjr-app-settings';

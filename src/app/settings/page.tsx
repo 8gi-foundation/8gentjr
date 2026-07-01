@@ -19,6 +19,8 @@ import {
   type InstallPlatform,
 } from '@/lib/pwa-install';
 import { LAYOUT_PRESETS, type LayoutPreset } from '@/lib/layout-presets';
+import { LAYOUT_PRIMITIVES, type LayoutPrimitive } from '@/lib/layout-primitives';
+import { isLayoutPrimitivesEnabled } from '@/lib/feature-flags';
 
 /**
  * 8gent Jr Settings Page
@@ -61,6 +63,10 @@ export default function SettingsPage() {
   const { settings, updateSettings } = useApp();
 
   const accent = settings.primaryColor || '#4CAF50';
+
+  // Layout primitives are gated behind a build-time feature flag (default off).
+  // When off, this section never renders and Settings looks exactly as today.
+  const primitivesEnabled = isLayoutPrimitivesEnabled();
 
   // Read-only stage estimate from on-device session-logger events (T3.7).
   // Computed client-side after mount so SSR stays deterministic.
@@ -203,6 +209,17 @@ export default function SettingsPage() {
           </p>
           <LayoutPresetPicker accent={accent} />
         </Section>
+
+        {/* ── Layout Primitives (feature-flagged, structural surfaces) ── */}
+        {primitivesEnabled && (
+          <Section title="Layout shape" icon={<IconLayout />}>
+            <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
+              Choose the shape of the Talk screen. Each shape arranges the same
+              words a different way. Steady Grid is the classic board.
+            </p>
+            <LayoutPrimitivePicker accent={accent} />
+          </Section>
+        )}
 
         {/* ── Grid Columns ── */}
         <Section title="Grid Size" icon={<IconGrid />}>
@@ -706,6 +723,99 @@ function PresetHint({ preset }: { preset: LayoutPreset }) {
           key={i}
           className="rounded-[2px]"
           style={{ backgroundColor: preset.hint.color, opacity: 0.85 }}
+        />
+      ))}
+    </span>
+  );
+}
+
+/* ── Layout primitive picker (radiogroup, feature-flagged) ── */
+function LayoutPrimitivePicker({ accent }: { accent: string }) {
+  const { settings, updateSettings } = useApp();
+  const activeId = settings.activeLayoutPrimitive ?? 'alpha';
+
+  const applyPrimitive = (primitive: LayoutPrimitive) => {
+    // Presentation-only: apply the primitive's layout bundle and record the
+    // selection. Vocabulary, categories, personal words and phrase folders
+    // live in their own storage keys and are never touched here.
+    updateSettings({
+      gridColumns: primitive.bundle.gridColumns,
+      cardSize: primitive.bundle.cardSize,
+      showPredictions: primitive.bundle.showPredictions,
+      showPersonalVocab: primitive.bundle.showPersonalVocab,
+      density: primitive.bundle.density,
+      activeLayoutPrimitive: primitive.id,
+    });
+  };
+
+  return (
+    <div className="space-y-2" role="radiogroup" aria-label="Talk screen shape">
+      {LAYOUT_PRIMITIVES.map((primitive) => {
+        const active = activeId === primitive.id;
+        return (
+          <button
+            key={primitive.id}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            onClick={() => applyPrimitive(primitive)}
+            className="w-full flex items-center gap-3 text-left px-3 py-3 rounded-xl border-2 transition-all active:scale-[0.98]"
+            style={{
+              borderColor: active ? accent : 'var(--warm-border, #E8E0D6)',
+              backgroundColor: active ? `${accent}12` : 'white',
+            }}
+          >
+            <PrimitiveHint primitive={primitive} />
+            <span className="flex-1 min-w-0">
+              <span className="flex items-center gap-2">
+                <span
+                  className="text-lg font-bold leading-none"
+                  style={{ color: primitive.hint.color }}
+                  aria-hidden="true"
+                >
+                  {primitive.glyph}
+                </span>
+                <span className="font-bold" style={{ color: active ? accent : 'var(--warm-text, #1A1614)' }}>
+                  {primitive.name}
+                </span>
+                {active && (
+                  <span
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                    style={{ backgroundColor: accent }}
+                    aria-hidden="true"
+                  >
+                    ✓
+                  </span>
+                )}
+              </span>
+              <span className="block text-sm mt-0.5" style={{ color: 'var(--warm-text-muted, #9A9088)' }}>
+                {primitive.description}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/* Tiny visual hint for a primitive: a mini grid preview mirroring its shape. */
+function PrimitiveHint({ primitive }: { primitive: LayoutPrimitive }) {
+  const cells = Array.from({ length: primitive.hint.cells });
+  return (
+    <span
+      className="grid gap-0.5 w-12 h-12 p-1 rounded-lg flex-shrink-0 self-start"
+      style={{
+        gridTemplateColumns: `repeat(${primitive.hint.cols}, 1fr)`,
+        backgroundColor: 'var(--warm-border-light, #F0EAE3)',
+      }}
+      aria-hidden="true"
+    >
+      {cells.map((_, i) => (
+        <span
+          key={i}
+          className="rounded-[2px]"
+          style={{ backgroundColor: primitive.hint.color, opacity: 0.85 }}
         />
       ))}
     </span>
