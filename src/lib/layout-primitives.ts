@@ -1,18 +1,23 @@
 /**
- * Layout Primitives - a STRUCTURAL layout dimension for the Talk Core surface.
+ * Layout Primitives - the SINGLE registry of selectable Talk Core layouts.
  *
- * The existing layout-presets system (see ./layout-presets) changes the
- * DENSITY and CARD SIZE of the SAME grid. Presets answer "how tightly packed
- * and how big are the cards?". Primitives answer a different, orthogonal
- * question: "what SHAPE of surface renders the vocabulary at all?" - a fixed
- * grid, an adaptive grid, a scene field, a text rail, a flowing board, or a
- * radial orbit core.
+ * Before consolidation the app had two competing lists: a set of DENSITY
+ * presets (Core First / Big & Simple / Word Rich / Quick Chat) and a separate
+ * set of STRUCTURAL primitives (Steady Grid / Busy Grid / Scene / ...). That
+ * meant two Layout choosers in Settings. This file is now the ONE source of
+ * truth: every selectable layout is a primitive that carries BOTH a structural
+ * `kind` (which surface renders it) AND the full settings `bundle` (grid,
+ * card size, helper rows, density). Selecting one is a single theme-like action:
+ * write `activeLayoutPrimitive` and spread the bundle via updateSettings.
  *
- * This file is ADDITIVE. It imports the existing bundle type and reuses the
- * existing preset bundles where the task calls for it, so nothing about the
- * current grid changes. Selecting a primitive is presentation-only: it never
- * touches vocabulary, categories, personal words or phrase folders (those live
- * in their own localStorage keys, independent of AppSettings).
+ * The classic density presets are DERIVED from this registry (see
+ * LAYOUT_PRESETS below), so their bundle values are never duplicated. Four of
+ * the primitives carry a `classic` descriptor so the flag-OFF Layout picker
+ * renders exactly as it did before consolidation.
+ *
+ * Selecting a primitive is presentation-only: it never touches vocabulary,
+ * categories, personal words or phrase folders (those live in their own
+ * localStorage keys, independent of AppSettings).
  *
  * Feature-flagged OFF by default (see ./feature-flags). When the flag is off,
  * the active primitive always resolves to 'alpha' (fixedGrid) and the app
@@ -21,9 +26,9 @@
  * No banned hues (270-350, purple/pink) appear in any primitive colour.
  */
 
-import {
-  LAYOUT_PRESETS,
-  type LayoutSettingsBundle,
+import type {
+  LayoutSettingsBundle,
+  LayoutPresetId,
 } from './layout-presets';
 
 /**
@@ -40,76 +45,114 @@ export type LayoutKind =
   | 'flowBoard'
   | 'orbitCore';
 
-/** Stable identifier for a primitive. Greek-letter series, alpha = default. */
+/** Stable identifier for a primitive. Greek-letter series, alpha = default.
+ *  eta/theta are the two extra calm grids carried over from the classic
+ *  Big & Simple and Quick Chat presets so no useful tuning is lost. */
 export type LayoutPrimitiveId =
   | 'alpha'
+  | 'eta'
   | 'beta'
+  | 'theta'
   | 'gamma'
   | 'delta'
   | 'epsilon'
   | 'zeta';
 
 /** The child-facing glyph shown on each primitive card. */
-export type LayoutPrimitiveGlyph = 'Α' | 'Β' | 'Γ' | 'Δ' | 'Ε' | 'Ζ';
+export type LayoutPrimitiveGlyph = 'Α' | 'Η' | 'Β' | 'Θ' | 'Γ' | 'Δ' | 'Ε' | 'Ζ';
+
+/** A small grid preview shown on a picker card. */
+export interface LayoutHint {
+  /** Columns to render in the mini preview. */
+  cols: number;
+  /** Number of filled cells to render (visual density cue). */
+  cells: number;
+  /** Accent colour for the preview (NO hues 270-350). */
+  color: string;
+}
+
+/**
+ * The classic-preset descriptor. Present on the four primitives that correspond
+ * to a density preset shipped before consolidation. It carries the classic id,
+ * name, copy and hint so the flag-OFF Layout picker (LAYOUT_PRESETS, derived
+ * below) renders byte-identically to what shipped. Absent on the four
+ * structural-only surfaces (scene / rail / flow / orbit).
+ */
+export interface ClassicPresetMeta {
+  id: Exclude<LayoutPresetId, 'custom'>;
+  name: string;
+  description: string;
+  hint: LayoutHint;
+}
 
 export interface LayoutPrimitive {
   id: LayoutPrimitiveId;
   /** Greek capital glyph rendered on the picker card. */
   glyph: LayoutPrimitiveGlyph;
-  /** Friendly, child-facing name. */
+  /** Friendly, child-facing name (unified theme name). */
   name: string;
   /** Which structural surface this primitive renders. */
   kind: LayoutKind;
-  /** Layout settings applied when this primitive is chosen (reuses the preset
-   *  bundle shape so it spreads straight into updateSettings). */
+  /** Layout settings applied when this primitive is chosen (spreads straight
+   *  into updateSettings). */
   bundle: LayoutSettingsBundle;
   /** One-line description of the shape and who it suits. */
   description: string;
   /** Tiny visual hint for the picker card: a small grid preview. */
-  hint: {
-    /** Columns to render in the mini preview. */
-    cols: number;
-    /** Number of filled cells to render (visual density cue). */
-    cells: number;
-    /** Accent colour for the preview (NO hues 270-350). */
-    color: string;
-  };
+  hint: LayoutHint;
+  /** Present when this primitive doubles as a classic density preset. */
+  classic?: ClassicPresetMeta;
 }
 
-/** The default primitive. Reused in several places so it is named once. */
+/** The default primitive used as a safe fallback for unknown/garbage ids and as
+ *  the flag-OFF resolution constant. Reused in several places so it is named
+ *  once. */
 export const DEFAULT_PRIMITIVE_ID: LayoutPrimitiveId = 'alpha';
 
-/** Look up an existing preset bundle by id, stripped to the bundle fields.
- *  Keeps alpha/beta genuinely reusing the shipped preset values rather than
- *  copying magic numbers, so the default surface stays identical to today. */
-function bundleFromPreset(presetId: string): LayoutSettingsBundle {
-  const preset = LAYOUT_PRESETS.find((p) => p.id === presetId);
-  if (!preset) {
-    // Should never happen - the preset ids are compile-time constants. Fall
-    // back to the calmest possible bundle rather than throwing in the UI path.
-    return {
-      gridColumns: 4,
-      cardSize: 'large',
-      showPredictions: false,
-      showPersonalVocab: false,
-      density: 'relaxed',
-    };
-  }
-  return {
-    gridColumns: preset.gridColumns,
-    cardSize: preset.cardSize,
-    showPredictions: preset.showPredictions,
-    showPersonalVocab: preset.showPersonalVocab,
-    density: preset.density,
-  };
-}
+/**
+ * The canonical layout bundles, defined once here (single source of truth).
+ * The classic presets reuse these exact values, so there are no duplicated
+ * magic numbers anywhere in the layout system.
+ */
+const CORE_FIRST_BUNDLE: LayoutSettingsBundle = {
+  gridColumns: 4,
+  cardSize: 'large',
+  showPredictions: false,
+  showPersonalVocab: false,
+  density: 'relaxed',
+};
+const BIG_SIMPLE_BUNDLE: LayoutSettingsBundle = {
+  gridColumns: 3,
+  cardSize: 'large',
+  showPredictions: false,
+  showPersonalVocab: true,
+  density: 'relaxed',
+};
+const WORD_RICH_BUNDLE: LayoutSettingsBundle = {
+  gridColumns: 6,
+  cardSize: 'small',
+  showPredictions: true,
+  showPersonalVocab: true,
+  density: 'compact',
+};
+const QUICK_CHAT_BUNDLE: LayoutSettingsBundle = {
+  gridColumns: 4,
+  cardSize: 'medium',
+  showPredictions: true,
+  showPersonalVocab: true,
+  density: 'balanced',
+};
 
 /**
- * The six structural primitives, in display order.
+ * The eight selectable layouts, in display order.
  *
- * Mapping (per spec):
- *   alpha   Α -> fixedGrid    (reuses core-first bundle - THE DEFAULT)
- *   beta    Β -> adaptiveGrid (reuses word-rich bundle - more columns)
+ * The first four are calm/working grids (they also back the classic presets);
+ * the last four are the experimental structural surfaces (grid-backed for now).
+ *
+ *   alpha   Α -> fixedGrid    (Core First bundle - the classic default calm grid)
+ *   eta     Η -> fixedGrid    (Big & Simple bundle - the shipped default)
+ *   beta    Β -> adaptiveGrid (Word Rich bundle - dense, predictions on)
+ *   theta   Θ -> fixedGrid    (Quick Chat bundle - your words + predictions)
  *   gamma   Γ -> sceneField   (few big cards, calm scene)
  *   delta   Δ -> textRail     (text-forward, predictions on)
  *   epsilon Ε -> flowBoard    (medium cards, flowing board)
@@ -121,18 +164,60 @@ export const LAYOUT_PRIMITIVES: LayoutPrimitive[] = [
     glyph: 'Α',
     name: 'Steady Grid',
     kind: 'fixedGrid',
-    bundle: bundleFromPreset('core-first'),
+    bundle: CORE_FIRST_BUNDLE,
     description: 'The classic fixed grid. Words never move - calm and reliable.',
     hint: { cols: 4, cells: 8, color: '#4CAF50' },
+    classic: {
+      id: 'core-first',
+      name: 'Core First',
+      description: 'Fewer, bigger core words. Calm and steady - no moving rows.',
+      hint: { cols: 4, cells: 8, color: '#4CAF50' },
+    },
+  },
+  {
+    id: 'eta',
+    glyph: 'Η',
+    name: 'Big & Simple',
+    kind: 'fixedGrid',
+    bundle: BIG_SIMPLE_BUNDLE,
+    description: 'Three big columns with the fewest helper rows. Easy to aim at.',
+    hint: { cols: 3, cells: 6, color: '#2196F3' },
+    classic: {
+      id: 'big-simple',
+      name: 'Big & Simple',
+      description: 'Three big columns with the fewest helper rows. Easy to aim at.',
+      hint: { cols: 3, cells: 6, color: '#2196F3' },
+    },
   },
   {
     id: 'beta',
     glyph: 'Β',
     name: 'Busy Grid',
     kind: 'adaptiveGrid',
-    bundle: bundleFromPreset('word-rich'),
+    bundle: WORD_RICH_BUNDLE,
     description: 'More words on screen with next-word helpers for fluent talkers.',
     hint: { cols: 6, cells: 18, color: '#E8610A' },
+    classic: {
+      id: 'word-rich',
+      name: 'Word Rich',
+      description: 'Six columns of smaller cards with next-word predictions on.',
+      hint: { cols: 6, cells: 18, color: '#E8610A' },
+    },
+  },
+  {
+    id: 'theta',
+    glyph: 'Θ',
+    name: 'Quick Chat',
+    kind: 'fixedGrid',
+    bundle: QUICK_CHAT_BUNDLE,
+    description: 'Your words and predictions up front for fast everyday talking.',
+    hint: { cols: 4, cells: 12, color: '#009688' },
+    classic: {
+      id: 'quick-chat',
+      name: 'Quick Chat',
+      description: 'Your words and predictions up front for fast everyday talking.',
+      hint: { cols: 4, cells: 12, color: '#009688' },
+    },
   },
   {
     id: 'gamma',
@@ -245,3 +330,69 @@ export function applyPrimitive<T extends LayoutSettingsBundle & Record<string, u
     activeLayoutPrimitive: primitive.id,
   };
 }
+
+/** True when two bundles carry identical layout values. */
+export function bundlesMatch(a: LayoutSettingsBundle, b: LayoutSettingsBundle): boolean {
+  return (
+    a.gridColumns === b.gridColumns &&
+    a.cardSize === b.cardSize &&
+    a.showPredictions === b.showPredictions &&
+    a.showPersonalVocab === b.showPersonalVocab &&
+    a.density === b.density
+  );
+}
+
+/**
+ * Resolve the selected unified-picker id for a settings object, or 'custom'
+ * when the current layout no longer matches any preset (i.e. the user
+ * hand-tuned a knob away from every preset).
+ *
+ * The stored `activeLayoutPrimitive` is trusted first: if its bundle still
+ * matches the current settings, that id wins (this disambiguates presets that
+ * happen to share a bundle, e.g. Big & Simple vs Scene). Only if the stored
+ * selection no longer matches do we look for any other preset with the same
+ * bundle before falling back to 'custom'.
+ */
+export function activePrimitiveIdForSettings(
+  s: LayoutSettingsBundle & { activeLayoutPrimitive?: string | null },
+): LayoutPrimitiveId | 'custom' {
+  const stored = getPrimitive(s.activeLayoutPrimitive);
+  if (bundlesMatch(stored.bundle, s)) return stored.id;
+  const match = LAYOUT_PRIMITIVES.find((p) => bundlesMatch(p.bundle, s));
+  return match ? match.id : 'custom';
+}
+
+// ---------------------------------------------------------------------------
+// Derived classic presets (flag-OFF Layout picker)
+// ---------------------------------------------------------------------------
+
+/**
+ * A classic density preset, in the flat shape the flag-OFF Layout picker
+ * renders (bundle fields at the top level, plus a hint). DERIVED from the
+ * primitives that carry a `classic` descriptor - never authored twice.
+ */
+export interface LayoutPreset extends LayoutSettingsBundle {
+  id: Exclude<LayoutPresetId, 'custom'>;
+  name: string;
+  description: string;
+  hint: LayoutHint;
+}
+
+/**
+ * The four classic density presets (Core First / Big & Simple / Word Rich /
+ * Quick Chat), derived from the single registry so the flag-OFF picker keeps
+ * working exactly as it shipped, with no duplicated data.
+ */
+export const LAYOUT_PRESETS: LayoutPreset[] = LAYOUT_PRIMITIVES.filter(
+  (p): p is LayoutPrimitive & { classic: ClassicPresetMeta } => p.classic !== undefined,
+).map((p) => ({
+  id: p.classic.id,
+  name: p.classic.name,
+  description: p.classic.description,
+  gridColumns: p.bundle.gridColumns,
+  cardSize: p.bundle.cardSize,
+  showPredictions: p.bundle.showPredictions,
+  showPersonalVocab: p.bundle.showPersonalVocab,
+  density: p.bundle.density,
+  hint: p.classic.hint,
+}));

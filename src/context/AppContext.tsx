@@ -92,9 +92,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   showPredictions: false,
   density: 'relaxed',
   activeLayoutPreset: 'big-simple',
-  // Structural layout primitive. 'alpha' = the current fixed grid. Only has an
-  // effect when the layoutPrimitives feature flag is enabled.
-  activeLayoutPrimitive: 'alpha',
+  // Unified layout selection. 'eta' is the Big & Simple grid - the same bundle
+  // as the shipped default above, so the unified picker highlights it on first
+  // run. Only has an effect when the layoutPrimitives feature flag is enabled;
+  // with the flag off this value is ignored and the surface is the fixed grid.
+  activeLayoutPrimitive: 'eta',
 };
 
 const STORAGE_KEY = '8gentjr-app-settings';

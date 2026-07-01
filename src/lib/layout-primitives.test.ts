@@ -1,27 +1,34 @@
 // @ts-nocheck - bun:test types not wired to main tsconfig; run with `bun test`
 /**
- * Tests for the Layout Primitives framework. Runs via `bun test`.
+ * Tests for the consolidated Layout registry. Runs via `bun test`.
  *
- * Proves the hard constraints from the framework PR:
- *   - the six primitives exist, are unique, and map to the right kinds
- *   - alpha is the default and reuses the shipped core-first bundle
+ * After consolidation there is ONE source of truth (LAYOUT_PRIMITIVES). The
+ * classic density presets (LAYOUT_PRESETS) are DERIVED from it. These tests
+ * prove:
+ *   - the eight primitives exist, are unique, and map to the right kinds
+ *   - every primitive carries BOTH a structural kind AND a full settings bundle
+ *   - the four classic presets are derived and reuse the primitive bundles
+ *     (no duplicated data)
  *   - NO primitive colour lands in the banned purple/pink hue band (270-350)
  *   - flag OFF === current behaviour: the active primitive always resolves to
  *     'alpha' (fixedGrid) regardless of what is stored
- *   - switching primitive and back is non-destructive: it only changes the
- *     layout bundle + selection, never vocabulary / categories / personal
- *     words / phrase folders / any other setting
+ *   - selecting a preset writes kind + bundle; switching and back is
+ *     non-destructive (never touches vocabulary / categories / personal words /
+ *     phrase folders / any other setting)
+ *   - Custom state is detected when the layout no longer matches any preset
  */
 import { describe, expect, test } from 'bun:test';
 import {
   DEFAULT_PRIMITIVE_ID,
   LAYOUT_PRIMITIVES,
+  LAYOUT_PRESETS,
   applyPrimitive,
+  bundlesMatch,
   getPrimitive,
   resolveActivePrimitiveId,
+  activePrimitiveIdForSettings,
   type LayoutKind,
 } from './layout-primitives';
-import { LAYOUT_PRESETS } from './layout-presets';
 
 /** Convert a #RRGGBB hex to an HSL hue in [0,360). */
 function hexToHue(hex: string): number {
@@ -41,28 +48,30 @@ function hexToHue(hex: string): number {
   return h < 0 ? h + 360 : h;
 }
 
-describe('LAYOUT_PRIMITIVES shape', () => {
-  test('has exactly six primitives', () => {
-    expect(LAYOUT_PRIMITIVES).toHaveLength(6);
+describe('LAYOUT_PRIMITIVES shape (single unified registry)', () => {
+  test('has exactly eight primitives', () => {
+    expect(LAYOUT_PRIMITIVES).toHaveLength(8);
   });
 
-  test('ids are the expected Greek series and are unique', () => {
+  test('ids are the expected series and are unique', () => {
     const ids = LAYOUT_PRIMITIVES.map((p) => p.id);
-    expect(ids).toEqual(['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta']);
-    expect(new Set(ids).size).toBe(6);
+    expect(ids).toEqual(['alpha', 'eta', 'beta', 'theta', 'gamma', 'delta', 'epsilon', 'zeta']);
+    expect(new Set(ids).size).toBe(8);
   });
 
   test('glyphs are unique Greek capitals', () => {
     const glyphs = LAYOUT_PRIMITIVES.map((p) => p.glyph);
-    expect(glyphs).toEqual(['Α', 'Β', 'Γ', 'Δ', 'Ε', 'Ζ']);
-    expect(new Set(glyphs).size).toBe(6);
+    expect(glyphs).toEqual(['Α', 'Η', 'Β', 'Θ', 'Γ', 'Δ', 'Ε', 'Ζ']);
+    expect(new Set(glyphs).size).toBe(8);
   });
 
-  test('kinds cover the six structural surfaces', () => {
+  test('kinds cover the structural surfaces', () => {
     const byId = Object.fromEntries(LAYOUT_PRIMITIVES.map((p) => [p.id, p.kind]));
     const expected: Record<string, LayoutKind> = {
       alpha: 'fixedGrid',
+      eta: 'fixedGrid',
       beta: 'adaptiveGrid',
+      theta: 'fixedGrid',
       gamma: 'sceneField',
       delta: 'textRail',
       epsilon: 'flowBoard',
@@ -71,8 +80,9 @@ describe('LAYOUT_PRIMITIVES shape', () => {
     expect(byId).toEqual(expected);
   });
 
-  test('every primitive carries a complete bundle and hint', () => {
+  test('every primitive carries a complete bundle, a kind and a hint', () => {
     for (const p of LAYOUT_PRIMITIVES) {
+      expect(typeof p.kind).toBe('string');
       expect(typeof p.bundle.gridColumns).toBe('number');
       expect(['large', 'medium', 'small']).toContain(p.bundle.cardSize);
       expect(typeof p.bundle.showPredictions).toBe('boolean');
@@ -95,7 +105,44 @@ describe('brand safety: no banned purple/pink hues (270-350)', () => {
   });
 });
 
-describe('alpha is the default and reuses core-first', () => {
+describe('classic presets are derived from the single registry', () => {
+  test('LAYOUT_PRESETS derives the four classic density presets in order', () => {
+    expect(LAYOUT_PRESETS.map((p) => p.id)).toEqual([
+      'core-first',
+      'big-simple',
+      'word-rich',
+      'quick-chat',
+    ]);
+  });
+
+  test('each classic preset reuses its backing primitive bundle (no duplicated data)', () => {
+    for (const preset of LAYOUT_PRESETS) {
+      const backing = LAYOUT_PRIMITIVES.find((p) => p.classic?.id === preset.id)!;
+      expect(bundlesMatch(preset, backing.bundle)).toBe(true);
+      // flat bundle fields on the derived preset equal the primitive bundle
+      expect(preset.gridColumns).toBe(backing.bundle.gridColumns);
+      expect(preset.cardSize).toBe(backing.bundle.cardSize);
+      expect(preset.showPredictions).toBe(backing.bundle.showPredictions);
+      expect(preset.showPersonalVocab).toBe(backing.bundle.showPersonalVocab);
+      expect(preset.density).toBe(backing.bundle.density);
+    }
+  });
+
+  test('classic preset copy matches the shipped-today values (flag-off parity)', () => {
+    const byId = Object.fromEntries(LAYOUT_PRESETS.map((p) => [p.id, p]));
+    expect(byId['core-first'].name).toBe('Core First');
+    expect(byId['big-simple'].name).toBe('Big & Simple');
+    expect(byId['word-rich'].name).toBe('Word Rich');
+    expect(byId['quick-chat'].name).toBe('Quick Chat');
+    // Bundle values preserved exactly.
+    expect(byId['core-first']).toMatchObject({ gridColumns: 4, cardSize: 'large', showPredictions: false, showPersonalVocab: false, density: 'relaxed' });
+    expect(byId['big-simple']).toMatchObject({ gridColumns: 3, cardSize: 'large', showPredictions: false, showPersonalVocab: true, density: 'relaxed' });
+    expect(byId['word-rich']).toMatchObject({ gridColumns: 6, cardSize: 'small', showPredictions: true, showPersonalVocab: true, density: 'compact' });
+    expect(byId['quick-chat']).toMatchObject({ gridColumns: 4, cardSize: 'medium', showPredictions: true, showPersonalVocab: true, density: 'balanced' });
+  });
+});
+
+describe('alpha is the safe default / fallback', () => {
   test('DEFAULT_PRIMITIVE_ID is alpha', () => {
     expect(DEFAULT_PRIMITIVE_ID).toBe('alpha');
   });
@@ -104,28 +151,21 @@ describe('alpha is the default and reuses core-first', () => {
     expect(getPrimitive('alpha').kind).toBe('fixedGrid');
   });
 
-  test("alpha's bundle equals the shipped core-first preset bundle", () => {
+  test("alpha's bundle equals the classic core-first bundle", () => {
     const coreFirst = LAYOUT_PRESETS.find((p) => p.id === 'core-first')!;
-    const alpha = getPrimitive('alpha');
-    expect(alpha.bundle).toEqual({
-      gridColumns: coreFirst.gridColumns,
-      cardSize: coreFirst.cardSize,
-      showPredictions: coreFirst.showPredictions,
-      showPersonalVocab: coreFirst.showPersonalVocab,
-      density: coreFirst.density,
-    });
+    expect(bundlesMatch(getPrimitive('alpha').bundle, coreFirst)).toBe(true);
   });
 
-  test("beta's bundle equals the shipped word-rich preset bundle", () => {
+  test("beta's bundle equals the classic word-rich bundle", () => {
     const wordRich = LAYOUT_PRESETS.find((p) => p.id === 'word-rich')!;
-    const beta = getPrimitive('beta');
-    expect(beta.bundle).toEqual({
-      gridColumns: wordRich.gridColumns,
-      cardSize: wordRich.cardSize,
-      showPredictions: wordRich.showPredictions,
-      showPersonalVocab: wordRich.showPersonalVocab,
-      density: wordRich.density,
-    });
+    expect(bundlesMatch(getPrimitive('beta').bundle, wordRich)).toBe(true);
+  });
+
+  test("eta reuses big-simple and theta reuses quick-chat", () => {
+    const bigSimple = LAYOUT_PRESETS.find((p) => p.id === 'big-simple')!;
+    const quickChat = LAYOUT_PRESETS.find((p) => p.id === 'quick-chat')!;
+    expect(bundlesMatch(getPrimitive('eta').bundle, bigSimple)).toBe(true);
+    expect(bundlesMatch(getPrimitive('theta').bundle, quickChat)).toBe(true);
   });
 });
 
@@ -140,20 +180,19 @@ describe('getPrimitive fallbacks', () => {
 describe('flag OFF === current behaviour', () => {
   test('flag off always resolves to alpha regardless of stored id', () => {
     expect(resolveActivePrimitiveId(false, 'zeta')).toBe('alpha');
-    expect(resolveActivePrimitiveId(false, 'beta')).toBe('alpha');
+    expect(resolveActivePrimitiveId(false, 'eta')).toBe('alpha');
     expect(resolveActivePrimitiveId(false, null)).toBe('alpha');
   });
 
   test('flag on honours a valid stored id and falls back for garbage', () => {
     expect(resolveActivePrimitiveId(true, 'zeta')).toBe('zeta');
+    expect(resolveActivePrimitiveId(true, 'theta')).toBe('theta');
     expect(resolveActivePrimitiveId(true, 'garbage')).toBe('alpha');
     expect(resolveActivePrimitiveId(true, null)).toBe('alpha');
   });
 });
 
-describe('non-destructive switch-and-back', () => {
-  // A settings-like object carrying BOTH layout fields and unrelated data that
-  // must survive any primitive switch untouched.
+describe('selecting a preset applies kind + bundle in one action', () => {
   const baseSettings = {
     // layout bundle fields (alpha / core-first values)
     gridColumns: 4,
@@ -170,15 +209,26 @@ describe('non-destructive switch-and-back', () => {
     parentEmailConfirmed: true,
   };
 
+  test('applyPrimitive spreads the whole bundle and records the selection', () => {
+    for (const p of LAYOUT_PRIMITIVES) {
+      const after = applyPrimitive(baseSettings, p.id);
+      expect(after.activeLayoutPrimitive).toBe(p.id);
+      expect(after.gridColumns).toBe(p.bundle.gridColumns);
+      expect(after.cardSize).toBe(p.bundle.cardSize);
+      expect(after.showPredictions).toBe(p.bundle.showPredictions);
+      expect(after.showPersonalVocab).toBe(p.bundle.showPersonalVocab);
+      expect(after.density).toBe(p.bundle.density);
+    }
+  });
+
   test('switching to beta only changes bundle + selection', () => {
     const afterBeta = applyPrimitive(baseSettings, 'beta');
     const beta = getPrimitive('beta');
-    // Bundle applied + selection recorded.
     expect(afterBeta.activeLayoutPrimitive).toBe('beta');
     expect(afterBeta.gridColumns).toBe(beta.bundle.gridColumns);
     expect(afterBeta.cardSize).toBe(beta.bundle.cardSize);
-    expect(afterBeta.showPredictions).toBe(beta.bundle.showPredictions);
-    // Unrelated data untouched.
+    // Unrelated data untouched (vocabulary/categories/personal words/phrase
+    // folders live in separate storage; these stand-ins prove nothing else moves).
     expect(afterBeta.childName).toBe('Robin');
     expect(afterBeta.selectedVoiceId).toBe('voice-123');
     expect(afterBeta.glpStage).toBe(2);
@@ -186,17 +236,15 @@ describe('non-destructive switch-and-back', () => {
     expect(afterBeta.parentEmailConfirmed).toBe(true);
   });
 
-  test('switching to a primitive and back to alpha restores the bundle exactly', () => {
-    const afterBeta = applyPrimitive(baseSettings, 'beta');
-    const backToAlpha = applyPrimitive(afterBeta, 'alpha');
-    // Layout bundle is byte-for-byte the original alpha bundle again.
+  test('switching to a preset and back to alpha restores the bundle exactly', () => {
+    const afterZeta = applyPrimitive(baseSettings, 'zeta');
+    const backToAlpha = applyPrimitive(afterZeta, 'alpha');
     expect(backToAlpha.gridColumns).toBe(baseSettings.gridColumns);
     expect(backToAlpha.cardSize).toBe(baseSettings.cardSize);
     expect(backToAlpha.showPredictions).toBe(baseSettings.showPredictions);
     expect(backToAlpha.showPersonalVocab).toBe(baseSettings.showPersonalVocab);
     expect(backToAlpha.density).toBe(baseSettings.density);
     expect(backToAlpha.activeLayoutPrimitive).toBe('alpha');
-    // And all unrelated data is still exactly as it started.
     expect(backToAlpha.childName).toBe(baseSettings.childName);
     expect(backToAlpha.selectedVoiceId).toBe(baseSettings.selectedVoiceId);
     expect(backToAlpha.glpStage).toBe(baseSettings.glpStage);
@@ -208,5 +256,42 @@ describe('non-destructive switch-and-back', () => {
     const snapshot = JSON.stringify(baseSettings);
     applyPrimitive(baseSettings, 'zeta');
     expect(JSON.stringify(baseSettings)).toBe(snapshot);
+  });
+});
+
+describe('Custom state detection', () => {
+  test('a settings bundle that matches a preset resolves to that preset id', () => {
+    const eta = getPrimitive('eta');
+    const settings = { ...eta.bundle, activeLayoutPrimitive: 'eta' as const };
+    expect(activePrimitiveIdForSettings(settings)).toBe('eta');
+  });
+
+  test('the stored selection wins when two presets share a bundle', () => {
+    // eta (Big & Simple) and gamma (Scene) share an identical bundle; the
+    // explicit stored selection disambiguates.
+    const gamma = getPrimitive('gamma');
+    expect(bundlesMatch(gamma.bundle, getPrimitive('eta').bundle)).toBe(true);
+    const settings = { ...gamma.bundle, activeLayoutPrimitive: 'gamma' as const };
+    expect(activePrimitiveIdForSettings(settings)).toBe('gamma');
+  });
+
+  test('hand-tuning a knob away from every preset yields custom', () => {
+    const eta = getPrimitive('eta');
+    // Bump grid columns to a value no preset uses.
+    const settings = { ...eta.bundle, gridColumns: 9, activeLayoutPrimitive: 'eta' as const };
+    expect(activePrimitiveIdForSettings(settings)).toBe('custom');
+  });
+
+  test('the shipped default (Big & Simple bundle, eta) is not custom', () => {
+    // Mirrors DEFAULT_SETTINGS: big-simple bundle + activeLayoutPrimitive 'eta'.
+    const settings = {
+      gridColumns: 3,
+      cardSize: 'large' as const,
+      showPredictions: false,
+      showPersonalVocab: true,
+      density: 'relaxed' as const,
+      activeLayoutPrimitive: 'eta' as const,
+    };
+    expect(activePrimitiveIdForSettings(settings)).toBe('eta');
   });
 });

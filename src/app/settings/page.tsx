@@ -18,8 +18,13 @@ import {
   detectPlatform,
   type InstallPlatform,
 } from '@/lib/pwa-install';
-import { LAYOUT_PRESETS, type LayoutPreset } from '@/lib/layout-presets';
-import { LAYOUT_PRIMITIVES, type LayoutPrimitive } from '@/lib/layout-primitives';
+import {
+  LAYOUT_PRESETS,
+  LAYOUT_PRIMITIVES,
+  activePrimitiveIdForSettings,
+  type LayoutPreset,
+  type LayoutPrimitive,
+} from '@/lib/layout-primitives';
 import { isLayoutPrimitivesEnabled } from '@/lib/feature-flags';
 
 /**
@@ -56,6 +61,8 @@ const DEFAULTS: Partial<AppSettings> = {
   showPersonalVocab: true,
   density: 'relaxed',
   activeLayoutPreset: 'big-simple',
+  // Unified layout selection matching the default Big & Simple bundle.
+  activeLayoutPrimitive: 'eta',
 };
 
 export default function SettingsPage() {
@@ -200,26 +207,29 @@ export default function SettingsPage() {
           </div>
         </Section>
 
-        {/* ── Layout Presets ── */}
+        {/* ── Layout (single unified chooser) ── */}
         <Section title="Layout" icon={<IconLayout />}>
-          <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
-            Pick a ready-made layout for the Talk screen. Choosing one sets the
-            grid size, card size and helper rows together. Tweak any of those
-            below and the layout becomes &ldquo;Custom&rdquo;.
-          </p>
-          <LayoutPresetPicker accent={accent} />
+          {primitivesEnabled ? (
+            <>
+              <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
+                Pick a layout for the Talk screen. Each one arranges the same
+                words a different way and sets the grid size, card size and
+                helper rows together. Tweak any of those below and the layout
+                becomes &ldquo;Custom&rdquo;.
+              </p>
+              <LayoutPrimitivePicker accent={accent} />
+            </>
+          ) : (
+            <>
+              <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
+                Pick a ready-made layout for the Talk screen. Choosing one sets the
+                grid size, card size and helper rows together. Tweak any of those
+                below and the layout becomes &ldquo;Custom&rdquo;.
+              </p>
+              <LayoutPresetPicker accent={accent} />
+            </>
+          )}
         </Section>
-
-        {/* ── Layout Primitives (feature-flagged, structural surfaces) ── */}
-        {primitivesEnabled && (
-          <Section title="Layout shape" icon={<IconLayout />}>
-            <p className="text-sm mb-3" style={{ color: 'var(--warm-text-secondary, #5C544A)' }}>
-              Choose the shape of the Talk screen. Each shape arranges the same
-              words a different way. Steady Grid is the classic board.
-            </p>
-            <LayoutPrimitivePicker accent={accent} />
-          </Section>
-        )}
 
         {/* ── Grid Columns ── */}
         <Section title="Grid Size" icon={<IconGrid />}>
@@ -732,12 +742,16 @@ function PresetHint({ preset }: { preset: LayoutPreset }) {
 /* ── Layout primitive picker (radiogroup, feature-flagged) ── */
 function LayoutPrimitivePicker({ accent }: { accent: string }) {
   const { settings, updateSettings } = useApp();
-  const activeId = settings.activeLayoutPrimitive ?? 'alpha';
+  // Selection is bundle-derived: a preset is "active" only while the current
+  // layout still matches its bundle. Hand-tuning any knob (Grid Size, Your
+  // Words) below makes the layout fall into "Custom" automatically.
+  const activeId = activePrimitiveIdForSettings(settings);
 
   const applyPrimitive = (primitive: LayoutPrimitive) => {
     // Presentation-only: apply the primitive's layout bundle and record the
-    // selection. Vocabulary, categories, personal words and phrase folders
-    // live in their own storage keys and are never touched here.
+    // selection in ONE action, exactly like a theme switch. Vocabulary,
+    // categories, personal words and phrase folders live in their own storage
+    // keys and are never touched here.
     updateSettings({
       gridColumns: primitive.bundle.gridColumns,
       cardSize: primitive.bundle.cardSize,
@@ -745,11 +759,15 @@ function LayoutPrimitivePicker({ accent }: { accent: string }) {
       showPersonalVocab: primitive.bundle.showPersonalVocab,
       density: primitive.bundle.density,
       activeLayoutPrimitive: primitive.id,
+      // Keep the classic selection field in sync so both pickers agree if the
+      // flag is ever toggled: a classic-backed primitive maps to its preset id,
+      // anything structural counts as a hand-tuned "custom" density.
+      activeLayoutPreset: primitive.classic ? primitive.classic.id : 'custom',
     });
   };
 
   return (
-    <div className="space-y-2" role="radiogroup" aria-label="Talk screen shape">
+    <div className="space-y-2" role="radiogroup" aria-label="Talk screen layout">
       {LAYOUT_PRIMITIVES.map((primitive) => {
         const active = activeId === primitive.id;
         return (
@@ -795,6 +813,41 @@ function LayoutPrimitivePicker({ accent }: { accent: string }) {
           </button>
         );
       })}
+
+      {/* Custom state row: not selectable, only reflects hand-tuned settings. */}
+      {activeId === 'custom' && (
+        <div
+          className="w-full flex items-center gap-3 px-3 py-3 rounded-xl border-2"
+          style={{ borderColor: accent, backgroundColor: `${accent}12` }}
+          aria-live="polite"
+        >
+          <span
+            className="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-dashed"
+            style={{ borderColor: accent, color: accent }}
+            aria-hidden="true"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+          </span>
+          <span className="flex-1 min-w-0">
+            <span className="flex items-center gap-2">
+              <span className="font-bold" style={{ color: accent }}>Custom</span>
+              <span
+                className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                style={{ backgroundColor: accent }}
+                aria-hidden="true"
+              >
+                ✓
+              </span>
+            </span>
+            <span className="block text-sm mt-0.5" style={{ color: 'var(--warm-text-muted, #9A9088)' }}>
+              Your own mix. Pick a layout above to start over.
+            </span>
+          </span>
+        </div>
+      )}
     </div>
   );
 }
