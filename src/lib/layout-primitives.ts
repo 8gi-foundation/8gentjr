@@ -231,7 +231,7 @@ export const LAYOUT_PRIMITIVES: LayoutPrimitive[] = [
       showPersonalVocab: true,
       density: 'relaxed',
     },
-    description: 'Big picture cards arranged like a scene. Coming soon.',
+    description: 'Big picture cards arranged like a scene.',
     hint: { cols: 3, cells: 6, color: '#2196F3' },
   },
   {
@@ -246,7 +246,7 @@ export const LAYOUT_PRIMITIVES: LayoutPrimitive[] = [
       showPersonalVocab: true,
       density: 'balanced',
     },
-    description: 'A text-forward rail with predictions up front. Coming soon.',
+    description: 'A text-forward rail with predictions up front.',
     hint: { cols: 4, cells: 12, color: '#009688' },
   },
   {
@@ -261,7 +261,7 @@ export const LAYOUT_PRIMITIVES: LayoutPrimitive[] = [
       showPersonalVocab: true,
       density: 'balanced',
     },
-    description: 'Cards flow to fit the screen at any size. Coming soon.',
+    description: 'Cards flow to fit the screen at any size.',
     hint: { cols: 5, cells: 15, color: '#F4A100' },
   },
   {
@@ -276,7 +276,7 @@ export const LAYOUT_PRIMITIVES: LayoutPrimitive[] = [
       showPersonalVocab: true,
       density: 'relaxed',
     },
-    description: 'Core words held close in a radial arrangement. Coming soon.',
+    description: 'Core words held close in a radial arrangement.',
     hint: { cols: 4, cells: 8, color: '#F44336' },
   },
 ];
