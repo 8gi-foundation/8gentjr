@@ -1,6 +1,11 @@
 # 8gent Jr
 
 Personalised AI OS for neurodivergent children (autism, ADHD). Free forever.
+Built for the child, their parent, and the speech and language therapist working
+with them.
+
+Run it: `npm install`, `cp .env.example .env.local`, `npm run dev`. Every key is
+optional for a first look. Tests run under Bun: `bun test`.
 
 - **Domain:** 8gentjr.com
 - **Parent:** [8GI Foundation](https://8gi.org)
@@ -175,6 +180,12 @@ Games are presented in a TikTok-style reels feed with topic filters and daily ac
 |---------|-------|-------------|
 | **Toolshed** | `/toolshed` | Hub of all tools and activities organised by category, with star rewards and unlock progression |
 
+### Learning
+
+| Feature | Route | Description |
+|---------|-------|-------------|
+| **Maths** | `/math` | Number and arithmetic practice activities |
+
 ### Parent & Setup
 
 | Feature | Route | Description |
@@ -182,6 +193,11 @@ Games are presented in a TikTok-style reels feed with topic filters and daily ac
 | **Parent Chat** | `/parent-chat` | Customise your child's AAC board through AI-powered conversation |
 | **Onboarding** | `/onboarding` | Problem-first onboarding flow: learns about your child before configuring the system |
 | **Settings** | `/settings` | App preferences and child profile configuration |
+| **Add Card** | `/add` | Create an AAC card from an ARASAAC symbol search or an upload |
+| **Progress** | `/analytics` | Usage and progress view for the parent |
+| **Help** | `/help` | How to use 8gent Jr |
+| **Send Feedback** | `/feedback` | Feedback form |
+| **Privacy** | `/privacy` | Privacy notice and consent record |
 | **Parental Gate** | (system) | Consent gate protecting all content (localStorage-based) |
 | **Lock Screen** | (system) | Session-based lock screen to prevent accidental exits |
 
@@ -210,4 +226,4 @@ cp .env.example .env.local   # fill in GROQ, ELEVENLABS, VPC, AGENTMAIL keys as 
 npm run dev
 ```
 
-Most keys are optional for local dev — the app gracefully falls back (log-only email sender, browser Web Speech TTS, Groq-less autocomplete). `VPC_TOKEN_SECRET` is required whenever you exercise the parental consent flow.
+Most keys are optional for local dev - the app gracefully falls back (log-only email sender, browser Web Speech TTS, Groq-less autocomplete). `VPC_TOKEN_SECRET` is required whenever you exercise the parental consent flow.
