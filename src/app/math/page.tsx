@@ -1,18 +1,25 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import SketchFrame from '@/components/math/SketchFrame';
 import { useCalmMode } from '@/components/math/useCalmMode';
+import { useSoundPreference } from '@/components/math/useSonify';
+import { countProgress, routeProgress, type LessonSummary } from '@/lib/guided-learning';
 
 const PRIMARY = '#E8610A';
 const CANVAS_BG = '#1A1612';
 
 interface Lesson {
   id: string;
-  href: string | null;
+  href: string;
   title: string;
   subtitle: string;
   preview: 'wave' | 'amplitude' | 'layered' | 'garden';
+  /** Key the lesson saves its guided progress under. */
+  lessonId: string;
+  /** How many guided steps the lesson ships with. */
+  stepCount: number;
 }
 
 const LESSONS: Lesson[] = [
@@ -20,31 +27,45 @@ const LESSONS: Lesson[] = [
     id: 'wave',
     href: '/math/wave',
     title: 'Wave',
-    subtitle: 'Numbers can wiggle',
+    subtitle: 'Numbers can wiggle, and wiggles have a pitch',
     preview: 'wave',
+    lessonId: 'math-wave',
+    stepCount: 5,
   },
   {
     id: 'amplitude',
-    href: null,
+    href: '/math/amplitude',
     title: 'Tall and Small',
-    subtitle: 'Two knobs, two effects',
+    subtitle: 'Taller is louder, faster is higher',
     preview: 'amplitude',
+    lessonId: 'math-amplitude',
+    stepCount: 5,
   },
   {
     id: 'layered',
-    href: null,
+    href: '/math/layers',
     title: 'Layers',
-    subtitle: 'Adding waves makes new shapes',
+    subtitle: 'Stack waves, hear an instrument appear',
     preview: 'layered',
+    lessonId: 'math-layers',
+    stepCount: 5,
   },
   {
     id: 'garden',
-    href: null,
+    href: '/math/garden',
     title: 'Garden',
-    subtitle: 'Tiny rules, big patterns',
+    subtitle: 'Two small rules, one whole pattern',
     preview: 'garden',
+    lessonId: 'math-garden',
+    stepCount: 5,
   },
 ];
+
+const SUMMARIES: LessonSummary[] = LESSONS.map((l) => ({
+  id: l.lessonId,
+  title: l.title,
+  stepCount: l.stepCount,
+}));
 
 function previewDraw(kind: Lesson['preview'], calm: boolean) {
   return (ctx: CanvasRenderingContext2D, t: number, w: number, h: number) => {
@@ -108,6 +129,20 @@ function previewDraw(kind: Lesson['preview'], calm: boolean) {
 export default function MathIndexPage() {
   const router = useRouter();
   const [calm, setCalm] = useCalmMode();
+  const [soundOn, setSoundOn] = useSoundPreference();
+  const [done, setDone] = useState<Record<string, number>>({});
+
+  // Guided progress lives in localStorage, so it is read after mount to keep
+  // the server and first client paint identical.
+  useEffect(() => {
+    const next: Record<string, number> = {};
+    LESSONS.forEach((l) => {
+      next[l.lessonId] = countProgress(l.lessonId);
+    });
+    setDone(next);
+  }, []);
+
+  const routeFraction = routeProgress(SUMMARIES, (id) => done[id] ?? 0);
 
   return (
     <div className="min-h-[100dvh] flex flex-col" style={{ backgroundColor: 'var(--brand-bg)' }}>
@@ -130,26 +165,56 @@ export default function MathIndexPage() {
           Math
         </span>
 
-        <button
-          onClick={() => setCalm(!calm)}
-          aria-pressed={calm}
-          className="text-white text-xs font-medium px-3 py-1.5 rounded-full bg-white/15 active:bg-white/25 transition-colors"
-        >
-          {calm ? 'Calm' : 'Lively'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSoundOn(!soundOn)}
+            aria-pressed={soundOn}
+            aria-label={soundOn ? 'Turn sound off' : 'Turn sound on'}
+            className="text-white p-1.5 rounded-full bg-white/15 active:bg-white/25 transition-colors"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+              {soundOn ? (
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+              ) : (
+                <path d="M23 9l-6 6M17 9l6 6" />
+              )}
+            </svg>
+          </button>
+          <button
+            onClick={() => setCalm(!calm)}
+            aria-pressed={calm}
+            className="text-white text-xs font-medium px-3 py-1.5 rounded-full bg-white/15 active:bg-white/25 transition-colors"
+          >
+            {calm ? 'Calm' : 'Lively'}
+          </button>
+        </div>
       </header>
 
       <main className="flex-1 px-4 pt-5 pb-8 max-w-xl w-full mx-auto">
         <p
-          className="text-center text-sm mb-5 animate-[fadeUp_500ms_ease-out]"
+          className="text-center text-sm mb-3 animate-[fadeUp_500ms_ease-out]"
           style={{ color: 'var(--brand-text-soft)' }}
         >
-          Watch what the numbers do.
+          Watch what the numbers do. Hear them. Move them with your finger.
         </p>
+
+        <div className="mb-5 animate-[fadeUp_500ms_ease-out]" aria-hidden>
+          <div
+            className="h-1.5 rounded-full overflow-hidden"
+            style={{ backgroundColor: 'var(--brand-border)' }}
+          >
+            <div
+              className="h-full rounded-full transition-[width] duration-500 ease-out"
+              style={{ width: `${Math.round(routeFraction * 100)}%`, backgroundColor: PRIMARY }}
+            />
+          </div>
+        </div>
 
         <ul className="grid gap-4">
           {LESSONS.map((lesson, i) => {
-            const locked = lesson.href === null;
+            const completed = done[lesson.lessonId] ?? 0;
+            const finished = completed >= lesson.stepCount;
             return (
               <li
                 key={lesson.id}
@@ -157,22 +222,19 @@ export default function MathIndexPage() {
                 style={{ animationDelay: `${i * 60}ms`, animationFillMode: 'backwards' }}
               >
                 <button
-                  onClick={() => lesson.href && router.push(lesson.href)}
-                  disabled={locked}
-                  className={`w-full text-left rounded-3xl overflow-hidden border border-[color:var(--brand-border)] bg-white shadow-sm transition-transform duration-150 ease-out ${
-                    locked ? 'opacity-60 cursor-default' : 'active:scale-[0.985]'
-                  }`}
+                  onClick={() => router.push(lesson.href)}
+                  className="w-full text-left rounded-3xl overflow-hidden border border-[color:var(--brand-border)] bg-white shadow-sm transition-transform duration-150 ease-out active:scale-[0.985]"
                 >
                   <div className="aspect-[16/7] bg-[color:var(--brand-text)] relative">
                     <SketchFrame
                       draw={previewDraw(lesson.preview, calm)}
-                      motion={locked ? 'off' : calm ? 'gentle' : 'on'}
+                      motion={calm ? 'gentle' : 'on'}
                       ariaLabel={`${lesson.title} preview`}
                       className="w-full h-full block"
                     />
-                    {locked && (
+                    {completed > 0 && (
                       <span className="absolute top-3 right-3 text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-full bg-white/85 text-[color:var(--brand-text)]">
-                        Soon
+                        {finished ? 'Done' : `${completed} of ${lesson.stepCount}`}
                       </span>
                     )}
                   </div>
@@ -185,11 +247,9 @@ export default function MathIndexPage() {
                         {lesson.subtitle}
                       </div>
                     </div>
-                    {!locked && (
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                        <polyline points="9 18 15 12 9 6" />
-                      </svg>
-                    )}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <polyline points="9 18 15 12 9 6" />
+                    </svg>
                   </div>
                 </button>
               </li>

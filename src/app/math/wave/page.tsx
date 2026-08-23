@@ -1,27 +1,103 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import SketchFrame from '@/components/math/SketchFrame';
 import Knob from '@/components/math/Knob';
+import LessonShell from '@/components/math/LessonShell';
+import GuidedSteps from '@/components/math/GuidedSteps';
 import { useCalmMode } from '@/components/math/useCalmMode';
+import { useSonify, useSoundPreference } from '@/components/math/useSonify';
+import { pitchForWiggles } from '@/lib/math-audio';
+import type { GuidedStep } from '@/lib/guided-learning';
 
 const PRIMARY = '#E8610A';
 const CANVAS_BG = '#1A1612';
+const LESSON_ID = 'math-wave';
 
 /**
- * Lesson 1 — Wave.
+ * Lesson 1 - Wave.
  *
  * One sine curve, two knobs (wiggle count and speed). The point of this
  * lesson is "numbers can wiggle, and two knobs make two different things
- * change". No symbols, no equations on screen — the curve itself is the
+ * change". No symbols, no equations on screen, the curve itself is the
  * teacher.
+ *
+ * The wiggle count is also the pitch, so the first thing a child meets on this
+ * route is a number they can see and hear at the same time.
  */
+
+const STEPS: readonly GuidedStep[] = [
+  {
+    id: 'stop',
+    prompt: 'Make the wave hold completely still.',
+    hint: 'Slide Speed all the way down to still.',
+    praise: 'Frozen.',
+  },
+  {
+    id: 'go',
+    prompt: 'Now set it moving again.',
+    hint: 'Speed back up.',
+    praise: 'Off it goes.',
+  },
+  {
+    id: 'wiggles',
+    prompt: 'Fit more wiggles on the screen.',
+    hint: 'The Wiggles knob. Listen to the note climb as they multiply.',
+    praise: 'More wiggles, higher note.',
+  },
+  {
+    id: 'hear',
+    prompt: 'Tap Hear the wave and listen.',
+    hint: 'Then move Wiggles while it is playing.',
+    praise: 'The number is a note.',
+  },
+  {
+    id: 'gentle',
+    prompt: 'Leave it slow and gentle.',
+    hint: 'Few wiggles, low speed.',
+    praise: 'Slow and gentle.',
+  },
+];
+
 export default function WaveLessonPage() {
-  const router = useRouter();
   const [calm, setCalm] = useCalmMode();
+  const [soundOn, setSoundOn] = useSoundPreference();
   const [frequency, setFrequency] = useState(1.5);
-  const [speed, setSpeed] = useState(calm ? 0.4 : 0.8);
+  const [speed, setSpeed] = useState(0.8);
+  const [playing, setPlaying] = useState(false);
+  const sound = useSonify(soundOn);
+
+  useEffect(() => {
+    if (!playing) {
+      sound.release();
+      return;
+    }
+    sound.hold(pitchForWiggles(frequency), 0.1);
+  }, [playing, frequency, sound]);
+
+  const state = useRef({ frequency, speed, playing });
+  state.current = { frequency, speed, playing };
+
+  const reached = useMemo(
+    () => (stepId: string) => {
+      const s = state.current;
+      switch (stepId) {
+        case 'stop':
+          return s.speed <= 0.05;
+        case 'go':
+          return s.speed >= 0.6;
+        case 'wiggles':
+          return s.frequency >= 3.2;
+        case 'hear':
+          return s.playing;
+        case 'gentle':
+          return s.frequency <= 1.5 && s.speed > 0 && s.speed <= 0.4;
+        default:
+          return false;
+      }
+    },
+    [],
+  );
 
   const draw = (ctx: CanvasRenderingContext2D, t: number, w: number, h: number) => {
     ctx.fillStyle = CANVAS_BG;
@@ -70,93 +146,79 @@ export default function WaveLessonPage() {
       : 'Nice and steady';
 
   return (
-    <div className="min-h-[100dvh] flex flex-col" style={{ backgroundColor: 'var(--brand-bg)' }}>
-      <header
-        className="flex items-center justify-between px-4 py-3 relative"
-        style={{ backgroundColor: PRIMARY }}
+    <LessonShell
+      title="Wave"
+      calmMode={calm}
+      onCalmChange={setCalm}
+      soundOn={soundOn}
+      onSoundChange={setSoundOn}
+    >
+      <div
+        className="rounded-3xl overflow-hidden shadow-sm"
+        style={{ aspectRatio: '4 / 3', backgroundColor: CANVAS_BG }}
       >
-        <button
-          onClick={() => router.push('/math')}
-          className="flex items-center gap-0.5 text-white font-medium text-lg"
-          aria-label="Back to math"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          <span>Math</span>
-        </button>
+        <SketchFrame
+          draw={draw}
+          motion={calm ? 'gentle' : 'on'}
+          deps={[frequency, speed, calm]}
+          ariaLabel={`A glowing sine wave with ${frequency.toFixed(1)} cycles, ${hint}.`}
+          className="w-full h-full block"
+        />
+      </div>
 
-        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white font-semibold text-xl">
-          Wave
-        </span>
+      <p
+        className="text-center text-sm font-medium tabular-nums"
+        style={{ color: 'var(--brand-text-soft)' }}
+      >
+        {hint}
+      </p>
 
-        <button
-          onClick={() => setCalm(!calm)}
-          aria-pressed={calm}
-          className="text-white text-xs font-medium px-3 py-1.5 rounded-full bg-white/15 active:bg-white/25 transition-colors"
-        >
-          {calm ? 'Calm' : 'Lively'}
-        </button>
-      </header>
+      <GuidedSteps
+        lessonId={LESSON_ID}
+        steps={STEPS}
+        reached={reached}
+        calmMode={calm}
+        soundOn={soundOn}
+        accent={PRIMARY}
+      />
 
-      <main className="flex-1 px-4 pt-4 pb-8 flex flex-col gap-5 max-w-xl w-full mx-auto animate-[fadeUp_400ms_ease-out]">
-        <div
-          className="rounded-3xl overflow-hidden shadow-sm"
-          style={{ aspectRatio: '4 / 3', backgroundColor: CANVAS_BG }}
-        >
-          <SketchFrame
-            draw={draw}
-            motion={calm ? 'gentle' : 'on'}
-            deps={[frequency, speed, calm]}
-            ariaLabel={`A glowing sine wave with ${frequency.toFixed(1)} cycles, ${hint}.`}
-            className="w-full h-full block"
-          />
-        </div>
+      <button
+        type="button"
+        onClick={() => setPlaying((p) => !p)}
+        aria-pressed={playing}
+        disabled={!soundOn}
+        className="w-full rounded-3xl py-4 font-semibold text-white text-lg active:scale-[0.99] transition-transform"
+        style={{ backgroundColor: PRIMARY, opacity: soundOn ? 1 : 0.5 }}
+      >
+        {soundOn ? (playing ? 'Stop the sound' : 'Hear the wave') : 'Sound is off'}
+      </button>
 
-        <p
-          className="text-center text-sm font-medium tabular-nums"
-          style={{ color: 'var(--brand-text-soft)' }}
-        >
-          {hint}
-        </p>
+      <div className="rounded-3xl bg-white/70 backdrop-blur-sm border border-[color:var(--brand-border)] p-5 flex flex-col gap-5 shadow-sm">
+        <Knob
+          label="Wiggles"
+          value={frequency}
+          min={0.5}
+          max={4}
+          step={0.1}
+          format={(v) => `${v.toFixed(1)}x`}
+          onChange={setFrequency}
+          calmMode={calm}
+        />
+        <Knob
+          label="Speed"
+          value={speed}
+          min={0}
+          max={1.5}
+          step={0.05}
+          format={(v) => (v === 0 ? 'still' : `${v.toFixed(2)}`)}
+          onChange={setSpeed}
+          calmMode={calm}
+        />
+      </div>
 
-        <div className="rounded-3xl bg-white/70 backdrop-blur-sm border border-[color:var(--brand-border)] p-5 flex flex-col gap-5 shadow-sm">
-          <Knob
-            label="Wiggles"
-            value={frequency}
-            min={0.5}
-            max={4}
-            step={0.1}
-            format={(v) => `${v.toFixed(1)}×`}
-            onChange={setFrequency}
-            calmMode={calm}
-          />
-          <Knob
-            label="Speed"
-            value={speed}
-            min={0}
-            max={1.5}
-            step={0.05}
-            format={(v) => (v === 0 ? 'still' : `${v.toFixed(2)}`)}
-            onChange={setSpeed}
-            calmMode={calm}
-          />
-        </div>
-
-        <p className="text-xs text-center" style={{ color: 'var(--brand-text-muted)' }}>
-          Try moving one slider at a time. What changes?
-        </p>
-      </main>
-
-      <style jsx>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          main { animation: none !important; }
-        }
-      `}</style>
-    </div>
+      <p className="text-xs text-center" style={{ color: 'var(--brand-text-muted)' }}>
+        Try moving one slider at a time. What changes?
+      </p>
+    </LessonShell>
   );
 }

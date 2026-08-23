@@ -21,6 +21,7 @@ _Living roadmap. Generated 2026-06-14 from repo state. Edit freely — the glass
 - [ ] **Changelog and version** — stuck at 0.1.0 with no CHANGELOG across ~15 shipped PRs; add one and bump.
 
 ## Done (recent)
+- **Multimodal math lessons** - Tall and Small, Layers and Garden shipped alongside Wave, each with Web Audio sonification, a two-axis finger pad, haptics and guided steps that complete by doing.
 - **Math route v1** — `/math` with a Wave lesson and calm-mode-aware sketches.
 - **Educator and government guides** — `/guides/educator` IEP walkthrough and `/guides/government` public-sector brief.
 - **EU AI Act guard** — CI blocks emotion and affect-detection imports.
