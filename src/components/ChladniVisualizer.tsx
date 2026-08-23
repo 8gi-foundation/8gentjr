@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import NamingCard from "@/components/guided/NamingCard";
+import ChladniPlate3D from "@/components/ChladniPlate3D";
+import { useGuidedDiscovery } from "@/hooks/useGuidedDiscovery";
 
 /* ── Chladni modes — note colors map to visible light spectrum ── */
 
@@ -26,9 +29,61 @@ const AMBIENT = [
 ] as const;
 
 const PARTICLE_COUNT = 3000;
-const FORCE = 0.00002;
-const DAMPING = 0.95;
-const NOISE_PHYSICS = 0.00005;
+
+/* ── Sand physics ────────────────────────────────────────────────────
+ * The plate shakes hardest where the standing wave is biggest, so grains get
+ * thrown around there and come to rest along the still lines. That agitation
+ * is the primary effect and it is what makes a Chladni figure appear.
+ *
+ * Why this was retuned. The previous tuning was NOT broken; it did converge.
+ * It was simply slow to sharpen on the low modes. Measured over 3000 grains,
+ * mean |z| (0 = sitting exactly on a still line, ~0.58 = evenly scattered):
+ *
+ *            C Cross (1,2)      E Star (3,5)
+ *   scattered    0.587              0.564
+ *   before   300 steps 0.051    300 steps 0.009
+ *   after    300 steps 0.004    300 steps 0.004
+ *
+ * 300 steps is about five seconds. The naming line in this activity tells the
+ * child the sand gathers where the plate stays still, and it appears four
+ * seconds after they stop moving, so the figure has to be crisp by then for
+ * that sentence to be true. That is the whole reason for the change.
+ *
+ * AGITATION - how far a grain is thrown at maximum amplitude, per frame.
+ * MIN_STEP  - a little life so settled sand still shimmers.
+ * FORCE     - gentle downhill slide on the wave's square, sharpens the lines.
+ */
+const AGITATION = 0.018;
+const MIN_STEP = 0.0004;
+const FORCE = 0.00012;
+const DAMPING = 0.9;
+
+/* ── Guided sliding (issue #225) ─────────────────────────────────────
+ * The child drags one frequency, the tone glides with the drag, and the sand
+ * re-forms into whichever mode is nearest. Pattern, sound and finger stay in
+ * step, which is the whole point: do, then see and hear, then name.
+ *
+ * The tone is routed through the existing master gain, so the Vol slider at
+ * zero silences it while the sand keeps working. The activity is complete with
+ * no audio at all. */
+const SLIDE_MIN_HZ = 110;
+const SLIDE_MAX_HZ = 300;
+/** Sand needs a still moment to settle onto the quiet lines before we name it. */
+const SETTLE_MS = 4000;
+
+/** Nearest Chladni mode to an arbitrary frequency, by absolute distance in Hz. */
+function nearestModeIndex(freq: number): number {
+  let best = 0;
+  let bestGap = Infinity;
+  for (let i = 0; i < MODES.length; i++) {
+    const gap = Math.abs(MODES[i].freq - freq);
+    if (gap < bestGap) {
+      bestGap = gap;
+      best = i;
+    }
+  }
+  return best;
+}
 
 /* ── Tuner ───────────────────────────────────────────────────
  * Chromatic note names for the live pitch tuner readout. */
@@ -171,7 +226,8 @@ export function ChladniVisualizer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particles = useRef(makeParticles());
   const animId = useRef(0);
-  const hueRef = useRef(280);
+  // Warm amber, not violet: hues 270-350 are banned by BRAND.md.
+  const hueRef = useRef(28);
   const volRef = useRef(0.5);
 
   /* Audio refs */
@@ -202,12 +258,30 @@ export function ChladniVisualizer() {
   /* UI state */
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
   const [activeAmbient, setActiveAmbient] = useState<string | null>(null);
-  const [hue, setHue] = useState(280);
+  const [hue, setHue] = useState(28);
   const [volume, setVolume] = useState(50);
   const [listening, setListening] = useState(false);
   const [liveNote, setLiveNote] = useState<string | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const [tuner, setTuner] = useState<TunerReading | null>(null);
+
+  /* Guided sliding state (issue #225) */
+  const [slideHz, setSlideHz] = useState(164);
+  /** Flat sand plate, or the same plate in relief the child can turn around. */
+  const [view, setView] = useState<"sand" | "plate">("sand");
+  const glideOsc = useRef<OscillatorNode | null>(null);
+  const glideGain = useRef<GainNode | null>(null);
+  const glideIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Highest mode complexity (n + m) the child has reached so far. */
+  const peakComplexity = useRef(0);
+
+  // Speech is additive: with Vol at zero the sentence is still shown, just not
+  // spoken, so the activity stays whole for a child who cannot hear it.
+  const guided = useGuidedDiscovery({
+    activityId: "cymatics",
+    speakEnabled: volume > 0,
+  });
 
   useEffect(() => { hueRef.current = hue; }, [hue]);
 
@@ -291,6 +365,109 @@ export function ChladniVisualizer() {
     [getAudio, getMaster, stopTone],
   );
 
+  /* ── Guided sliding: one frequency the child drags ───── */
+
+  /**
+   * Record what the child just produced. Only real, on-screen effects are
+   * recorded: a pattern appeared, a more complex pattern appeared, or the sand
+   * was left alone long enough to settle onto the still lines.
+   */
+  const noteMode = useCallback(
+    (idx: number) => {
+      const m = MODES[idx];
+      guided.record("pattern-formed");
+
+      const complexity = m.n + m.m;
+      if (complexity > peakComplexity.current) {
+        // Only counts once the child has genuinely climbed: the first pattern
+        // sets the baseline rather than claiming "higher" on its own.
+        if (peakComplexity.current > 0) guided.record("higher-more-lines");
+        peakComplexity.current = complexity;
+      }
+
+      // Sand settles onto the quiet lines only if the frequency is left alone.
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+      settleTimer.current = setTimeout(() => {
+        guided.record("quiet-lines");
+      }, SETTLE_MS);
+    },
+    // record is stable; depending on the whole hook result would rebuild this
+    // callback (and selectMode with it) on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [guided.record],
+  );
+
+  const stopGlide = useCallback(() => {
+    const ctx = audioCtx.current;
+    const g = glideGain.current;
+    const o = glideOsc.current;
+    if (!ctx || !g || !o) return;
+    const now = ctx.currentTime;
+    g.gain.cancelScheduledValues(now);
+    g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), now);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+    try { o.stop(now + 0.4); } catch { /* already stopped */ }
+    glideOsc.current = null;
+    glideGain.current = null;
+  }, []);
+
+  /**
+   * Start (or keep) a single gliding tone and point it at `hz`. One oscillator
+   * is reused for the whole drag so the pitch slides continuously instead of
+   * retriggering, which is what makes the sound feel attached to the finger.
+   */
+  const glideTo = useCallback(
+    (hz: number) => {
+      const ctx = getAudio();
+      const master = getMaster();
+      const now = ctx.currentTime;
+
+      if (!glideOsc.current) {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "sine";
+        o.frequency.setValueAtTime(hz, now);
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(0.1, now + 0.12);
+        o.connect(g);
+        g.connect(master);
+        o.start(now);
+        glideOsc.current = o;
+        glideGain.current = g;
+      } else {
+        glideOsc.current.frequency.setTargetAtTime(hz, now, 0.03);
+      }
+
+      // Fade out shortly after the child stops moving, so a released slider
+      // does not leave a tone humming under the room.
+      if (glideIdle.current) clearTimeout(glideIdle.current);
+      glideIdle.current = setTimeout(stopGlide, 900);
+    },
+    [getAudio, getMaster, stopGlide],
+  );
+
+  /** The slider itself: pattern, tone and sand all move together. */
+  const handleSlide = useCallback(
+    (hz: number) => {
+      setSlideHz(hz);
+      const idx = nearestModeIndex(hz);
+      const m = MODES[idx];
+
+      // Re-scatter only when the pattern actually changes, so dragging within
+      // one mode stays smooth rather than shaking the sand continuously.
+      if (mode.current?.n !== m.n || mode.current?.m !== m.m) {
+        mode.current = { n: m.n, m: m.m };
+        scatter(particles.current);
+        setActiveIdx(idx);
+        noteMode(idx);
+      }
+
+      stopTone(); // the tap-a-note tone must not fight the glide
+      glideTo(hz);
+    },
+    [glideTo, noteMode, stopTone],
+  );
+
   /* ── Ambient noise controls ──────────────────────────── */
 
   const stopNoise = useCallback(() => {
@@ -359,12 +536,14 @@ export function ChladniVisualizer() {
       const m = MODES[i];
       mode.current = { n: m.n, m: m.m };
       setActiveIdx(i);
+      setSlideHz(m.freq); // keep the drag slider in step with the tapped note
       playTone(m.freq);
       scatter(particles.current);
+      noteMode(i);
       if (typeof navigator !== "undefined" && navigator.vibrate)
         navigator.vibrate(25);
     },
-    [playTone],
+    [playTone, noteMode],
   );
 
   /* ── Live input: mic → pitch → pattern (record button) ── */
@@ -419,7 +598,8 @@ export function ChladniVisualizer() {
             const idx = freqToModeIndex(freq);
             const m = MODES[idx];
             mode.current = { n: m.n, m: m.m };
-            setHue(Math.round((idx / (MODES.length - 1)) * 300));
+            // Capped at 260 so the sweep stops short of the banned 270-350 band.
+            setHue(Math.round((idx / (MODES.length - 1)) * 260));
 
             // Tuner: where should the marker aim, and is it on the note?
             const reading = freqToTuner(freq);
@@ -432,6 +612,8 @@ export function ChladniVisualizer() {
               setActiveIdx(idx);
               setLiveNote(m.note);
               scatter(particles.current); // re-energise sand on a new note
+              // A pattern the child produced with their own voice counts too.
+              noteMode(idx);
             }
           }
         }
@@ -460,7 +642,7 @@ export function ChladniVisualizer() {
       setMicError("Microphone access is needed to shape sand with your voice.");
       setListening(false);
     }
-  }, [getAudio]);
+  }, [getAudio, noteMode]);
 
   const toggleListening = useCallback(() => {
     if (listening) stopListening();
@@ -469,7 +651,12 @@ export function ChladniVisualizer() {
 
   /* ── Canvas animation loop ───────────────────────────── */
 
+  // Keyed on `view`: switching to the relief view unmounts this canvas, and
+  // switching back mounts a brand new element. Without the dependency the loop
+  // would keep painting the old detached canvas and the flat view would come
+  // back blank.
   useEffect(() => {
+    if (view !== "sand") return;
     const cvs = canvasRef.current;
     if (!cvs) return;
 
@@ -508,14 +695,24 @@ export function ChladniVisualizer() {
         const p = pts[i];
         if (m) {
           const z = chladni(p.x, p.y, m.n, m.m);
+          // chladni() spans -2..2; normalise to a 0..1 shake strength.
+          const amp = Math.abs(z) * 0.5;
+
+          // Agitation: grains are thrown about where the plate moves most,
+          // and barely at all along the still lines, so they collect there.
+          const step = MIN_STEP + amp * AGITATION;
+          p.x += (Math.random() - 0.5) * step;
+          p.y += (Math.random() - 0.5) * step;
+
+          // A gentle slide downhill on z squared, which sharpens the lines.
           const [gx, gy] = chladniGrad(p.x, p.y, m.n, m.m);
-          p.vx += -z * gx * FORCE;
-          p.vy += -z * gy * FORCE;
+          p.vx = (p.vx - z * gx * FORCE) * DAMPING;
+          p.vy = (p.vy - z * gy * FORCE) * DAMPING;
+        } else {
+          // No note chosen yet: a barely-there drift, not a still image.
+          p.vx = (p.vx + (Math.random() - 0.5) * 0.0002) * DAMPING;
+          p.vy = (p.vy + (Math.random() - 0.5) * 0.0002) * DAMPING;
         }
-        p.vx += (Math.random() - 0.5) * NOISE_PHYSICS;
-        p.vy += (Math.random() - 0.5) * NOISE_PHYSICS;
-        p.vx *= DAMPING;
-        p.vy *= DAMPING;
         p.x += p.vx;
         p.y += p.vy;
         if (p.x < 0) { p.x = 0; p.vx = Math.abs(p.vx) * 0.3; }
@@ -549,7 +746,7 @@ export function ChladniVisualizer() {
       cancelAnimationFrame(animId.current);
       window.removeEventListener("resize", resize);
     };
-  }, []);
+  }, [view]);
 
   /* ── Cleanup audio on unmount ────────────────────────── */
 
@@ -558,10 +755,13 @@ export function ChladniVisualizer() {
       stopTone();
       stopNoise();
       stopListening();
+      stopGlide();
+      if (glideIdle.current) clearTimeout(glideIdle.current);
+      if (settleTimer.current) clearTimeout(settleTimer.current);
       if (audioCtx.current && audioCtx.current.state !== "closed")
         audioCtx.current.close();
     };
-  }, [stopTone, stopNoise, stopListening]);
+  }, [stopTone, stopNoise, stopListening, stopGlide]);
 
   /* ── Render ──────────────────────────────────────────── */
 
@@ -571,12 +771,38 @@ export function ChladniVisualizer() {
       <div className="flex flex-col md:flex-row md:items-start md:gap-6 lg:gap-8 gap-3 max-w-5xl mx-auto">
         {/* Chladni plate canvas — grows on larger screens */}
         <div className="relative w-full md:flex-1 md:max-w-[560px] aspect-square max-h-[42vh] md:max-h-none rounded-2xl overflow-hidden shadow-xl shrink-0">
-          <canvas
-            ref={canvasRef}
-            className="w-full h-full block"
-            style={{ touchAction: "none" }}
-          />
-          {activeIdx === null && (
+          {view === "plate" ? (
+            <ChladniPlate3D
+              n={activeIdx !== null ? MODES[activeIdx].n : 1}
+              m={activeIdx !== null ? MODES[activeIdx].m : 2}
+              hue={hue}
+              className="w-full h-full block"
+            />
+          ) : (
+            <canvas
+              ref={canvasRef}
+              className="w-full h-full block"
+              style={{ touchAction: "none" }}
+            />
+          )}
+
+          {/* Flat or relief. Both show the same plate, so this is a way to
+              look, never a level to unlock. */}
+          <button
+            onClick={() => setView((v) => (v === "sand" ? "plate" : "sand"))}
+            aria-pressed={view === "plate"}
+            className="absolute top-2 right-2 px-3 rounded-full border-none font-bold text-xs cursor-pointer select-none"
+            style={{
+              minHeight: 44,
+              backgroundColor: view === "plate" ? "#E8610A" : "rgba(255,255,255,0.14)",
+              color: "#fff",
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            {view === "plate" ? "Turn it" : "See it 3D"}
+          </button>
+
+          {view === "sand" && activeIdx === null && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none gap-2">
               <span className="text-3xl opacity-40">✦</span>
               <p className="text-white/30 text-sm font-medium text-center px-8 leading-relaxed">
@@ -685,6 +911,42 @@ export function ChladniVisualizer() {
               <span className="sr-only">{tunerAnnounce}</span>
             </div>
           )}
+
+          {/* Drag one frequency: the sand and the tone follow the finger.
+              This is the do half of do -> see -> name. */}
+          <div className="flex items-center gap-2.5 w-full px-1">
+            <span className="text-xs text-[#8a7e70] font-semibold shrink-0 w-10">
+              Slide
+            </span>
+            <input
+              type="range"
+              min={SLIDE_MIN_HZ}
+              max={SLIDE_MAX_HZ}
+              step={1}
+              value={slideHz}
+              onChange={(e) => handleSlide(Number(e.target.value))}
+              aria-label="Slide the sound from low to high and watch the sand change"
+              className="flex-1 h-2.5 rounded-full appearance-none cursor-pointer outline-none"
+              style={{
+                background: `linear-gradient(to right, #E8610A ${
+                  ((slideHz - SLIDE_MIN_HZ) / (SLIDE_MAX_HZ - SLIDE_MIN_HZ)) * 100
+                }%, #f0e6d6 ${
+                  ((slideHz - SLIDE_MIN_HZ) / (SLIDE_MAX_HZ - SLIDE_MIN_HZ)) * 100
+                }%)`,
+              }}
+            />
+            <span className="text-xs text-[#8a7e70] font-semibold shrink-0 w-12 text-right">
+              {slideHz < 160 ? "low" : slideHz > 240 ? "high" : "middle"}
+            </span>
+          </div>
+
+          {/* The name half. Shown always, spoken only when the volume allows. */}
+          <NamingCard
+            line={guided.line}
+            onDismiss={guided.dismiss}
+            accent="#E8610A"
+            tone="dark"
+          />
 
           {/* Sliders row: Color + Volume */}
           <div className="flex flex-col gap-2 w-full">

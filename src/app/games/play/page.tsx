@@ -53,7 +53,11 @@ import MusicalBalls from "@/components/games/sensory-3d/MusicalBalls";
 // Memory games
 import MemoryMatch from "@/components/games/memory/MemoryMatch";
 
-type Category = "speech" | "maths" | "sensory" | "sensory-3d" | "memory";
+// Science sandboxes (issue #225) - play surfaces where the law shows itself
+import LightMixer from "@/components/LightMixer";
+import WaveInterference from "@/components/WaveInterference";
+
+type Category = "speech" | "maths" | "sensory" | "sensory-3d" | "memory" | "science";
 
 type GameDef = {
   id: string;
@@ -71,6 +75,7 @@ const categories: { id: Category; label: string; emoji: string }[] = [
   { id: "sensory", label: "Sensory", emoji: "\u{1F308}" },
   { id: "sensory-3d", label: "Sensory 3D", emoji: "\u{1F30C}" },
   { id: "memory", label: "Memory", emoji: "\u{1F9E0}" },
+  { id: "science", label: "Science", emoji: "\u{1F52C}" },
 ];
 
 const games: GameDef[] = [
@@ -123,6 +128,10 @@ const games: GameDef[] = [
 
   // Memory (1)
   { id: "memory-match", category: "memory", emoji: "\u{1F0CF}", title: "Memory Match", description: "Find all matching pairs!", color: "#4ECDC4", component: MemoryMatch },
+
+  // Science (2) - sandboxes, no score and no way to lose
+  { id: "ripples", category: "science", emoji: "〰️", title: "Ripples", description: "Move two wave makers. Find the quiet spots.", color: "#14B8A6", component: WaveInterference },
+  { id: "light-mixer", category: "science", emoji: "\u{1F526}", title: "Light Mixer", description: "Overlap three lights. See what colors you get.", color: "#E8610A", component: LightMixer },
 ];
 
 export default function GamesPlayPage() {
