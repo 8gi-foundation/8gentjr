@@ -210,6 +210,7 @@ const DISCOVERIES: Record<GuidedActivityId, Discovery[]> = {
       },
     },
   ],
+
 };
 
 // ---------------------------------------------------------------------------
@@ -240,6 +241,36 @@ export function getNamingLine(
   const discovery = getDiscoveries(activityId).find((d) => d.id === discoveryId);
   if (!discovery) return null;
   return discovery.lines[bandForStage(stageId)];
+}
+
+/**
+ * Whether an effect may take the card right now.
+ *
+ * Pure, and out here rather than inline in the hook, because the ORDER of these
+ * three conditions is the whole bug that shipped in wave 1 and a comment
+ * claiming the order is right is not worth the line it is written on.
+ *
+ * The rule that matters is the middle one. Two effects can be recorded inside a
+ * single event handler, before React has committed anything, and the first
+ * pointerdown in the interference activity does exactly that. If a record that
+ * arrives while a line is showing is marked as named and then loses the setLine
+ * race, its sentence is spent without ever being read. So it is declined
+ * instead, and the caller must not mark it named, which leaves it free to earn
+ * its line the next time the child produces the same effect.
+ */
+export function canTakeTheCard(args: {
+  /** Effects that have already had their line. */
+  named: ReadonlySet<string>;
+  /** The line currently on screen, or null when the card is clear. */
+  lineOnScreen: string | null;
+  discoveryId: string;
+  /** The resolved line, or null when the id is unknown. */
+  text: string | null;
+}): boolean {
+  if (args.named.has(args.discoveryId)) return false;
+  if (args.lineOnScreen !== null) return false;
+  if (!args.text) return false;
+  return true;
 }
 
 /** Word count used by the stage-length rule. Whitespace separated. */

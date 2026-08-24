@@ -20,6 +20,7 @@ import {
   BANNED_TERMS,
   MIN_AUTHORED_DISCOVERIES,
   bandForStage,
+  canTakeTheCard,
   countWords,
   fitsStage,
   getActivityIds,
@@ -74,11 +75,26 @@ describe('activity catalogue', () => {
     }
   });
 
-  test('EVERY authored discovery is reachable, at every stage', () => {
-    // Regression guard. Naming is not gated on a count, so any discovery an
-    // activity can record must resolve to a real line. A discovery that can
-    // never produce a sentence is dead copy, and an activity whose predicates
-    // are mutually exclusive can leave a child with no naming at all.
+  test('EVERY authored discovery resolves to a line, at every stage', () => {
+    // Regression guard against DEAD COPY, and only that. Naming is not gated on
+    // a count, so any discovery an activity records must resolve to a real
+    // sentence at every stage; a discovery that resolves to nothing would leave
+    // a child with silence where a naming was intended.
+    //
+    // WHAT THIS TEST DOES NOT COVER, stated plainly because an earlier version
+    // of this comment claimed otherwise: it does not check that a component
+    // ever calls record() with these ids, so it cannot catch an unreachable
+    // predicate. Restoring the wave-1 LightMixer `else if` bug leaves this
+    // suite green. It also cannot catch a component naming at mount before the
+    // child has touched anything. Both of those bugs shipped under this file.
+    //
+    // The repo has no DOM test harness and adding one is out of scope, so the
+    // structural answer is to keep the predicates out of the components. Water
+    // Sphere does that: its predicates are a pure reducer in
+    // `water-sphere-discovery.ts` and `water-sphere-discovery.test.ts` drives
+    // real event sequences through them, covering both failure modes above.
+    // The three wave-1 activities still decide inline and remain uncovered
+    // here, which is a known gap and not something this test papers over.
     for (const id of getActivityIds()) {
       for (const d of getDiscoveries(id)) {
         for (const stage of ALL_STAGE_IDS) {
@@ -132,6 +148,77 @@ describe('getNamingLine', () => {
         }
       }
     }
+  });
+});
+
+describe('canTakeTheCard (hold, never burn)', () => {
+  const line = 'You made the sound visible.';
+
+  test('a fresh effect with a clear card takes it', () => {
+    expect(
+      canTakeTheCard({
+        named: new Set(),
+        lineOnScreen: null,
+        discoveryId: 'pattern-formed',
+        text: line,
+      }),
+    ).toBe(true);
+  });
+
+  test('an effect already named never takes the card again', () => {
+    expect(
+      canTakeTheCard({
+        named: new Set(['pattern-formed']),
+        lineOnScreen: null,
+        discoveryId: 'pattern-formed',
+        text: line,
+      }),
+    ).toBe(false);
+  });
+
+  test('a second effect in the same handler is declined while a line is showing', () => {
+    // The wave-1 bug, as a test. Two records inside one pointerdown both ran
+    // before React committed, both were marked named, and only the last line
+    // was ever shown. The first sentence was spent unread on the child's very
+    // first touch. Declining here is what leaves it available.
+    expect(
+      canTakeTheCard({
+        named: new Set(),
+        lineOnScreen: 'Two waves met each other.',
+        discoveryId: 'found-loud',
+        text: 'Two waves made a big one.',
+      }),
+    ).toBe(false);
+  });
+
+  test('the same effect takes the card once the card is clear', () => {
+    // The other half: declining must not be a permanent loss. The caller does
+    // not mark a declined effect as named, so the next time the child produces
+    // it, it names.
+    const named = new Set<string>();
+    expect(
+      canTakeTheCard({ named, lineOnScreen: 'something', discoveryId: 'found-loud', text: line }),
+    ).toBe(false);
+    expect(
+      canTakeTheCard({ named, lineOnScreen: null, discoveryId: 'found-loud', text: line }),
+    ).toBe(true);
+  });
+
+  test('an unresolvable line is declined rather than shown blank', () => {
+    expect(
+      canTakeTheCard({ named: new Set(), lineOnScreen: null, discoveryId: 'typo', text: null }),
+    ).toBe(false);
+    expect(
+      canTakeTheCard({ named: new Set(), lineOnScreen: null, discoveryId: 'typo', text: '' }),
+    ).toBe(false);
+  });
+
+  test('an empty line on screen still counts as a clear card', () => {
+    // null means clear. Anything else, including an empty string that somehow
+    // reached the card, means occupied.
+    expect(
+      canTakeTheCard({ named: new Set(), lineOnScreen: '', discoveryId: 'x', text: line }),
+    ).toBe(false);
   });
 });
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import { speak, stopSpeaking } from '@/lib/tts';
-import { getNamingLine, type GuidedActivityId } from '@/lib/guided-naming';
+import { canTakeTheCard, getNamingLine, type GuidedActivityId } from '@/lib/guided-naming';
 
 /**
  * do -> see -> name, as a hook.
@@ -27,6 +27,20 @@ import { getNamingLine, type GuidedActivityId } from '@/lib/guided-naming';
  *     what keeps this anti-engagement: no streak, no counter, no escalation,
  *     and producing the same effect again is silent. A child who keeps
  *     dragging is never nagged; a child who explores widely is never starved.
+ *
+ *   - HOLD, NEVER BURN. A single event handler can record two effects in one
+ *     go. The first pointerdown in the interference activity does exactly
+ *     that, because the listening ear starts on the centre line: the drag
+ *     records `waves-overlap` and then `found-loud` before React commits
+ *     anything, so only the second line was ever shown while BOTH were marked
+ *     as named. The first sentence was consumed forever, unseen, on the
+ *     child's very first touch. The light mixer burned `two-lights` the same
+ *     way, and cymatics batched two of its three.
+ *
+ *     So a record that arrives while a line is already on screen is declined
+ *     rather than swallowed: nothing is marked named, and the effect can name
+ *     itself later once the card is clear. One line at a time still holds, and
+ *     no authored sentence is spent without being read.
  *
  *   - DISPLAY IS NEVER GATED ON AUDIO. The line is returned for display
  *     regardless. Speech is additive: with `speakEnabled` false, or the
@@ -69,6 +83,14 @@ export function useGuidedDiscovery({
    * count, and this must not trigger a render of its own.
    */
   const named = useRef<Set<string>>(new Set());
+  /**
+   * Mirror of `line` that is readable synchronously.
+   *
+   * Two records inside one event handler both run before React commits, so
+   * reading the state variable would tell the second one that no line is
+   * showing. The ref is what makes "hold, never burn" work.
+   */
+  const lineRef = useRef<string | null>(null);
   /** True only if THIS activity started speech, so cleanup cannot cut off the talker. */
   const spoke = useRef(false);
 
@@ -81,16 +103,31 @@ export function useGuidedDiscovery({
 
   const record = useCallback(
     (discoveryId: string) => {
-      // Already named this effect: stay silent. This is the anti-nag rule, and
-      // it is the only gate. There is no threshold to reach.
-      if (named.current.has(discoveryId)) return;
-
       const s = settingsRef.current;
+      // Unknown discovery id resolves to null, and the gate declines it, so a
+      // typo shows nothing rather than an invented sentence.
       const text = getNamingLine(activityId, discoveryId, s.glpStage);
-      // Unknown discovery id: show nothing rather than invent a sentence.
+
+      // The gate is `canTakeTheCard`, tested in guided-naming.test.ts. Note
+      // what does NOT happen when it declines: the effect is not marked named,
+      // so it is still free to earn its line later.
+      if (
+        !canTakeTheCard({
+          named: named.current,
+          lineOnScreen: lineRef.current,
+          discoveryId,
+          text,
+        })
+      ) {
+        return;
+      }
+      // The gate has already rejected a null line. Restated here because the
+      // compiler cannot narrow `text` through an object argument, and an
+      // assertion would silence a future change to the gate rather than catch it.
       if (!text) return;
 
       named.current.add(discoveryId);
+      lineRef.current = text;
       setLine(text);
 
       // Speech is additive. The line is already on screen either way.
@@ -110,10 +147,14 @@ export function useGuidedDiscovery({
     [activityId],
   );
 
-  const dismiss = useCallback(() => setLine(null), []);
+  const dismiss = useCallback(() => {
+    lineRef.current = null;
+    setLine(null);
+  }, []);
 
   const reset = useCallback(() => {
     named.current = new Set();
+    lineRef.current = null;
     setLine(null);
   }, []);
 

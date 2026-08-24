@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import NamingCard from "@/components/guided/NamingCard";
 import ChladniPlate3D from "@/components/ChladniPlate3D";
+import { useCalmMode } from "@/components/math/useCalmMode";
 import { useGuidedDiscovery } from "@/hooks/useGuidedDiscovery";
 
 /* ── Chladni modes — note colors map to visible light spectrum ── */
@@ -57,6 +58,34 @@ const AGITATION = 0.018;
 const MIN_STEP = 0.0004;
 const FORCE = 0.00012;
 const DAMPING = 0.9;
+
+/**
+ * How much of AGITATION actually reaches the sand, and why there is a dial here
+ * at all.
+ *
+ * The retune above raised the per-frame throw by about two orders of magnitude,
+ * which is what makes the figure crisp inside the four seconds the naming line
+ * depends on. Settled sand is unaffected, because the throw is scaled by |z|
+ * and |z| is near zero on the still lines. What it did change is the look of a
+ * DRAG: crossing into a new mode re-energises every grain, and a child sweeping
+ * the slider therefore watched three thousand grains boil continuously.
+ *
+ * That is not a flash hazard, the dots are uncorrelated noise, but it is a
+ * sensory load, and this was the one surface in the wave with no way to turn it
+ * down: `prefers-reduced-motion` cannot reach a canvas loop, and CSS is the
+ * only place it was honoured. So the loop reads it directly, and it reads the
+ * global Calm Mode too, which is on by default.
+ *
+ * The scales are chosen to keep the settle honest rather than to be as small as
+ * possible. Calm still sharpens a figure well within the four seconds; reduced
+ * takes longer and stays legible the whole way, which is the right trade for a
+ * child who has asked for less movement.
+ */
+const AGITATION_SCALE = {
+  lively: 1,
+  calm: 0.45,
+  reduced: 0.22,
+} as const;
 
 /* ── Guided sliding (issue #225) ─────────────────────────────────────
  * The child drags one frequency, the tone glides with the drag, and the sand
@@ -155,12 +184,37 @@ function makeParticles(): Particle[] {
   }));
 }
 
+/**
+ * Throw every grain somewhere new. For a DISCRETE event only: tapping a note is
+ * one deliberate act and watching a fresh figure assemble from nothing is the
+ * best thing this activity does.
+ */
 function scatter(particles: Particle[]) {
   for (const p of particles) {
     p.x = Math.random();
     p.y = Math.random();
     p.vx = (Math.random() - 0.5) * 0.002;
     p.vy = (Math.random() - 0.5) * 0.002;
+  }
+}
+
+/**
+ * Loosen the sand without teleporting it.
+ *
+ * A continuous drag crosses many modes, and scattering at every crossing meant
+ * the sand never stopped being thrown across the plate: three thousand grains
+ * jumping to new random positions several times a second. That is the boil.
+ *
+ * Real sand does not teleport. It gets shaken loose and walks to the nearest
+ * still line, which is the thing this activity is about. A kick to the velocity
+ * is enough to free a grain from a line that is no longer a line, and the
+ * pattern then migrates in front of the child rather than blinking. Calmer to
+ * watch and closer to what a plate actually does.
+ */
+function loosen(particles: Particle[], strength: number) {
+  for (const p of particles) {
+    p.vx += (Math.random() - 0.5) * strength;
+    p.vy += (Math.random() - 0.5) * strength;
   }
 }
 
@@ -226,6 +280,39 @@ export function ChladniVisualizer() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particles = useRef(makeParticles());
   const animId = useRef(0);
+
+  /**
+   * Calm Mode, read but not offered here.
+   *
+   * The setting is global and persists per device, and the Light Mixer already
+   * ships the toggle, so honouring it costs nothing and adding a second control
+   * to this already busy surface would cost real screen. It defaults to on,
+   * which is the right default for the sand.
+   */
+  const [calm] = useCalmMode();
+
+  /**
+   * How hard the sand is thrown, resolved from Calm Mode and the operating
+   * system's reduced-motion setting.
+   *
+   * A ref rather than state on purpose: the render loop reads it every frame,
+   * and it must not restart the loop when it changes.
+   */
+  const agitationRef = useRef(AGITATION * AGITATION_SCALE.calm);
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const apply = () => {
+      const scale = mq.matches
+        ? AGITATION_SCALE.reduced
+        : calm
+          ? AGITATION_SCALE.calm
+          : AGITATION_SCALE.lively;
+      agitationRef.current = AGITATION * scale;
+    };
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, [calm]);
   // Warm amber, not violet: hues 270-350 are banned by BRAND.md.
   const hueRef = useRef(28);
   const volRef = useRef(0.5);
@@ -458,11 +545,12 @@ export function ChladniVisualizer() {
       const idx = nearestModeIndex(hz);
       const m = MODES[idx];
 
-      // Re-scatter only when the pattern actually changes, so dragging within
-      // one mode stays smooth rather than shaking the sand continuously.
+      // Only when the pattern actually changes, and even then the sand is
+      // loosened rather than scattered. A drag crosses several modes, and a
+      // full scatter at each crossing is what made the plate boil.
       if (mode.current?.n !== m.n || mode.current?.m !== m.m) {
         mode.current = { n: m.n, m: m.m };
-        scatter(particles.current);
+        loosen(particles.current, 0.004);
         setActiveIdx(idx);
         noteMode(idx);
       }
@@ -616,7 +704,9 @@ export function ChladniVisualizer() {
               lastDetectIdx.current = idx;
               setActiveIdx(idx);
               setLiveNote(m.note);
-              scatter(particles.current); // re-energise sand on a new note
+              // Loosened, not scattered: a sung glide crosses notes as
+              // continuously as a dragged slider does.
+              loosen(particles.current, 0.004);
               // A pattern the child produced with their own voice counts too.
               noteMode(idx);
             }
@@ -705,7 +795,9 @@ export function ChladniVisualizer() {
 
           // Agitation: grains are thrown about where the plate moves most,
           // and barely at all along the still lines, so they collect there.
-          const step = MIN_STEP + amp * AGITATION;
+          // Scaled by Calm Mode and reduced motion, read fresh every frame so
+          // changing either setting takes effect without a reload.
+          const step = MIN_STEP + amp * agitationRef.current;
           p.x += (Math.random() - 0.5) * step;
           p.y += (Math.random() - 0.5) * step;
 
@@ -729,10 +821,13 @@ export function ChladniVisualizer() {
       const ch = hueRef.current;
       // A touch of shimmer so the granules feel alive (very subtle, per-particle
       // phase so they twinkle independently rather than pulsing in unison).
-      const tNow = performance.now() * 0.004;
+      // Held still under reduced motion: this is decoration, and decoration is
+      // the first thing to give up when a child has asked for less movement.
+      const shimmerOn = agitationRef.current > AGITATION * AGITATION_SCALE.reduced;
+      const tNow = shimmerOn ? performance.now() * 0.004 : 0;
       for (let i = 0; i < pts.length; i++) {
         const p = pts[i];
-        const shimmer = 1 + 0.12 * Math.sin(tNow + i * 1.7);
+        const shimmer = shimmerOn ? 1 + 0.12 * Math.sin(tNow + i * 1.7) : 1;
         const alpha = Math.min(1, p.a * shimmer);
         ctx.fillStyle = `hsla(${ch}, 72%, 66%, ${alpha})`;
         ctx.fillRect(
@@ -781,6 +876,7 @@ export function ChladniVisualizer() {
               n={activeIdx !== null ? MODES[activeIdx].n : 1}
               m={activeIdx !== null ? MODES[activeIdx].m : 2}
               hue={hue}
+              calm={calm}
               className="w-full h-full block"
             />
           ) : (

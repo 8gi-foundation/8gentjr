@@ -239,13 +239,32 @@ export default function LightMixer() {
     [nearest, scan, toNorm],
   );
 
+  /**
+   * Coalesce the drag to one frame's work.
+   *
+   * There is no animation loop on this surface, so every pointermove ran the
+   * whole field pass AND the overlap scan synchronously. iOS delivers pointer
+   * moves faster than it paints, up to 120 a second on the iPads this has to be
+   * pleasant on, so a child dragging a light was asking for several times more
+   * work than could ever be shown, and the drag would lag behind the finger.
+   *
+   * The position is still taken from every event, so the drag itself is no
+   * coarser. Only the painting is capped at one per frame, which is the most
+   * anybody can see.
+   */
+  const movePending = useRef(0);
+
   const onMove = useCallback(
     (e: React.PointerEvent) => {
       const h = dragging.current;
       if (!h) return;
       pts.current[h] = toNorm(e);
-      repaintRef.current?.();
-      scan();
+      if (movePending.current) return;
+      movePending.current = requestAnimationFrame(() => {
+        movePending.current = 0;
+        repaintRef.current?.();
+        scan();
+      });
     },
     [scan, toNorm],
   );
@@ -253,6 +272,13 @@ export default function LightMixer() {
   const onUp = useCallback(() => {
     dragging.current = null;
   }, []);
+
+  useEffect(
+    () => () => {
+      if (movePending.current) cancelAnimationFrame(movePending.current);
+    },
+    [],
+  );
 
   /** Keyboard path: arrow keys move the red light, so this is reachable without a pointer. */
   const onKeyDown = useCallback(

@@ -91,16 +91,48 @@ export default function WaveInterference() {
   const osc = useRef<OscillatorNode | null>(null);
   const gain = useRef<GainNode | null>(null);
 
+  /**
+   * Fade out, then stop.
+   *
+   * Cutting an oscillator mid-cycle steps the waveform to zero, and a step is a
+   * click: broadband, sudden, and loud in the exact way a sensory-sensitive
+   * child cannot filter out. Turning the sound OFF must not be the loudest
+   * moment in the activity. The ramp is short enough to feel immediate and long
+   * enough to have no edge, and the context is suspended afterwards so nothing
+   * keeps the audio hardware awake once the child has said they do not want it.
+   */
   const stopTone = useCallback(() => {
-    try {
-      osc.current?.stop();
-    } catch {
-      /* already stopped */
-    }
-    osc.current?.disconnect();
-    gain.current?.disconnect();
+    const ctx = audioCtx.current;
+    const g = gain.current;
+    const o = osc.current;
     osc.current = null;
     gain.current = null;
+
+    if (!ctx || !g || !o) return;
+    const now = ctx.currentTime;
+    const FADE = 0.09;
+    try {
+      g.gain.cancelScheduledValues(now);
+      g.gain.setValueAtTime(Math.max(g.gain.value, 0.0001), now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + FADE);
+      o.stop(now + FADE + 0.02);
+    } catch {
+      /* the node may already be stopped: nothing left to fade */
+    }
+    setTimeout(
+      () => {
+        try {
+          o.disconnect();
+          g.disconnect();
+        } catch {
+          /* already torn down */
+        }
+        if (audioCtx.current === ctx && !osc.current && ctx.state === 'running') {
+          void ctx.suspend().catch(() => {});
+        }
+      },
+      (FADE + 0.05) * 1000,
+    );
   }, []);
 
   const startTone = useCallback(() => {
@@ -327,20 +359,29 @@ export default function WaveInterference() {
     let raf = 0;
     let mounted = true;
     let last = 0;
+    /** Set by repaintRef while the loop runs, so a drag costs one pass per frame. */
+    let dirty = false;
     const start = performance.now();
+
+    /* Cached in resize rather than measured per frame. getBoundingClientRect
+     * forces layout, and asking for it inside the loop puts a synchronous
+     * layout on every frame of an activity a child holds a finger on. */
+    let cssW = 0;
+    let cssH = 0;
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const rect = canvas.getBoundingClientRect();
+      cssW = rect.width;
+      cssH = rect.height;
       canvas.width = Math.max(1, Math.round(rect.width * dpr));
       canvas.height = Math.max(1, Math.round(rect.height * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
     const render = (t: number) => {
-      const rect = canvas.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
+      const w = cssW;
+      const h = cssH;
       if (w < 2 || h < 2) return;
 
       const a = pts.current.a;
@@ -409,11 +450,36 @@ export default function WaveInterference() {
     // initial paint and the ResizeObserver cannot each spawn a second loop.
     const tick = (now: number) => {
       if (!mounted) return;
-      if (now - last >= frameInterval) {
+      if (dirty || now - last >= frameInterval) {
         last = now;
+        dirty = false;
         render((now - start) / 1000);
       }
       raf = requestAnimationFrame(tick);
+    };
+
+    /**
+     * The on-demand repaint, which until now was declared, called from three
+     * places, and never assigned.
+     *
+     * The consequence landed hardest on exactly the audience this product is
+     * for. Under `prefers-reduced-motion: reduce` the rAF loop never starts, so
+     * the canvas painted once at mount and then froze. Dragging a source still
+     * moved the state and the meter, so the readout announced "Quiet here" over
+     * a picture that had not changed since mount. A child using reduced motion
+     * had a broken activity that looked like a working one.
+     *
+     * It also coalesces. iOS delivers pointer moves faster than it delivers
+     * frames, so painting synchronously per event would run a full field pass
+     * each time. While the loop is running this only marks the frame dirty, so
+     * the cost is one field pass per frame however hard a child drags.
+     */
+    repaintRef.current = () => {
+      if (animate) {
+        dirty = true;
+        return;
+      }
+      render(0);
     };
 
     resize();
@@ -431,6 +497,7 @@ export default function WaveInterference() {
       mounted = false;
       cancelAnimationFrame(raf);
       ro.disconnect();
+      repaintRef.current = null;
     };
   }, [calm]);
 

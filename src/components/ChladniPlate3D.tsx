@@ -157,12 +157,25 @@ export default function ChladniPlate3D({ n, m, hue, calm = true, className }: Pr
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    // Reused across frames so a steady 30fps does not churn the heap.
+    // Allocated once and reused, so a steady 30fps does not churn the heap.
+    //
+    // The depth sort used to build an array of ~1400 fresh {i, depth} objects
+    // every frame while a comment above claimed the buffers were reused. They
+    // were; that array was not. At 24fps it was about 34,000 short-lived
+    // objects a second, which is exactly the shape of allocation that produces
+    // a periodic collection pause on an iPad. Parallel arrays now hold the
+    // depths and only the indices are sorted, so a frame allocates nothing.
     const px = new Float64Array((grid + 1) * (grid + 1));
     const py = new Float64Array((grid + 1) * (grid + 1));
     const pz = new Float64Array((grid + 1) * (grid + 1));
     const hh = new Float64Array((grid + 1) * (grid + 1));
-    const order: { i: number; depth: number }[] = [];
+    const quadDepth = new Float64Array(grid * grid);
+    const quadOrder = new Int32Array(grid * grid);
+    for (let i = 0; i < quadOrder.length; i++) quadOrder[i] = i;
+    // Int32Array.sort takes a comparator but always allocates internally, so
+    // the index list is a plain array that is filled, never re-created.
+    const sortIdx: number[] = new Array(grid * grid);
+    for (let i = 0; i < sortIdx.length; i++) sortIdx[i] = i;
 
     const render = (t: number) => {
       const rect = canvas.getBoundingClientRect();
@@ -220,21 +233,20 @@ export default function ChladniPlate3D({ n, m, hue, calm = true, className }: Pr
       ctx.fillStyle = '#080A0C';
       ctx.fillRect(0, 0, w, h);
 
-      // Painter's algorithm: far quads first.
-      order.length = 0;
+      // Painter's algorithm: far quads first. Depths by quad ordinal, then the
+      // ordinals are sorted; no per-frame allocation.
       for (let gy = 0; gy < grid; gy++) {
         for (let gx = 0; gx < grid; gx++) {
+          const q = gy * grid + gx;
           const i = gy * stride + gx;
-          order.push({
-            i,
-            depth: (pz[i] + pz[i + 1] + pz[i + stride] + pz[i + stride + 1]) * 0.25,
-          });
+          quadOrder[q] = i;
+          quadDepth[q] = (pz[i] + pz[i + 1] + pz[i + stride] + pz[i + stride + 1]) * 0.25;
         }
       }
-      order.sort((a, b) => b.depth - a.depth);
+      sortIdx.sort((a, b) => quadDepth[b] - quadDepth[a]);
 
-      for (let k = 0; k < order.length; k++) {
-        const i = order[k].i;
+      for (let k = 0; k < sortIdx.length; k++) {
+        const i = quadOrder[sortIdx[k]];
         const i2 = i + 1;
         const i3 = i + stride + 1;
         const i4 = i + stride;
@@ -284,12 +296,32 @@ export default function ChladniPlate3D({ n, m, hue, calm = true, className }: Pr
       }
     };
 
-    repaint.current = () => render(animate ? (performance.now() - start) / 1000 : 0);
+    /**
+     * On-demand repaint, for the paths that have no loop to wait for.
+     *
+     * While the animation loop is running there is nothing to do here: a drag
+     * or an arrow key changes the camera refs, and the next frame is already
+     * scheduled. Painting synchronously as well ran a second full render on top
+     * of a live loop, so a drag cost two renders per frame instead of one and
+     * the ~1400 quad fills were being done twice for the same picture.
+     *
+     * With reduced motion there is no loop, and this is the only thing that
+     * paints, so it renders straight away.
+     */
+    let dirty = false;
+    repaint.current = () => {
+      if (animate) {
+        dirty = true;
+        return;
+      }
+      render(0);
+    };
 
     const tick = (now: number) => {
       if (!mounted) return;
-      if (now - last >= frameInterval) {
+      if (dirty || now - last >= frameInterval) {
         last = now;
+        dirty = false;
         render((now - start) / 1000);
       }
       raf = requestAnimationFrame(tick);
