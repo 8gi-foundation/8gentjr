@@ -22,6 +22,21 @@ import { useCallback, useEffect, useRef } from 'react';
  * Issue: #225
  */
 
+/**
+ * Fold the incoming hue into the part of the wheel this product allows.
+ *
+ * The Color slider that feeds this surface spans the full 0-360 and can sit
+ * anywhere, including the 270-350 band BRAND.md bans. That slider is
+ * pre-existing and is not this component's to change, but what this component
+ * PAINTS is its own responsibility. Compressing the wheel into 0-265 keeps the
+ * slider's whole sweep meaningful (warm through green to blue, in order) while
+ * making the banned band unrenderable here.
+ */
+function safeHue(h: number): number {
+  const wrapped = ((h % 360) + 360) % 360;
+  return (wrapped / 360) * 265;
+}
+
 /** Same plate equation the flat view uses. */
 function chladni(x: number, y: number, n: number, m: number): number {
   return (
@@ -156,7 +171,8 @@ export default function ChladniPlate3D({ n, m, hue, calm = true, className }: Pr
       if (w < 2 || h < 2) return;
 
       const { n: nn, m: mm } = modeRef.current;
-      const baseHue = hueRef.current;
+      // Folded on the way in, so nothing downstream can paint a banned hue.
+      const baseHue = safeHue(hueRef.current);
 
       // The plate breathes: a standing wave rising and falling in place. The
       // still lines stay at zero through the whole cycle, which is the point.
@@ -231,7 +247,8 @@ export default function ChladniPlate3D({ n, m, hue, calm = true, className }: Pr
         const lambert = Math.max(0, Math.min(1, 0.62 + slope * 0.9));
 
         // Warm peaks in the child's chosen hue, cool teal troughs, near-black
-        // along the still lines. Teal at 190 keeps every hue clear of 270-350.
+        // along the still lines. Peaks use the child's hue after safeHue() has
+        // folded it clear of 270-350; troughs are a fixed teal at 190.
         const t2 = Math.max(-1, Math.min(1, zAvg));
         const mag = Math.abs(t2);
         const hueUse = t2 >= 0 ? baseHue : 190;

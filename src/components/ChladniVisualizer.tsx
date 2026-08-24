@@ -273,8 +273,9 @@ export function ChladniVisualizer() {
   const glideGain = useRef<GainNode | null>(null);
   const glideIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /** Highest mode complexity (n + m) the child has reached so far. */
-  const peakComplexity = useRef(0);
+  /** Range of mode complexity (n + m) the child has met, in either direction. */
+  const lowComplexity = useRef(Infinity);
+  const highComplexity = useRef(0);
 
   // Speech is additive: with Vol at zero the sentence is still shown, just not
   // spoken, so the activity stays whole for a child who cannot hear it.
@@ -377,12 +378,16 @@ export function ChladniVisualizer() {
       const m = MODES[idx];
       guided.record("pattern-formed");
 
+      // "Higher sounds made more lines" is true once the child has seen two
+      // patterns of different complexity, whichever order they met them in.
+      // Requiring a strictly upward climb meant a child who started high and
+      // slid down never earned it, even though they saw exactly the same
+      // relationship. Track the range, not a peak.
       const complexity = m.n + m.m;
-      if (complexity > peakComplexity.current) {
-        // Only counts once the child has genuinely climbed: the first pattern
-        // sets the baseline rather than claiming "higher" on its own.
-        if (peakComplexity.current > 0) guided.record("higher-more-lines");
-        peakComplexity.current = complexity;
+      lowComplexity.current = Math.min(lowComplexity.current, complexity);
+      highComplexity.current = Math.max(highComplexity.current, complexity);
+      if (highComplexity.current > lowComplexity.current) {
+        guided.record("higher-more-lines");
       }
 
       // Sand settles onto the quiet lines only if the frequency is left alone.

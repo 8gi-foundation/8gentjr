@@ -87,6 +87,16 @@ export default function LightMixer() {
   /** Plain-language description of the scene, for the sound-off channel. */
   const [sceneNote, setSceneNote] = useState('Three lights, not overlapping yet.');
 
+  /**
+   * True once the child has actually touched something.
+   *
+   * do -> see -> name means the naming line describes what the CHILD did. The
+   * opening scene already contains overlaps, so scanning it at mount would put
+   * a sentence on screen before the child had moved anything, which is a
+   * lecture. The scene description still updates; only naming waits.
+   */
+  const interacted = useRef(false);
+
   const { line, record, dismiss } = useGuidedDiscovery({ activityId: 'light-mix' });
 
   const blockerRadius = 0.085;
@@ -166,9 +176,15 @@ export default function LightMixer() {
       }
     }
 
-    if (sawWhite) record('all-three-white');
-    else if (sawTwo) record('two-lights');
-    if (sawColoredShadow) record('shadow-colors');
+    // Each effect is recorded on its own. These are not alternatives: a white
+    // core is always ringed by two-way overlaps, so an `else if` here made
+    // "two lights" unreachable for any child who got to white, which is the
+    // most likely thing to do first.
+    if (interacted.current) {
+      if (sawTwo) record('two-lights');
+      if (sawWhite) record('all-three-white');
+      if (sawColoredShadow) record('shadow-colors');
+    }
 
     setSceneNote(
       sawWhite
@@ -208,6 +224,7 @@ export default function LightMixer() {
       const h = nearest(p);
       if (!h) return;
       dragging.current = h;
+      interacted.current = true;
       pts.current[h] = p;
       repaintRef.current?.();
       scan();
@@ -250,6 +267,7 @@ export default function LightMixer() {
       else if (e.key === 'ArrowDown') ny += step;
       else return;
       e.preventDefault();
+      interacted.current = true;
       pts.current.r = { x: Math.max(0, Math.min(1, nx)), y: Math.max(0, Math.min(1, ny)) };
       repaintRef.current?.();
       scan();
@@ -422,7 +440,10 @@ export default function LightMixer() {
             max={0.7}
             step={0.01}
             format={(v) => (v < 0.34 ? 'small' : v > 0.55 ? 'wide' : 'medium')}
-            onChange={setReach}
+            onChange={(v) => {
+              interacted.current = true;
+              setReach(v);
+            }}
             calmMode={calm}
             accent={ACCENT}
           />
@@ -430,7 +451,10 @@ export default function LightMixer() {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
-              onClick={() => setBlockerOn((s) => !s)}
+              onClick={() => {
+                interacted.current = true;
+                setBlockerOn((s) => !s);
+              }}
               aria-pressed={blockerOn}
               className="px-4 rounded-full border-none font-bold text-sm cursor-pointer"
               style={{

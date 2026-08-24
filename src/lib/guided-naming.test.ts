@@ -18,7 +18,7 @@ import { describe, expect, test } from 'bun:test';
 import { GLP_STAGES, getMaxWords } from './glp';
 import {
   BANNED_TERMS,
-  DISCOVERIES_BEFORE_NAMING,
+  MIN_AUTHORED_DISCOVERIES,
   bandForStage,
   countWords,
   fitsStage,
@@ -68,9 +68,26 @@ describe('activity catalogue', () => {
     expect(getActivityIds().sort()).toEqual(['cymatics', 'interference', 'light-mix']);
   });
 
-  test('every activity defines at least the number of discoveries needed to earn a naming line', () => {
+  test('every activity authors at least the floor number of discoveries', () => {
     for (const id of getActivityIds()) {
-      expect(getDiscoveries(id).length).toBeGreaterThanOrEqual(DISCOVERIES_BEFORE_NAMING);
+      expect(getDiscoveries(id).length).toBeGreaterThanOrEqual(MIN_AUTHORED_DISCOVERIES);
+    }
+  });
+
+  test('EVERY authored discovery is reachable, at every stage', () => {
+    // Regression guard. Naming is not gated on a count, so any discovery an
+    // activity can record must resolve to a real line. A discovery that can
+    // never produce a sentence is dead copy, and an activity whose predicates
+    // are mutually exclusive can leave a child with no naming at all.
+    for (const id of getActivityIds()) {
+      for (const d of getDiscoveries(id)) {
+        for (const stage of ALL_STAGE_IDS) {
+          expect(
+            getNamingLine(id, d.id, stage),
+            `${id}/${d.id} at stage ${stage} resolves to nothing`,
+          ).toBeTruthy();
+        }
+      }
     }
   });
 

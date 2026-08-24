@@ -157,11 +157,26 @@ export default function WaveInterference() {
     return Math.abs(Math.cos((k * (r1 - r2)) / 2));
   }, []);
 
-  /** Record what the child produced. Only distinct effects advance anything. */
+  /**
+   * True once the child has actually touched something.
+   *
+   * The listening spot starts on the centre line, where the two waves always
+   * arrive together, so reading it at mount would put "Loud here" on screen as
+   * a naming line before the child had moved anything. do -> see -> name means
+   * the sentence describes what the CHILD did. The meter itself still reads
+   * from the very first frame; only naming waits.
+   */
+  const interacted = useRef(false);
+
+  /**
+   * Record what the child produced. Quiet and loud are independent findings,
+   * not alternatives, so both are checked on every reading.
+   */
   const noteStrength = useCallback(
     (v: number) => {
+      if (!interacted.current) return;
       if (v < QUIET_BELOW) record('found-quiet');
-      else if (v > LOUD_ABOVE) record('found-loud');
+      if (v > LOUD_ABOVE) record('found-loud');
     },
     [record],
   );
@@ -207,6 +222,7 @@ export default function WaveInterference() {
       const h = nearest(p);
       if (!h) return;
       dragging.current = h;
+      interacted.current = true;
       applyMove(p, h);
       // Capture last, and never fatally: if the browser refuses the pointer id
       // the drag must still work rather than dying before it starts.
@@ -251,6 +267,10 @@ export default function WaveInterference() {
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const step = 0.04;
+      // Set before nudging: nudgeEar reads this when it records.
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        interacted.current = true;
+      }
       if (e.key === 'ArrowLeft') nudgeEar(-step, 0);
       else if (e.key === 'ArrowRight') nudgeEar(step, 0);
       else if (e.key === 'ArrowUp') nudgeEar(0, -step);
@@ -484,7 +504,10 @@ export default function WaveInterference() {
             max={0.3}
             step={0.005}
             format={(v) => (v < 0.12 ? 'small' : v > 0.22 ? 'big' : 'medium')}
-            onChange={setWavelength}
+            onChange={(v) => {
+              interacted.current = true;
+              setWavelength(v);
+            }}
             calmMode={calm}
             accent={ACCENT}
           />

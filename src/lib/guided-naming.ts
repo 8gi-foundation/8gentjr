@@ -259,8 +259,12 @@ export function fitsStage(line: string, stageId: number): boolean {
 }
 
 /**
- * How many distinct discoveries a child produces before the single naming line
- * appears. The issue calls for 2 to 3 patterns first; three keeps the naming
- * genuinely earned without making it rare.
+ * How many discoveries every activity must AUTHOR. This is a floor on the
+ * content, not a gate on the child: each activity offers at least this many
+ * different things worth naming, so exploring in any direction finds one.
+ *
+ * Naming is deliberately NOT gated on reaching this count. A line appears
+ * after the first effect the child produces, and each distinct effect may earn
+ * its own single line, once. See useGuidedDiscovery for the rule and why.
  */
-export const DISCOVERIES_BEFORE_NAMING = 3;
+export const MIN_AUTHORED_DISCOVERIES = 3;
