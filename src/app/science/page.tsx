@@ -24,6 +24,13 @@ const activities = [
     desc: "Drag three lights together. Find where they turn white.",
     icon: "\ud83d\udd26",
   },
+  {
+    id: "water",
+    href: "/science/water",
+    title: "Water Sphere",
+    desc: "Shake a floating drop. Find the speeds where it holds a shape.",
+    icon: "\ud83d\udca7",
+  },
 ];
 
 export default function SciencePage() {

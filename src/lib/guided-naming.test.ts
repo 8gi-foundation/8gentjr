@@ -65,8 +65,13 @@ describe('bandForStage', () => {
 });
 
 describe('activity catalogue', () => {
-  test('ships the three activities issue #225 asks for', () => {
-    expect(getActivityIds().sort()).toEqual(['cymatics', 'interference', 'light-mix']);
+  test('ships every activity built against issue #225', () => {
+    expect(getActivityIds().sort()).toEqual([
+      'cymatics',
+      'interference',
+      'light-mix',
+      'water-sphere',
+    ]);
   });
 
   test('every activity authors at least the floor number of discoveries', () => {

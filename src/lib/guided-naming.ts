@@ -27,7 +27,7 @@ import { getMaxWords } from '@/lib/glp';
 // Types
 // ---------------------------------------------------------------------------
 
-export type GuidedActivityId = 'cymatics' | 'interference' | 'light-mix';
+export type GuidedActivityId = 'cymatics' | 'interference' | 'light-mix' | 'water-sphere';
 
 /**
  * Stage bands. GLP stages 1-6 collapse to five phrasing shapes because stages 1
@@ -211,6 +211,57 @@ const DISCOVERIES: Record<GuidedActivityId, Discovery[]> = {
     },
   ],
 
+  /**
+   * Water Sphere. The child shakes a floating drop and hunts for the speeds
+   * where its surface stops churning and holds a lobed shape.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `water-sphere-discovery.ts`, and the ids here are the ones it emits. The
+   * two files are held together by a test, so a rename in either fails the
+   * suite rather than silently leaving a child with nothing named.
+   */
+  'water-sphere': [
+    {
+      id: 'mode-locked',
+      lines: {
+        gestalt: 'You made the water hold still.',
+        single: 'Shape',
+        early: 'Water made shapes',
+        complex: 'The water settled into a steady shape.',
+        full: 'At this speed the ripples line up and hold one steady shape.',
+      },
+    },
+    {
+      id: 'higher-more-petals',
+      lines: {
+        gestalt: 'Higher sounds made more petals.',
+        single: 'More',
+        early: 'Higher makes more',
+        complex: 'Higher sounds made more petals on the drop.',
+        full: 'When you went higher the drop grew more petals around it.',
+      },
+    },
+    {
+      id: 'poked-rings',
+      lines: {
+        gestalt: 'You touched it and it rang.',
+        single: 'Rings',
+        early: 'Your touch rippled',
+        complex: 'Your touch sent rings across the water.',
+        full: 'Touching the drop sent rings running around it until they faded.',
+      },
+    },
+    {
+      id: 'between-is-messy',
+      lines: {
+        gestalt: 'Between shapes the water churns.',
+        single: 'Between',
+        early: 'Between is messy',
+        complex: 'Between the shapes the water goes choppy.',
+        full: 'Only some speeds hold a shape, and between them the water churns.',
+      },
+    },
+  ],
 };
 
 // ---------------------------------------------------------------------------
