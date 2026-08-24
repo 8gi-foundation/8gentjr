@@ -1,8 +1,9 @@
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
+import WaveInterference from '@/components/WaveInterference';
 
-type Mode = 'particles' | 'projectile' | 'pendulum';
+type Mode = 'particles' | 'projectile' | 'pendulum' | 'waves';
 interface Particle { x: number; y: number; vx: number; vy: number; color: string; trail: { x: number; y: number }[] }
 
 const COLORS = ['#FF4444', '#FF8800', '#FFDD00', '#44DD44', '#00CCCC', '#4488FF', '#DD44FF'];
@@ -27,6 +28,9 @@ const MODES: { id: Mode; emoji: string; label: string }[] = [
   { id: 'particles', emoji: '\u2728', label: 'Particles' },
   { id: 'projectile', emoji: '\uD83D\uDE80', label: 'Launch' },
   { id: 'pendulum', emoji: '\uD83D\uDD34', label: 'Swing' },
+  // Ripples runs as its own self-contained surface (issue #225), so it replaces
+  // the shared canvas rather than joining this component's render loop.
+  { id: 'waves', emoji: '\u3030\uFE0F', label: 'Ripples' },
 ];
 
 export default function PhysicsPlayground() {
@@ -127,9 +131,16 @@ export default function PhysicsPlayground() {
 
   const clear = useCallback(() => { state.current.particles = []; }, []);
 
+  // Ripples swaps the shared canvas out for its own component, so the loop must
+  // stand down rather than draw into a detached element.
+  const showCanvas = mode !== 'waves';
+
   useEffect(() => {
-    const c = canvasRef.current!;
-    const ctx = c.getContext('2d')!;
+    if (!showCanvas) return;
+    const c = canvasRef.current;
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    if (!ctx) return;
     let raf: number;
 
     const resize = () => {
@@ -287,7 +298,7 @@ export default function PhysicsPlayground() {
 
     raf = requestAnimationFrame(loop);
     return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
-  }, []);
+  }, [showCanvas]);
 
   return (
     <div className="h-screen flex flex-col bg-[#14141e] select-none touch-none">
@@ -318,20 +329,30 @@ export default function PhysicsPlayground() {
         ))}
       </div>
 
+      {/* Ripples brings its own canvas, controls and naming line. touch-auto
+          undoes the lab's page-level touch-none so this panel can scroll. */}
+      {!showCanvas && (
+        <div className="flex-1 min-h-0 overflow-y-auto touch-auto">
+          <WaveInterference />
+        </div>
+      )}
+
       {/* Canvas */}
-      <canvas
-        ref={canvasRef}
-        className="flex-1 w-full cursor-crosshair"
-        onMouseDown={handleDown}
-        onMouseMove={handleMove}
-        onMouseUp={handleUp}
-        onTouchStart={handleDown}
-        onTouchMove={handleMove}
-        onTouchEnd={handleUp}
-      />
+      {showCanvas && (
+        <canvas
+          ref={canvasRef}
+          className="flex-1 w-full cursor-crosshair"
+          onMouseDown={handleDown}
+          onMouseMove={handleMove}
+          onMouseUp={handleUp}
+          onTouchStart={handleDown}
+          onTouchMove={handleMove}
+          onTouchEnd={handleUp}
+        />
+      )}
 
       {/* Controls */}
-      <div className="py-3 px-4 bg-[rgba(30,30,46,0.9)] shrink-0 flex items-center gap-3">
+      <div className={`py-3 px-4 bg-[rgba(30,30,46,0.9)] shrink-0 items-center gap-3 ${showCanvas ? 'flex' : 'hidden'}`}>
         {mode === 'particles' && (
           <>
             <span className="text-xs text-gray-500 w-12">Gravity</span>
