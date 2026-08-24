@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import NamingCard from '@/components/guided/NamingCard';
+import { useCalmMode } from '@/components/math/useCalmMode';
 import { useGuidedDiscovery } from '@/hooks/useGuidedDiscovery';
 import {
   MODES,
@@ -206,9 +207,37 @@ export default function WaterSphere() {
    * from mount looks exactly like a discovery.
    */
   const [hz, setHz] = useState(MODES[0].hz);
-  const [volume, setVolume] = useState(45);
+  /**
+   * Sound OFF until the child asks for it.
+   *
+   * Ripples defaults its sound off behind an explicit press, and where two
+   * activities in the same wave disagree about consent the stricter one has to
+   * win. An unrequested hum the moment a finger lands is aversive for exactly
+   * the children this product is for, and "they can always turn it down" puts
+   * the burden on the child least able to carry it.
+   *
+   * This is also load bearing for the gain fix below. Master gain now follows
+   * this value from the moment the graph exists, so leaving the default at 45
+   * would have turned a silent bug into an unrequested noise bug.
+   */
+  const [volume, setVolume] = useState(0);
   const [announce, setAnnounce] = useState('');
   const [quality, setQuality] = useState(0);
+
+  /**
+   * Calm Mode, read but not offered here.
+   *
+   * This was the only science sandbox ignoring it, which is the wrong one to
+   * miss: the churn state is the sensory-heaviest thing in the activity, and it
+   * is where a child spends their time while hunting, because churn is what
+   * "not there yet" looks like. Turbulence, bloom, drifting light and dust all
+   * damp together below.
+   *
+   * The toggle is deliberately not repeated on this surface. One switch a carer
+   * sets once beats five that each do a little, and Light Mixer already ships
+   * it against the same key. It defaults to on.
+   */
+  const [calm] = useCalmMode();
 
   const hzRef = useRef(hz);
   hzRef.current = hz;
@@ -360,7 +389,18 @@ export default function WaterSphere() {
     }
 
     const master = ctx.createGain();
-    master.gain.value = 0;
+    /*
+     * Follow the slider from the instant the graph exists.
+     *
+     * This was hardcoded to 0, and the only thing that ever raised it was the
+     * [volume] effect, which returns early while `audio.current` is null and
+     * then never re-runs, because ensureAudio() is called from the pointer and
+     * key handlers and none of those change `volume`. So the whole audio
+     * channel was inaudible: hum, churn noise and poke alike. Reading the
+     * slider here is what closes that, and the [volume] effect handles every
+     * change after.
+     */
+    master.gain.value = (volumeRef.current / 100) * 0.5;
     master.connect(ctx.destination);
 
     const mk = (freq: number, gain: number) => {
@@ -690,8 +730,11 @@ export default function WaterSphere() {
     };
 
     /* Motes: dust in the dark so the drop is somewhere rather than nowhere. */
+    /* Dust thins right down in Calm Mode: it is atmosphere, and atmosphere is
+     * the first thing to give up when a child has asked for less going on. */
+    const moteCount = calm ? Math.round(q.motes * 0.4) : q.motes;
     const motes: { x: number; y: number; z: number }[] = [];
-    for (let i = 0; i < q.motes; i++) {
+    for (let i = 0; i < moteCount; i++) {
       const u = Math.random() * 2 - 1;
       const a = Math.random() * Math.PI * 2;
       const r = 2.4 + Math.random() * 2.6;
@@ -786,7 +829,7 @@ export default function WaterSphere() {
 
       /* The key light drifts, slowly, forever. It is most of why a still frame
        * of this does not feel like a still frame. */
-      const drift = reduceMotion ? 0 : t * 0.11;
+      const drift = reduceMotion ? 0 : t * (calm ? 0.045 : 0.11);
       let lx = -0.52 + Math.sin(drift) * 0.14;
       let ly = 0.74;
       let lz = 0.55 + Math.cos(drift * 0.8) * 0.12;
@@ -801,7 +844,7 @@ export default function WaterSphere() {
       const phaseB = reduceMotion ? 0.6 : Math.cos(t * visualRate(reading.index) * 1.37 + 1.7);
       const phaseT = reduceMotion ? 0.3 : Math.cos(t * 2.9);
       const phaseI = reduceMotion ? 1 : Math.cos(t * 0.62);
-      const swirl = reduceMotion ? 0 : t * 0.16;
+      const swirl = reduceMotion ? 0 : t * (calm ? 0.07 : 0.16);
 
       fillPolar(pA, modeA.l, modeA.m);
       fillPolar(pB, modeB.l, modeB.m);
@@ -816,7 +859,9 @@ export default function WaterSphere() {
        * the amplitude must not be multiplied by a frozen zero. */
       const ampA = AMPLITUDE * (0.35 + 0.65 * lock) * (reduceMotion ? 0.85 : phaseA);
       const ampB = AMPLITUDE * 0.62 * churn * (reduceMotion ? 0.4 : phaseB);
-      const ampT = TURBULENCE * churn * (reduceMotion ? 0.5 : phaseT);
+      // The churn is the loudest thing on screen and the state a hunting child
+      // sits in longest, so this is the single most useful number to damp.
+      const ampT = TURBULENCE * churn * (calm ? 0.4 : 1) * (reduceMotion ? 0.5 : phaseT);
       const ampI = IDLE * (reduceMotion ? 1 : phaseI);
 
       /* Live pokes. */
@@ -941,7 +986,7 @@ export default function WaterSphere() {
       if (lock > 0.25) {
         const lobes = Math.max(3, modeA.m > 0 ? modeA.m * 2 : modeA.l * 2);
         const rr = pr * 0.52;
-        const spinP = reduceMotion ? 0 : t * 0.28;
+        const spinP = reduceMotion ? 0 : t * (calm ? 0.12 : 0.28);
         for (let i = 0; i < lobes; i++) {
           const a = (i / lobes) * Math.PI * 2 + spinP + yaw.current;
           const bx = ox + Math.cos(a) * rr;
@@ -1145,7 +1190,7 @@ export default function WaterSphere() {
         // Where the water rises highest, light gathers. Collected here and
         // painted additively after the surface, so it spills past the geometry
         // the way real bloom does.
-        if (crest > 0.68 && blooms.length < 14 && (k & 3) === 0) {
+        if (crest > 0.68 && blooms.length < (calm ? 6 : 14) && (k & 3) === 0) {
           blooms.push({
             x: (sx[a] + sx[c]) * 0.5,
             y: (sy[a] + sy[c]) * 0.5,
@@ -1248,7 +1293,7 @@ export default function WaterSphere() {
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [quality]);
+  }, [quality, calm]);
 
   /* ── UI ────────────────────────────────────────────────────────────────── */
 
@@ -1351,8 +1396,14 @@ export default function WaterSphere() {
             min={0}
             max={100}
             value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
-            aria-label="Sound volume. The activity is complete with the sound off."
+            onChange={(e) => {
+              // A child may reach for sound before touching the drop, and this
+              // is the gesture that permits audio, so it has to be able to
+              // build the graph on its own.
+              ensureAudio();
+              setVolume(Number(e.target.value));
+            }}
+            aria-label="Sound volume. Starts off. The activity is complete with the sound off."
             className="h-11 min-w-0 flex-1 cursor-pointer bg-transparent"
             style={{ accentColor: ACCENT }}
           />
