@@ -31,6 +31,27 @@ const activities = [
     desc: "Shake a floating drop. Find the speeds where it holds a shape.",
     icon: "\ud83d\udca7",
   },
+  {
+    id: "garden",
+    href: "/science/garden",
+    title: "Pattern Garden",
+    desc: "Paint seeds in the dark. Watch patterns grow out of your finger.",
+    icon: "\ud83c\udf3f",
+  },
+  {
+    id: "fractal",
+    href: "/science/fractal",
+    title: "Fractal Grower",
+    desc: "Drag a stem up out of a seed. Bend the split and the whole tree changes.",
+    icon: "\ud83c\udf33",
+  },
+  {
+    id: "harmonograph",
+    href: "/science/harmonograph",
+    title: "Sound Drawing",
+    desc: "Slide the weights on two swinging strings. Watch the pen draw what they make together.",
+    icon: "\u3030\ufe0f",
+  },
 ];
 
 export default function SciencePage() {

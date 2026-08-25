@@ -55,6 +55,7 @@ import MemoryMatch from "@/components/games/memory/MemoryMatch";
 
 // Science sandboxes (issue #225) - play surfaces where the law shows itself
 import LightMixer from "@/components/LightMixer";
+import PatternGarden from "@/components/PatternGarden";
 import WaterSphere from "@/components/WaterSphere";
 import WaveInterference from "@/components/WaveInterference";
 
@@ -130,10 +131,11 @@ const games: GameDef[] = [
   // Memory (1)
   { id: "memory-match", category: "memory", emoji: "\u{1F0CF}", title: "Memory Match", description: "Find all matching pairs!", color: "#4ECDC4", component: MemoryMatch },
 
-  // Science (3) - sandboxes, no score and no way to lose
+  // Science (4) - sandboxes, no score and no way to lose
   { id: "ripples", category: "science", emoji: "〰️", title: "Ripples", description: "Move two wave makers. Find the quiet spots.", color: "#14B8A6", component: WaveInterference },
   { id: "light-mixer", category: "science", emoji: "\u{1F526}", title: "Light Mixer", description: "Overlap three lights. See what colors you get.", color: "#E8610A", component: LightMixer },
   { id: "water-sphere", category: "science", emoji: "\u{1F4A7}", title: "Water Sphere", description: "Shake a floating drop until it holds a shape.", color: "#2BB3B8", component: WaterSphere },
+  { id: "pattern-garden", category: "science", emoji: "\u{1F33F}", title: "Pattern Garden", description: "Paint seeds in the dark. Watch patterns grow.", color: "#3FA98A", component: PatternGarden },
 ];
 
 export default function GamesPlayPage() {

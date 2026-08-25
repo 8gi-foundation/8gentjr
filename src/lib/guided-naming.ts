@@ -27,7 +27,14 @@ import { getMaxWords } from '@/lib/glp';
 // Types
 // ---------------------------------------------------------------------------
 
-export type GuidedActivityId = 'cymatics' | 'interference' | 'light-mix' | 'water-sphere';
+export type GuidedActivityId =
+  | 'cymatics'
+  | 'interference'
+  | 'light-mix'
+  | 'water-sphere'
+  | 'pattern-garden'
+  | 'fractal'
+  | 'harmonograph';
 
 /**
  * Stage bands. GLP stages 1-6 collapse to five phrasing shapes because stages 1
@@ -259,6 +266,217 @@ const DISCOVERIES: Record<GuidedActivityId, Discovery[]> = {
         early: 'Between is messy',
         complex: 'Between the shapes the water goes choppy.',
         full: 'Only some speeds hold a shape, and between them the water churns.',
+      },
+    },
+  ],
+
+  /**
+   * Pattern Garden. The child paints seed into a dark bed and shapes grow out
+   * of it, live, under their hand. Two things spread and react, and out of that
+   * one small rule come the coats of animals.
+   *
+   * Every line here is a description of something on the screen. In particular
+   * the last one is a real law and not a flourish: the width of the shapes
+   * comes from the rule, not from the finger, so a dab and a smear settle into
+   * features of the same size. The claim is checked by a test that grows both
+   * beds and compares them, because a line that tells a child to go and look is
+   * only worth writing if what they find agrees with it.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `pattern-garden-discovery.ts`, and the ids here are the ones it emits. The
+   * two files are held together by a test in both directions, so neither a
+   * rename nor a piece of dead copy can survive the suite.
+   */
+  'pattern-garden': [
+    {
+      id: 'first-growth',
+      lines: {
+        gestalt: 'Your touch grew a pattern.',
+        single: 'Grew',
+        early: 'Your touch grew',
+        complex: 'The pattern grew where your finger went.',
+        full: 'Everywhere your finger touched, a pattern started growing on its own.',
+      },
+    },
+    {
+      id: 'grows-on-its-own',
+      lines: {
+        gestalt: 'It kept growing by itself.',
+        single: 'Growing',
+        early: 'It keeps growing',
+        complex: 'It kept spreading after you let go.',
+        full: 'You stopped touching it and the pattern kept spreading across the bed.',
+      },
+    },
+    {
+      id: 'different-shapes',
+      lines: {
+        gestalt: 'You grew a different shape.',
+        single: 'Different',
+        early: 'A different shape',
+        complex: 'The same garden grew a different shape.',
+        full: 'You moved one thing and the same garden grew a different shape.',
+      },
+    },
+    {
+      id: 'own-size',
+      lines: {
+        gestalt: 'The pattern picks its own size.',
+        single: 'Same',
+        early: 'Same size shapes',
+        complex: 'Big and small seeds grew the same size.',
+        full: 'A big smear and a small dab grew shapes the same size.',
+      },
+    },
+  ],
+
+  /**
+   * Fractal Grower. The child drags a stem up out of a seed, it splits, and
+   * every piece then does exactly what the stem did. Their fingers hold the two
+   * numbers the split uses, so one drag changes every branch at every size at
+   * once.
+   *
+   * The four lines are the four things that are on the screen in front of them,
+   * in the order a pair of hands finds them:
+   *
+   *   - a split exists,
+   *   - the small branches are the same shape as the big ones,
+   *   - moving one thing a little moved everything a lot,
+   *   - and the same rule, given a different split, made a different nature.
+   *
+   * The third and fourth are the ones worth the activity. Neither is a
+   * flourish: `fractal-grower.test.ts` sweeps the angle and measures the
+   * bounding box widening and shortening across the whole range, and the four
+   * seeds are four lists of multipliers handed to one recursion, with a test
+   * asserting none of them reaches code of its own.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `fractal-grower-discovery.ts`, and the ids here are the ones it emits. The
+   * two files are held together by a test in both directions, so neither a
+   * rename nor a piece of dead copy can survive the suite.
+   */
+  fractal: [
+    {
+      id: 'branch',
+      lines: {
+        gestalt: 'Your stem split in two.',
+        single: 'Branch',
+        early: 'A branch grew',
+        complex: 'The stem split into two branches.',
+        full: 'You grew it taller and the stem split into two branches.',
+      },
+    },
+    {
+      id: 'pattern-repeats',
+      lines: {
+        gestalt: 'Small branches copy big branches.',
+        single: 'Again',
+        early: 'Small copies big',
+        complex: 'The small branches copy the big ones.',
+        full: 'Every small branch is the same shape as the big one.',
+      },
+    },
+    {
+      id: 'small-change-big-change',
+      lines: {
+        gestalt: 'A small change moved everything.',
+        single: 'Changed',
+        early: 'Everything moved',
+        complex: 'You moved one thing and everything changed.',
+        full: 'You changed the angle a little and the whole shape changed.',
+      },
+    },
+    {
+      id: 'same-rule-different-nature',
+      lines: {
+        gestalt: 'One rule made both shapes.',
+        single: 'Both',
+        early: 'Same rule again',
+        complex: 'The same rule made a different shape.',
+        full: 'One rule made the tree, the fern and the lightning.',
+      },
+    },
+  ],
+
+  /**
+   * Sound Drawing. Two pendulums swing a pen about, and what it leaves on the
+   * paper is the shape of how their two speeds compare. Nothing else is in it.
+   *
+   * The five lines are the five things on the paper in front of the child, in
+   * the order a pair of hands finds them:
+   *
+   *   - there is a drawing, and their swinging made it,
+   *   - it came from both strings at once, not one,
+   *   - a shorter string put more loops on the paper,
+   *   - at a simple comparison the line comes back over its own path,
+   *   - and anywhere in between, it drifts and never joins up.
+   *
+   * The last two are the ones worth the activity, and they are the same fact
+   * arriving twice. Neither is a flourish: `harmonograph.test.ts` measures the
+   * pen against its own earlier laps across the whole drawing, asserts that
+   * measure is zero to floating point at every exact simple ratio at every
+   * length of drawing, and asserts it grows lap by lap once the ratio is off
+   * one. The loops are counted in the sampled path rather than worked out from
+   * the ratio, and swept across the whole control.
+   *
+   * The same comparison is a musical interval, so with the sound on the two
+   * pendulums are the two notes of it. Nothing here says that to a child. The
+   * activity plays them and draws them and lets them be one thing.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `harmonograph-discovery.ts`, and the ids here are the ones it emits. The
+   * two files are held together by a test in both directions, so neither a
+   * rename nor a piece of dead copy can survive the suite.
+   */
+  harmonograph: [
+    {
+      id: 'drew-a-figure',
+      lines: {
+        gestalt: 'Your swinging drew a picture.',
+        single: 'Drawing',
+        early: 'You drew this',
+        complex: 'The two pendulums drew that picture.',
+        full: 'The pen followed both pendulums at once and drew that picture.',
+      },
+    },
+    {
+      id: 'both-strings',
+      lines: {
+        gestalt: 'Both strings move one pen.',
+        single: 'Both',
+        early: 'Both strings drew',
+        complex: 'Both strings are moving the same pen.',
+        full: 'One string swings the pen sideways, the other swings it away.',
+      },
+    },
+    {
+      id: 'more-loops',
+      lines: {
+        gestalt: 'A shorter string made more loops.',
+        single: 'More',
+        early: 'Shorter makes more',
+        complex: 'A shorter string made more loops.',
+        full: 'You made a string shorter, so the pen drew more loops.',
+      },
+    },
+    {
+      id: 'simple-closes',
+      lines: {
+        gestalt: 'The line came back over itself.',
+        single: 'Closed',
+        early: 'It joined up',
+        complex: 'The line keeps coming back over itself.',
+        full: 'Simple numbers like three against two draw a line that joins up.',
+      },
+    },
+    {
+      id: 'never-joins',
+      lines: {
+        gestalt: 'This line never joins up.',
+        single: 'Spiral',
+        early: 'It never joins',
+        complex: 'In between, the line never joins up.',
+        full: 'Between the simple numbers the line drifts and never joins up.',
       },
     },
   ],
