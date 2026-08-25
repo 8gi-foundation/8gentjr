@@ -45,6 +45,13 @@ const activities = [
     desc: "Drag a stem up out of a seed. Bend the split and the whole tree changes.",
     icon: "\ud83c\udf33",
   },
+  {
+    id: "harmonograph",
+    href: "/science/harmonograph",
+    title: "Sound Drawing",
+    desc: "Slide the weights on two swinging strings. Watch the pen draw what they make together.",
+    icon: "\u3030\ufe0f",
+  },
 ];
 
 export default function SciencePage() {

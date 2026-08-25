@@ -69,6 +69,7 @@ describe('activity catalogue', () => {
     expect(getActivityIds().sort()).toEqual([
       'cymatics',
       'fractal',
+      'harmonograph',
       'interference',
       'light-mix',
       'pattern-garden',

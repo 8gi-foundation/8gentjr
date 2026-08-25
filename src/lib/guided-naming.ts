@@ -33,7 +33,8 @@ export type GuidedActivityId =
   | 'light-mix'
   | 'water-sphere'
   | 'pattern-garden'
-  | 'fractal';
+  | 'fractal'
+  | 'harmonograph';
 
 /**
  * Stage bands. GLP stages 1-6 collapse to five phrasing shapes because stages 1
@@ -393,6 +394,89 @@ const DISCOVERIES: Record<GuidedActivityId, Discovery[]> = {
         early: 'Same rule again',
         complex: 'The same rule made a different shape.',
         full: 'One rule made the tree, the fern and the lightning.',
+      },
+    },
+  ],
+
+  /**
+   * Sound Drawing. Two pendulums swing a pen about, and what it leaves on the
+   * paper is the shape of how their two speeds compare. Nothing else is in it.
+   *
+   * The five lines are the five things on the paper in front of the child, in
+   * the order a pair of hands finds them:
+   *
+   *   - there is a drawing, and their swinging made it,
+   *   - it came from both strings at once, not one,
+   *   - a shorter string put more loops on the paper,
+   *   - at a simple comparison the line comes back over its own path,
+   *   - and anywhere in between, it drifts and never joins up.
+   *
+   * The last two are the ones worth the activity, and they are the same fact
+   * arriving twice. Neither is a flourish: `harmonograph.test.ts` measures the
+   * pen against its own earlier laps across the whole drawing, asserts that
+   * measure is zero to floating point at every exact simple ratio at every
+   * length of drawing, and asserts it grows lap by lap once the ratio is off
+   * one. The loops are counted in the sampled path rather than worked out from
+   * the ratio, and swept across the whole control.
+   *
+   * The same comparison is a musical interval, so with the sound on the two
+   * pendulums are the two notes of it. Nothing here says that to a child. The
+   * activity plays them and draws them and lets them be one thing.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `harmonograph-discovery.ts`, and the ids here are the ones it emits. The
+   * two files are held together by a test in both directions, so neither a
+   * rename nor a piece of dead copy can survive the suite.
+   */
+  harmonograph: [
+    {
+      id: 'drew-a-figure',
+      lines: {
+        gestalt: 'Your swinging drew a picture.',
+        single: 'Drawing',
+        early: 'You drew this',
+        complex: 'The two pendulums drew that picture.',
+        full: 'The pen followed both pendulums at once and drew that picture.',
+      },
+    },
+    {
+      id: 'both-strings',
+      lines: {
+        gestalt: 'Both strings move one pen.',
+        single: 'Both',
+        early: 'Both strings drew',
+        complex: 'Both strings are moving the same pen.',
+        full: 'One string swings the pen sideways, the other swings it away.',
+      },
+    },
+    {
+      id: 'more-loops',
+      lines: {
+        gestalt: 'A shorter string made more loops.',
+        single: 'More',
+        early: 'Shorter makes more',
+        complex: 'A shorter string made more loops.',
+        full: 'You made a string shorter, so the pen drew more loops.',
+      },
+    },
+    {
+      id: 'simple-closes',
+      lines: {
+        gestalt: 'The line came back over itself.',
+        single: 'Closed',
+        early: 'It joined up',
+        complex: 'The line keeps coming back over itself.',
+        full: 'Simple numbers like three against two draw a line that joins up.',
+      },
+    },
+    {
+      id: 'never-joins',
+      lines: {
+        gestalt: 'This line never joins up.',
+        single: 'Spiral',
+        early: 'It never joins',
+        complex: 'In between, the line never joins up.',
+        full: 'Between the simple numbers the line drifts and never joins up.',
       },
     },
   ],
