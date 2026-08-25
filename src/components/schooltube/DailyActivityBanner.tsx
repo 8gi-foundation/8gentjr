@@ -3,7 +3,12 @@
 /**
  * DailyActivityBanner — shows the day's suggested learning activity.
  * Ported from NickOS, simplified to work without external daily-routine lib.
+ *
+ * Text colour is derived from the day's accent by `accentSurface`, not fixed
+ * to white. White on Tuesday's #4ECDC4 measured 1.93:1 (#230 I3).
  */
+
+import { accentSurface } from "@/lib/contrast";
 
 const DAILY_ACTIVITIES = [
   {
@@ -47,7 +52,7 @@ const DAILY_ACTIVITIES = [
     theme: "Sensory Play",
     activity: "Relaxing sensory experiences",
     icon: "\uD83C\uDF08",
-    color: "#FF69B4",
+    color: "#FF8C42",
     duration: 20,
     gameTypes: [
       "ballRain",
@@ -92,10 +97,15 @@ export default function DailyActivityBanner({
 }: DailyActivityBannerProps) {
   const activity = getTodayActivity();
 
+  // 5:1 rather than 4.5:1 so the translucent decoration behind the text cannot
+  // wash it back under the bar.
+  const surface = accentSurface(activity.color, 5);
+  const ink = { color: surface.text };
+
   return (
     <div
       className="mx-4 mb-4 rounded-3xl p-4 shadow-lg overflow-hidden relative"
-      style={{ backgroundColor: activity.color }}
+      style={{ backgroundColor: surface.background }}
     >
       {/* Background decoration */}
       <div className="absolute inset-0 opacity-20 pointer-events-none">
@@ -111,20 +121,23 @@ export default function DailyActivityBanner({
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className="text-white/80 text-sm font-medium">
+          <p className="text-sm font-medium" style={ink}>
             {activity.day}&apos;s Activity
           </p>
-          <h3 className="text-white font-bold text-lg truncate">
+          <h3 className="font-bold text-lg truncate" style={ink}>
             {activity.theme}
           </h3>
-          <p className="text-white/90 text-sm">{activity.activity}</p>
-          <div className="flex items-center gap-1 mt-1 text-white/70 text-xs">
+          <p className="text-sm" style={ink}>
+            {activity.activity}
+          </p>
+          <div className="flex items-center gap-1 mt-1 text-xs" style={ink}>
             <svg
               className="w-3 h-3"
               fill="none"
               stroke="currentColor"
               strokeWidth={2}
               viewBox="0 0 24 24"
+              aria-hidden="true"
             >
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
@@ -136,12 +149,14 @@ export default function DailyActivityBanner({
         {/* Play button */}
         <button
           onClick={() => onStartActivity(activity.gameTypes)}
+          aria-label={`Start ${activity.theme}: ${activity.activity}`}
           className="h-14 w-14 rounded-2xl bg-white hover:bg-white/90 shadow-lg flex items-center justify-center shrink-0 active:scale-95 transition-transform"
         >
           <svg
             className="w-6 h-6 text-gray-800"
             fill="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path d="M8 5v14l11-7z" />
           </svg>
