@@ -31,6 +31,13 @@ const activities = [
     desc: "Shake a floating drop. Find the speeds where it holds a shape.",
     icon: "\ud83d\udca7",
   },
+  {
+    id: "garden",
+    href: "/science/garden",
+    title: "Pattern Garden",
+    desc: "Paint seeds in the dark. Watch patterns grow out of your finger.",
+    icon: "\ud83c\udf3f",
+  },
 ];
 
 export default function SciencePage() {

@@ -70,6 +70,7 @@ describe('activity catalogue', () => {
       'cymatics',
       'interference',
       'light-mix',
+      'pattern-garden',
       'water-sphere',
     ]);
   });

@@ -27,7 +27,12 @@ import { getMaxWords } from '@/lib/glp';
 // Types
 // ---------------------------------------------------------------------------
 
-export type GuidedActivityId = 'cymatics' | 'interference' | 'light-mix' | 'water-sphere';
+export type GuidedActivityId =
+  | 'cymatics'
+  | 'interference'
+  | 'light-mix'
+  | 'water-sphere'
+  | 'pattern-garden';
 
 /**
  * Stage bands. GLP stages 1-6 collapse to five phrasing shapes because stages 1
@@ -259,6 +264,66 @@ const DISCOVERIES: Record<GuidedActivityId, Discovery[]> = {
         early: 'Between is messy',
         complex: 'Between the shapes the water goes choppy.',
         full: 'Only some speeds hold a shape, and between them the water churns.',
+      },
+    },
+  ],
+
+  /**
+   * Pattern Garden. The child paints seed into a dark bed and shapes grow out
+   * of it, live, under their hand. Two things spread and react, and out of that
+   * one small rule come the coats of animals.
+   *
+   * Every line here is a description of something on the screen. In particular
+   * the last one is a real law and not a flourish: the width of the shapes
+   * comes from the rule, not from the finger, so a dab and a smear settle into
+   * features of the same size. The claim is checked by a test that grows both
+   * beds and compares them, because a line that tells a child to go and look is
+   * only worth writing if what they find agrees with it.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `pattern-garden-discovery.ts`, and the ids here are the ones it emits. The
+   * two files are held together by a test in both directions, so neither a
+   * rename nor a piece of dead copy can survive the suite.
+   */
+  'pattern-garden': [
+    {
+      id: 'first-growth',
+      lines: {
+        gestalt: 'Your touch grew a pattern.',
+        single: 'Grew',
+        early: 'Your touch grew',
+        complex: 'The pattern grew where your finger went.',
+        full: 'Everywhere your finger touched, a pattern started growing on its own.',
+      },
+    },
+    {
+      id: 'grows-on-its-own',
+      lines: {
+        gestalt: 'It kept growing by itself.',
+        single: 'Growing',
+        early: 'It keeps growing',
+        complex: 'It kept spreading after you let go.',
+        full: 'You stopped touching it and the pattern kept spreading across the bed.',
+      },
+    },
+    {
+      id: 'different-shapes',
+      lines: {
+        gestalt: 'You grew a different shape.',
+        single: 'Different',
+        early: 'A different shape',
+        complex: 'The same garden grew a different shape.',
+        full: 'You moved one thing and the same garden grew a different shape.',
+      },
+    },
+    {
+      id: 'own-size',
+      lines: {
+        gestalt: 'The pattern picks its own size.',
+        single: 'Same',
+        early: 'Same size shapes',
+        complex: 'Big and small seeds grew the same size.',
+        full: 'A big smear and a small dab grew shapes the same size.',
       },
     },
   ],
