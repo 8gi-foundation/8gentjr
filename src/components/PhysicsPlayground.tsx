@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import WaveInterference from '@/components/WaveInterference';
 
 type Mode = 'particles' | 'projectile' | 'pendulum' | 'waves';
@@ -304,9 +305,29 @@ export default function PhysicsPlayground() {
     <div className="h-screen flex flex-col bg-[#14141e] select-none touch-none">
       {/* Header */}
       <div className="flex items-center justify-center py-3 px-4 bg-[#E8610A] shrink-0 relative">
-        <a href="/" className="absolute left-4 text-white font-bold text-lg no-underline cursor-pointer">
-          &larr; Home
-        </a>
+        {/* Back goes to the index the child came from, never to "/" (which lands
+            in the AAC board). Same chevron + destination word as every other
+            science page, at a 44x44 target (#230 C2). */}
+        <Link
+          href="/science"
+          className="absolute left-2 flex min-h-[44px] min-w-[44px] items-center gap-0.5 px-2 text-lg font-medium text-white no-underline"
+          aria-label="Back to science"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+          <span>Science</span>
+        </Link>
         <span className="text-white font-bold text-xl">
           Science Lab
         </span>
