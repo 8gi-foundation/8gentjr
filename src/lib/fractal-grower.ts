@@ -93,11 +93,15 @@ export const RATIO_MAX = 0.92;
 /**
  * Ceiling on segments.
  *
- * A fern at its full depth is 364 segments and the widest seed here reaches
- * about a thousand, so this is roughly four times the worst honest case. It is
- * here so that a future seed with four children and a deep max cannot quietly
- * hand a tablet a hundred thousand paths; growth stops at the cap rather than
- * the frame stopping.
+ * Every seed here is a full tree of its own arity, so its worst case is exactly
+ * the sum of children^generation and there is nothing to estimate. Measured, and
+ * asserted in the suite so these numbers cannot rot: fern 121, river 121,
+ * lightning 255, tree 511. The worst honest case in the product is 511, and this
+ * cap is eight times it.
+ *
+ * It is here so that a future seed with four children and a deep max cannot
+ * quietly hand a tablet a hundred thousand paths; growth stops at the cap rather
+ * than the frame stopping.
  */
 export const SEGMENT_CAP = 4096;
 
@@ -298,10 +302,12 @@ export interface Structure {
   /**
    * How far the structure reaches toward and away from the viewer.
    *
-   * Not decoration. At the dense end of the ratio a tree sprawls four and a
-   * half trunk lengths deep, which is further than the camera stands back, and
-   * a fixed camera would put branches behind the viewer's eye and blow them up
-   * across the whole screen. The camera is placed from these numbers instead.
+   * Not decoration, and not a small number. Measured across every seed at every
+   * setting of both controls, and asserted in the suite: the shallowest thing a
+   * child can grow is a fern 0.016 trunk lengths deep, and the deepest is a tree
+   * 7.85 deep, front to back. One fixed camera cannot serve both without either
+   * flattening the fern or putting the tree's near branches behind the viewer's
+   * eye, so the camera is placed from these numbers instead.
    */
   minZ: number;
   maxZ: number;
@@ -603,17 +609,21 @@ export function growWithRule(rule: BranchRule, params: Omit<GrowthParams, 'prese
 /**
  * How far back the viewer stands, in units of the structure's own half-depth.
  *
- * A ratio rather than a distance, because the structure is not a fixed size: a
- * sparse pine is half a trunk length deep and a dense coral at the top of the
- * ratio reaches four and a half, which is further than any fixed camera could
- * stand back from without putting branches behind the viewer's eye. Measured,
- * in `fractal-grower.test.ts`, across every seed at every setting of both
- * controls, and the camera is placed from those numbers.
+ * A ratio rather than a distance, because the structure is not a fixed size.
+ * Measured in `fractal-grower.test.ts` across every seed at every setting of
+ * both controls: the shallowest is a fern 0.016 trunk lengths deep and the
+ * deepest a tree at 7.85, a half-depth of 3.93. That is a range of nearly five
+ * hundred to one, so there is no distance a fixed camera could stand at that
+ * would suit both ends, and the camera is placed from the structure's own
+ * half-depth instead.
  *
- * At three, the nearest point sits at two thirds of the camera distance and
- * the furthest at four thirds, which is a perspective scale from 0.75 to 1.5:
- * enough that a branch swinging toward the child visibly grows, and not so much
- * that the structure looks like it is falling on them.
+ * At three, the nearest point of any structure sits at two thirds of the camera
+ * distance and the furthest at four thirds, so the perspective scale runs 1.5
+ * near to 0.75 far, whatever size the structure is. That is the invariant the
+ * suite pins, twice: the near-to-far ratio is exactly 2 at every depth, and
+ * every point of every structure a child can grow projects with k inside
+ * 0.6..1.8. Enough that a branch swinging toward the child visibly grows, and
+ * not so much that the structure looks like it is falling on them.
  */
 export const CAMERA_DISTANCE = 3;
 
@@ -672,6 +682,65 @@ export function projectPoint(x: number, y: number, z: number, camera: Camera): P
   // inverting the picture, which is the one failure a child would see.
   const k = camera.distance / Math.max(camera.distance * 0.2, d);
   return { x: x * k, y: y * k, k, depthT: depthFade(z, camera) };
+}
+
+// ---------------------------------------------------------------------------
+// Fitting it on a screen
+//
+// Two numbers the renderer needs that are not renderer logic: how far ahead of
+// the child the frame is fitted, and how big the mark on a growing tip is
+// allowed to get. Both were found by the observed pass rather than reasoned
+// out, both are the kind of formula a later edit can shift by a character
+// without anything noticing, and neither of them touches a canvas. So they live
+// out here with a test each, next to the rule they are fitting.
+// ---------------------------------------------------------------------------
+
+/**
+ * How far ahead of the child the frame is fitted.
+ *
+ * The frame cannot be fitted to the structure as it stands: that scales a
+ * two-inch sprout up to fill the screen, and the child's drag then appears to do
+ * nothing at all, because the tree stays the same size and only gains detail.
+ *
+ * The first version fitted to the structure at FULL growth instead, and the
+ * observed pass measured what that costs: the first split a child ever makes
+ * came out 176 pixels tall on a 1943 pixel canvas, nine percent of the screen, a
+ * speck above the seed. The whole activity is do-then-see, and that was barely
+ * see.
+ *
+ * So the frame runs AHEAD of the child rather than all the way ahead. The
+ * multiplier is above one so there is always sky left to grow into; the floor
+ * stops that sky being the entire screen at the start, which is the case the
+ * multiplier alone cannot cover, because 1.6 times nothing is still nothing.
+ */
+export const FRAME_LOOKAHEAD = 1.6;
+export const FRAME_FLOOR = 0.35;
+
+export function frameGrowthFor(growth: number): number {
+  if (!Number.isFinite(growth)) return FRAME_FLOOR;
+  return Math.min(1, Math.max(FRAME_FLOOR, growth * FRAME_LOOKAHEAD));
+}
+
+/**
+ * How big the soft mark on a growing tip may get, in CSS pixels.
+ *
+ * Proportional to the height of what is actually standing there, not to the
+ * segment the mark sits on. The observed pass caught what happens without that:
+ * on a tree with one stem and its first split, the stem IS a tip, it is six
+ * hundred pixels long, and a mark sized off its own length is a ninety pixel
+ * blob sitting exactly on top of the split the child has just made and is at
+ * that moment being told about.
+ *
+ * The floor is in pixels rather than proportional, because at the very start the
+ * structure is a few pixels tall and two percent of it rounds to nothing; a bud
+ * on a bare stem should still be a bud.
+ */
+export const TIP_CAP_FRACTION = 0.02;
+export const TIP_CAP_MIN_PX = 2;
+
+export function tipCapPx(structureHeightPx: number): number {
+  if (!Number.isFinite(structureHeightPx)) return TIP_CAP_MIN_PX;
+  return Math.max(TIP_CAP_MIN_PX, structureHeightPx * TIP_CAP_FRACTION);
 }
 
 // ---------------------------------------------------------------------------

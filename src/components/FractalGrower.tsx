@@ -16,9 +16,11 @@ import {
   clampGrowth,
   clampRatio,
   describeStructure,
+  frameGrowthFor,
   growStructure,
   paletteAt,
   projectPoint,
+  tipCapPx,
   type Camera,
   type PresetId,
   type Structure,
@@ -71,9 +73,9 @@ import {
  * branches are drawn larger, further ones are faded into the sky, and the
  * thickness tapers with the generation, so a flat canvas holds something with a
  * front and a back. The camera is placed from the structure's own measured
- * depth rather than parked at a fixed distance, because a dense coral reaches
- * four and a half trunk lengths deep and a fixed camera would have branches
- * coming out behind the child's eye.
+ * depth rather than parked at a fixed distance, because what a child can grow
+ * runs from a fern 0.016 trunk lengths deep to a tree at 7.85, and no one fixed
+ * distance serves both ends of that.
  *
  * Strokes are filled tapered ribbons with a bow along their length rather than
  * lines with a width, which is what stops a thousand branches looking like a
@@ -85,8 +87,14 @@ import {
  * that finger is: far branches lag, near branches lead, which is parallax and
  * is most of why it reads as depth. When the finger lifts the sway settles and
  * the loop stops painting entirely. Nothing moves on this screen that the child
- * did not just do, which is both the reduced-motion contract and the reason a
- * tablet left open on this activity is not warming itself.
+ * did not just do, which is the reason a tablet left open on this activity is
+ * not warming itself.
+ *
+ * Under reduced motion the two halves of that come apart. The LEAN stays: it is
+ * a function of where the finger is, so it moves only when the finger does. The
+ * SWAY goes, entirely and at all times, held or not, because it is a wall-clock
+ * sinusoid and a finger resting still on the screen would otherwise be watching
+ * the structure oscillate on its own. See the sway block in the loop.
  *
  * SOUND OFF
  *
@@ -170,8 +178,15 @@ const ACCENT = '#3FA98A';
  *
  * That is deliberate and it is the lesson from Pattern Garden, where the ladder
  * rebuilt the simulation grid and deleted the child's garden at the exact
- * moment it was fullest. Here a downgrade is invisible except that the edges
- * get simpler; the tree the child grew is the same tree, to the last branch.
+ * moment it was fullest. Here a downgrade cannot cost the child anything they
+ * made: the tree is the same tree, to the last branch, at every rung.
+ *
+ * It is not invisible, and it gets less invisible as it goes. Rung 1 drops the
+ * lit edge off the thick stems and halves the backing store, which reads as the
+ * structure getting slightly flatter. Rung 2 drops the tip marks as well, and
+ * those are not an edge treatment: they are the leaves on a tree and a frond,
+ * the sparks on a bolt. A tree that steps down twice is a bare tree. Structure
+ * kept, decoration surrendered, in that order, and only ever downward.
  */
 interface QualityRung {
   maxDpr: number;
@@ -216,24 +231,6 @@ const GRIP_BAND = 0.26;
 
 /** Where the ground sits, as a fraction of the canvas height. */
 const GROUND_LINE = 0.86;
-
-/**
- * How far ahead of the child the frame is fitted.
- *
- * The frame is sized for a structure this much further grown than the one on
- * screen, floored so that the very first pull is not a speck. Measured on the
- * observed pass: fitting to full growth put the child's first split at nine
- * percent of the canvas height, and these numbers put it near half.
- *
- * The multiplier is above one so there is always sky left to grow into, and the
- * floor stops that sky being the entire screen at the start.
- */
-const FRAME_LOOKAHEAD = 1.6;
-const FRAME_FLOOR = 0.35;
-
-function frameGrowthFor(growth: number): number {
-  return Math.min(1, Math.max(FRAME_FLOOR, growth * FRAME_LOOKAHEAD));
-}
 
 /** How much of the canvas the structure is fitted into. */
 const FIT_W = 0.86;
@@ -407,9 +404,17 @@ export default function FractalGrower() {
    *
    * The loop does not run continuously. It stops itself once the structure is
    * still and there is nothing queued, and every input path calls this to start
-   * it again. A loop that runs forever and returns early is cheap but it is not
-   * nothing, and on an activity a child may leave open on a tablet for an hour
-   * the honest answer to "is anything running" should be no.
+   * it again. A frame loop that runs forever and returns early is cheap but it
+   * is not nothing, and on an activity a child may leave open on a tablet for an
+   * hour it should not be there.
+   *
+   * Scoped to the frame loop, which is what this ref wakes. It is not a claim
+   * that the component is idle: three slow intervals do keep ticking for as long
+   * as it is mounted, at 1400ms (looking at the structure), 500ms (publishing
+   * the screen-reader sentence) and 180ms (following the sound to the hand).
+   * Each returns immediately when nothing has happened, and between them they
+   * are about eight wakeups a second against a frame loop's thirty-two, none of
+   * them touching the canvas.
    */
   const wake = useRef<(() => void) | null>(null);
   /** Set when the parameters moved and the structure has to be grown again. */
@@ -423,20 +428,11 @@ export default function FractalGrower() {
   /**
    * The frame the structure is drawn into.
    *
-   * Not fitted to the structure as it stands. That would scale a two-inch
-   * sprout up to fill the screen and the child's drag would appear to do
-   * nothing at all: the tree would stay the same size and only gain detail.
-   *
-   * The first version fitted to the structure at FULL growth instead, and the
-   * observed pass measured what that costs: the first split a child ever makes
-   * came out 176 pixels tall on a 1943 pixel canvas, nine percent of the
-   * screen, a speck above the seed. The whole activity is do-then-see, and that
-   * was barely see.
-   *
-   * So the frame runs AHEAD of the child rather than all the way ahead. See
-   * frameGrowthFor: it is fitted to a structure somewhat taller than the one
-   * they have, which leaves the sprout large enough to read while still leaving
-   * sky above it to grow into.
+   * Fitted neither to the structure as it stands nor to the structure at full
+   * growth, but to one somewhat taller than the child currently has. Both of
+   * the other two were tried and both are wrong, one by reasoning and one by
+   * measurement; frameGrowthFor in `fractal-grower.ts` carries that story and
+   * the numbers, and a test pins the formula.
    */
   const frame = useRef<{
     cam: Camera;
@@ -707,6 +703,35 @@ export default function FractalGrower() {
     dirty.current = true;
     wake.current?.();
   }, []);
+
+  /*
+   * The gesture ends on the window, not only on the canvas.
+   *
+   * setPointerCapture is wrapped in a try above and treated as an optimisation,
+   * which means the code has already admitted it may do nothing. If it does
+   * nothing, a finger that slides off the canvas mid-drag delivers its pointerup
+   * to whatever is under it instead, the canvas never hears the release, and
+   * `holding` stays true forever: the frame loop never stops, and under reduced
+   * motion the lean stays frozen at full tilt on a structure nobody is touching.
+   *
+   * So the release is also listened for where it cannot be missed. endGesture
+   * returns immediately when there is no gesture, so the ordinary path, where
+   * the canvas handler has already run, costs a comparison. lostpointercapture
+   * is in here for the other half of the same failure: capture taken and then
+   * taken away, by a browser gesture or by the element being removed, which
+   * delivers no pointerup at all.
+   */
+  useEffect(() => {
+    const end = () => endGesture();
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+    window.addEventListener('lostpointercapture', end);
+    return () => {
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      window.removeEventListener('lostpointercapture', end);
+    };
+  }, [endGesture]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -1027,11 +1052,17 @@ export default function FractalGrower() {
       const originX = cssW / 2 - ((f.minX + f.maxX) / 2) * scale;
       const originY = groundY + f.minY * scale;
 
-      /* No growing tip is drawn larger than this. Two percent of the height of
-       * what is actually standing there, so a bud on a bare stem is a bud. */
-      const tipCap = Math.max(2, (s.maxY - s.minY) * scale * 0.02);
+      /* No growing tip is drawn larger than this. Proportional to the height of
+       * what is actually standing there rather than to the segment it sits on,
+       * with a pixel floor so a bud on a bare stem is still a bud. The formula
+       * and both of its numbers are pinned by a test: see tipCapPx. */
+      const tipCap = tipCapPx((s.maxY - s.minY) * scale);
 
-      const amp = swayAmp.current * swayScale;
+      /* The time-driven half of the motion, and the only place the wall clock
+       * reaches the picture. Zero under reduced motion, always: swayAt below
+       * returns 0 for every point, and what is left is the lean, which is a
+       * function of where the finger is and of nothing else. */
+      const amp = reduceMotion ? 0 : swayAmp.current * swayScale;
       const leanX = lean.current.x * swayAmp.current * PARALLAX;
       const leanY = lean.current.y * swayAmp.current * PARALLAX * 0.35;
       const topY = Math.max(1e-6, s.maxY);
@@ -1146,14 +1177,9 @@ export default function FractalGrower() {
 
         /* A soft mark where the structure is still growing. Leaves on a tree
          * and a frond, a spark on a bolt, almost nothing on a delta, and it is
-         * one number in the seed that decides which.
-         *
-         * Capped against the size of the whole structure, not just scaled off
-         * the segment. The observed pass caught what happens without the cap:
-         * on a tree with one stem and its first split, the stem IS a tip, it is
-         * six hundred pixels long, and a mark sized off that is a ninety pixel
-         * blob sitting exactly on top of the split the child has just made and
-         * is at that moment being told about. */
+         * one number in the seed that decides which. Sized off the segment, and
+         * then capped against the whole structure: see tipCapPx for what the
+         * observed pass measured without that cap. */
         if (rung.tips && seg.tip && rule.tipSize > 0) {
           const r = Math.min(rule.tipSize * ul * 0.5, tipCap);
           if (r > 0.8) {
@@ -1187,10 +1213,11 @@ export default function FractalGrower() {
      *
      * The loop STOPS when the structure is still, rather than running forever
      * and returning early on every frame. An early return is cheap, and it is
-     * not free, and on an activity a child may leave open on a tablet the
-     * honest answer to "is anything running" should be no rather than "almost
+     * not free, and on an activity a child may leave open on a tablet there
+     * should be no rAF callback and no paint at all rather than "almost
      * nothing". Every input path calls wake, and the loop reschedules itself
-     * only while there is a reason to.
+     * only while there is a reason to. The three slow intervals this component
+     * also owns are a separate question; see the wake ref for what they cost.
      */
     const schedule = () => {
       if (raf === 0 && mounted) raf = requestAnimationFrame(tick);
@@ -1210,21 +1237,46 @@ export default function FractalGrower() {
       const dt = lastFrameTime === 0 ? 0 : Math.min(0.2, (nowMs - lastFrameTime) / 1000);
       last = nowMs;
       lastFrameTime = nowMs;
-      if (cssW < 2) {
-        schedule();
-        return;
-      }
+      /*
+       * No canvas to paint into, so nothing is scheduled.
+       *
+       * cssW is only ever set by build(), and build() returns without setting
+       * it when the element measures under two pixels. So on a canvas that has
+       * not been laid out yet, or one whose subtree is display:none, this stays
+       * at zero and rescheduling here would spin the frame loop for as long as
+       * the element is hidden, painting nothing, which is exactly the thing the
+       * self-stopping loop exists to avoid. The ResizeObserver below wakes it
+       * when a size arrives.
+       */
+      if (cssW < 2) return;
 
       const moved = drain();
 
       /*
        * Sway.
        *
-       * It exists only under a finger. Holding winds it up, letting go lets it
-       * settle, and when it has settled the loop below stops painting
-       * altogether. Under reduced motion there is no sway at all: the lean
-       * still answers the finger, because that is a direct consequence of
-       * something the child is doing, but nothing continues on its own.
+       * Two different motions are scaled by this one amplitude, and they are
+       * not the same kind of thing.
+       *
+       *   The LEAN is position driven. It is a function of where the finger is,
+       *   so it moves when and only when the finger moves, and it stops dead
+       *   when the finger stops. It is the child's hand, shown back to them.
+       *
+       *   The SWAY is time driven. It is a wall-clock sinusoid, so it keeps
+       *   oscillating under a finger that is resting perfectly still. That is
+       *   autonomous motion however it got started.
+       *
+       * Out of reduced motion, both. Holding winds the amplitude up over about
+       * a quarter of a second, letting go lets it settle, and when it has
+       * settled the loop below stops painting altogether.
+       *
+       * Under reduced motion the amplitude snaps rather than ramping, because a
+       * ramp is itself an animation that outlives the input that started it,
+       * and the time-driven half is dropped entirely: `amp` in paint is zero
+       * whenever reduceMotion is set, held or not. So the lean still answers
+       * the finger and a finger held still paints the same pixels frame after
+       * frame, which is the property the observed pass samples DURING a hold
+       * rather than only after the release.
        */
       if (reduceMotion) {
         swayAmp.current = holding.current ? 1 : 0;

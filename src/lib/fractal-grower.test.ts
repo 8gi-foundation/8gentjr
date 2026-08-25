@@ -21,17 +21,22 @@ import {
   ANGLE_MAX,
   ANGLE_MIN,
   CAMERA_DISTANCE,
+  FRAME_FLOOR,
+  FRAME_LOOKAHEAD,
   PRESETS,
   PRESET_IDS,
   RATIO_MAX,
   RATIO_MIN,
   SEGMENT_CAP,
+  TIP_CAP_FRACTION,
+  TIP_CAP_MIN_PX,
   clampAngle,
   clampGrowth,
   cameraFor,
   clampRatio,
   depthFade,
   describeStructure,
+  frameGrowthFor,
   growStructure,
   growWithRule,
   hueIsAllowed,
@@ -40,6 +45,7 @@ import {
   projectPoint,
   safeHue,
   shapeIndex,
+  tipCapPx,
 } from './fractal-grower';
 
 const SEED = 20260825;
@@ -260,6 +266,121 @@ describe('one rule, repeated', () => {
   });
 });
 
+describe('the trunk splits where the child can see it', () => {
+  /*
+   * The first split is the one the first naming line is about, and the observed
+   * pass caught it being invisible. The recursion turns the frame about the stem
+   * between generations so the structure has depth in it, and the first version
+   * did that at the trunk too: with the trunk's frame rolled, both of a tree's
+   * first children came off almost entirely along the depth axis, so on screen
+   * the child's first split projected as a bump on a stem rather than as two
+   * branches.
+   *
+   * The fix is one conditional, `node.generation === 0 ? 0 : rule.rollStep`, and
+   * it was shipped with nothing measuring it: deleting the conditional left all
+   * 284 tests in the repo passing. These two are what that conditional is worth.
+   */
+
+  /** The rule with every child's own roll removed, so any depth left is the frame's. */
+  const unrolledChildren = (preset) => ({
+    ...PRESETS[preset],
+    children: PRESETS[preset].children.map((c) => ({ ...c, roll: 0 })),
+  });
+
+  test('the frame contributes no depth at the first split, for any seed', () => {
+    // Stated as "any depth in generation one was asked for by the seed's own
+    // child templates, never by the frame". Taking the seed's rolls out has to
+    // leave the first split flat in the picture plane; if the trunk rolls its
+    // frame, it does not.
+    for (const preset of PRESET_IDS) {
+      const rule = unrolledChildren(preset);
+      for (let i = 0; i <= 8; i++) {
+        for (let j = 0; j <= 8; j++) {
+          const s = growWithRule(rule, {
+            angle: ANGLE_MIN + ((ANGLE_MAX - ANGLE_MIN) * i) / 8,
+            ratio: RATIO_MIN + ((RATIO_MAX - RATIO_MIN) * j) / 8,
+            growth: 1,
+            seed: SEED,
+          });
+          for (const seg of gen(s, 1)) {
+            expect(Math.abs(seg.z0), `${preset} generation 1 starts off the picture plane`).toBeLessThan(1e-12);
+            expect(Math.abs(seg.z1), `${preset} generation 1 leaves the picture plane`).toBeLessThan(1e-12);
+          }
+        }
+      }
+    }
+  });
+
+  test('three of the four seeds split dead flat, and lightning by exactly its own roll', () => {
+    // The shipped seeds, unaltered. Tree, fern and river author every child with
+    // roll 0, so their first split is exactly flat. Lightning authors its fork
+    // 0.9 radians around the stem on purpose, which is why a bolt has stubs
+    // coming out of the picture, so it is the one seed with depth at generation
+    // one and the amount is its own.
+    for (const preset of PRESET_IDS) {
+      const rolls = PRESETS[preset].children.map((c) => c.roll);
+      const flatSeed = rolls.every((r) => r === 0);
+      expect(flatSeed, `${preset}`).toBe(preset !== 'lightning');
+
+      let deepest = 0;
+      for (let i = 0; i <= 8; i++) {
+        for (let j = 0; j <= 8; j++) {
+          const s = growStructure(
+            base({
+              preset,
+              angle: ANGLE_MIN + ((ANGLE_MAX - ANGLE_MIN) * i) / 8,
+              ratio: RATIO_MIN + ((RATIO_MAX - RATIO_MIN) * j) / 8,
+            }),
+          );
+          for (const seg of gen(s, 1)) deepest = Math.max(deepest, Math.abs(seg.z1));
+        }
+      }
+
+      if (flatSeed) {
+        expect(deepest, `${preset} generation 1 is not flat`).toBe(0);
+      } else {
+        // Measured at 0.418, and bounded above by what one child rolled 0.9 off
+        // a vertical stem and turned by at most ANGLE_MAX can reach.
+        expect(deepest).toBeGreaterThan(0.4);
+        expect(deepest).toBeLessThanOrEqual(Math.sin(0.9) * Math.sin(ANGLE_MAX * 1.5) + 1e-9);
+      }
+    }
+  });
+
+  test('the first split reads as a split on screen and not as a bump on a stem', () => {
+    // The same claim in the terms the child experiences it: how much of the
+    // separation between the two ends of the first split survives the flattening
+    // onto the screen. A rolled trunk throws it into the depth axis, where the
+    // projection all but erases it.
+    for (const preset of PRESET_IDS) {
+      let worst = 1;
+      for (let i = 0; i <= 8; i++) {
+        for (let j = 0; j <= 8; j++) {
+          const s = growStructure(
+            base({
+              preset,
+              angle: ANGLE_MIN + ((ANGLE_MAX - ANGLE_MIN) * i) / 8,
+              ratio: RATIO_MIN + ((RATIO_MAX - RATIO_MIN) * j) / 8,
+            }),
+          );
+          const tips = gen(s, 1);
+          const xs = tips.map((t) => t.x1);
+          const zs = tips.map((t) => t.z1);
+          const xSpan = Math.max(...xs) - Math.min(...xs);
+          const zSpan = Math.max(...zs) - Math.min(...zs);
+          const inPicture = xSpan / Math.max(1e-9, Math.hypot(xSpan, zSpan));
+          if (inPicture < worst) worst = inPicture;
+        }
+      }
+      // Tree, fern and river: 1.0000, every setting, the whole split is in the
+      // picture plane. Lightning: 0.1717 at its worst, because its fork is
+      // authored to go backwards and the leader carries the visible path.
+      if (preset === 'lightning') expect(worst).toBeGreaterThan(0.17);
+      else expect(worst, `${preset} worst in-picture fraction ${worst}`).toBeCloseTo(1, 12);
+    }
+  });
+});
+
 describe('a small change to the rule is a big change to the shape', () => {
   test('opening the angle widens the structure and shortens it, all the way', () => {
     // "You moved one thing and everything changed", measured across the whole
@@ -388,6 +509,44 @@ describe('the segment ceiling', () => {
     }
   });
 
+  test('the numbers the ceiling comment quotes are the measured ones', () => {
+    // The comment on SEGMENT_CAP used to say a fern was 364 segments, the widest
+    // seed about a thousand, and the cap four times the worst case. All three
+    // were wrong, and nothing in the suite would have noticed. Every seed is a
+    // full tree of its own arity, so the worst case is exactly the geometric
+    // sum, and that is asserted against a measured sweep of both controls.
+    const expected = { tree: 511, fern: 121, lightning: 255, river: 121 };
+    let worst = 0;
+
+    for (const preset of PRESET_IDS) {
+      const rule = PRESETS[preset];
+      let formula = 0;
+      for (let g = 0; g < rule.maxDepth; g++) formula += Math.pow(rule.children.length, g);
+      expect(formula, `${preset} geometric sum`).toBe(expected[preset]);
+
+      let measured = 0;
+      for (let i = 0; i <= 10; i++) {
+        for (let j = 0; j <= 10; j++) {
+          const s = growStructure(
+            base({
+              preset,
+              angle: ANGLE_MIN + ((ANGLE_MAX - ANGLE_MIN) * i) / 10,
+              ratio: RATIO_MIN + ((RATIO_MAX - RATIO_MIN) * j) / 10,
+            }),
+          );
+          if (s.segments.length > measured) measured = s.segments.length;
+        }
+      }
+      expect(measured, `${preset} measured worst case`).toBe(expected[preset]);
+      if (measured > worst) worst = measured;
+    }
+
+    // The worst honest case in the product, and the headroom over it.
+    expect(worst).toBe(511);
+    expect(SEGMENT_CAP / worst).toBeGreaterThanOrEqual(8);
+    expect(SEGMENT_CAP / worst).toBeLessThan(9);
+  });
+
   test('a rule that would run away is stopped, and says so', () => {
     const runaway = {
       ...PRESETS.tree,
@@ -480,6 +639,55 @@ describe('the camera', () => {
     }
   });
 
+  test('the depth range the camera comment quotes is the measured one', () => {
+    // The comment used to say a sparse pine was half a trunk length deep and a
+    // dense coral four and a half, and neither number came from anything. This
+    // is the sweep those numbers should have come from: every seed, both
+    // controls, eleven samples each way.
+    let shallowest = Infinity;
+    let deepest = 0;
+    let shallowestAt = '';
+    let deepestAt = '';
+
+    for (const preset of PRESET_IDS) {
+      for (let i = 0; i <= 10; i++) {
+        for (let j = 0; j <= 10; j++) {
+          const s = growStructure(
+            base({
+              preset,
+              angle: ANGLE_MIN + ((ANGLE_MAX - ANGLE_MIN) * i) / 10,
+              ratio: RATIO_MIN + ((RATIO_MAX - RATIO_MIN) * j) / 10,
+            }),
+          );
+          const span = s.maxZ - s.minZ;
+          if (span < shallowest) {
+            shallowest = span;
+            shallowestAt = preset;
+          }
+          if (span > deepest) {
+            deepest = span;
+            deepestAt = preset;
+          }
+        }
+      }
+    }
+
+    // Measured: a fern at 0.016 and a tree at 7.850, front to back, which is a
+    // range of nearly five hundred to one. That range is the whole argument for
+    // placing the camera from the structure rather than parking it.
+    expect(shallowestAt).toBe('fern');
+    expect(shallowest).toBeGreaterThan(0.015);
+    expect(shallowest).toBeLessThan(0.017);
+    expect(deepestAt).toBe('tree');
+    expect(deepest).toBeGreaterThan(7.8);
+    expect(deepest).toBeLessThan(7.9);
+    expect(deepest / shallowest).toBeGreaterThan(400);
+
+    // And the half-depth the camera is actually placed from, which is the number
+    // CAMERA_DISTANCE multiplies.
+    expect(cameraFor({ minZ: -deepest / 2, maxZ: deepest / 2 }).halfDepth).toBeCloseTo(3.925, 2);
+  });
+
   test('a point behind the camera cannot invert the picture', () => {
     expect(projectPoint(1, 1, -100, cam).k).toBeGreaterThan(0);
     expect(Number.isFinite(projectPoint(1, 1, -CAMERA_DISTANCE * 40, cam).k)).toBe(true);
@@ -512,6 +720,113 @@ describe('the camera', () => {
       expect(lo, `${preset} never reached the near end of the haze`).toBeLessThan(0.02);
       expect(hi, `${preset} never reached the far end of the haze`).toBeGreaterThan(0.98);
     }
+  });
+});
+
+describe('fitting it on a screen', () => {
+  /*
+   * Two formulas the observed pass found, both of which lived in the component
+   * with nothing measuring them. A later edit moving a 0.35 to a 0.3 or a 0.02
+   * to a 0.2 would have changed what a child sees on their first pull and no
+   * test in the repo would have said a word.
+   */
+
+  describe('the frame runs ahead of the child', () => {
+    test('never behind, and strictly ahead until there is nowhere left to grow', () => {
+      for (let i = 0; i <= 200; i++) {
+        const g = i / 200;
+        const f = frameGrowthFor(g);
+        expect(f, `frame fell behind growth at ${g}`).toBeGreaterThanOrEqual(g);
+        if (g < 1) expect(f, `frame stopped leading at ${g}`).toBeGreaterThan(g);
+        expect(f).toBeLessThanOrEqual(1);
+        expect(f).toBeGreaterThanOrEqual(FRAME_FLOOR);
+      }
+      // At full growth the frame stops leading: there is no sky left to leave.
+      expect(frameGrowthFor(1)).toBe(1);
+    });
+
+    test('the floor carries the start, where the multiplier cannot', () => {
+      // 1.6 times nothing is still nothing, which is the case a lookahead alone
+      // cannot cover and the one every child meets first. The floor binds below
+      // growth 0.21875 and the multiplier takes over above it.
+      const handover = FRAME_FLOOR / FRAME_LOOKAHEAD;
+      expect(handover).toBeCloseTo(0.21875, 12);
+      expect(frameGrowthFor(0)).toBe(FRAME_FLOOR);
+      expect(frameGrowthFor(handover / 2)).toBe(FRAME_FLOOR);
+      expect(frameGrowthFor(handover)).toBeCloseTo(FRAME_FLOOR, 12);
+      expect(frameGrowthFor(handover * 2)).toBeCloseTo(FRAME_FLOOR * 2, 12);
+    });
+
+    test('a non-finite growth is the floor, not a NaN frame', () => {
+      for (const g of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+        expect(frameGrowthFor(g)).toBe(FRAME_FLOOR);
+      }
+      expect(frameGrowthFor(-3)).toBe(FRAME_FLOOR);
+      expect(frameGrowthFor(9)).toBe(1);
+    });
+
+    test('what that is worth: the first pull is fitted to twice its own height', () => {
+      // The consequence, in the units the frame is actually made of. On a tree,
+      // the very first generation is 1 unit tall and the structure the frame is
+      // fitted to is 2.108, so the sprout reads at 47 percent of the frame with
+      // the rest left as sky to grow into. Fitting to the structure as it stands
+      // would put it at 100 percent and the child's next pull would appear to do
+      // nothing at all.
+      const heightAt = (growth) => {
+        const s = growStructure(base({ growth }));
+        return s.maxY - s.minY;
+      };
+      const first = 1 / PRESETS.tree.maxDepth;
+      const shown = heightAt(first);
+      const fitted = heightAt(frameGrowthFor(first));
+      expect(shown).toBeCloseTo(1, 9);
+      expect(fitted).toBeGreaterThan(2);
+      expect(shown / fitted).toBeGreaterThan(0.4);
+      expect(shown / fitted).toBeLessThan(0.55);
+
+      // And it closes as they grow, so the frame is not permanently over-sized.
+      const late = 8 / PRESETS.tree.maxDepth;
+      expect(heightAt(late) / heightAt(frameGrowthFor(late))).toBeGreaterThan(0.9);
+    });
+  });
+
+  describe('the mark on a growing tip', () => {
+    test('is a fixed fraction of the structure, above a pixel floor', () => {
+      expect(tipCapPx(1000)).toBeCloseTo(1000 * TIP_CAP_FRACTION, 12);
+      expect(tipCapPx(500)).toBeCloseTo(10, 12);
+      // The floor and the proportion cross at exactly 100 pixels of structure.
+      expect(TIP_CAP_MIN_PX / TIP_CAP_FRACTION).toBe(100);
+      expect(tipCapPx(100)).toBe(TIP_CAP_MIN_PX);
+      expect(tipCapPx(99)).toBe(TIP_CAP_MIN_PX);
+      expect(tipCapPx(0)).toBe(TIP_CAP_MIN_PX);
+      expect(tipCapPx(-40)).toBe(TIP_CAP_MIN_PX);
+      for (const h of [Number.NaN, Number.POSITIVE_INFINITY]) {
+        expect(tipCapPx(h)).toBe(TIP_CAP_MIN_PX);
+      }
+    });
+
+    test('never falls as the structure grows', () => {
+      let previous = 0;
+      for (let h = 0; h <= 2000; h += 7) {
+        const cap = tipCapPx(h);
+        expect(cap).toBeGreaterThanOrEqual(previous);
+        previous = cap;
+      }
+    });
+
+    test('the case the observed pass caught: a bare stem is not a blob', () => {
+      // A tree with one stem and its first split. The stem IS a tip, and on a
+      // real canvas it is around six hundred pixels long, so the mark sized off
+      // its own length is 0.3 * 600 * 0.5 = 90 pixels, sitting on the split the
+      // child is at that moment being told about. The structure at that point is
+      // about 660 pixels tall, so the cap is 13.2 and the mark is a bud.
+      const uncapped = PRESETS.tree.tipSize * 600 * 0.5;
+      expect(uncapped).toBeCloseTo(90, 9);
+      const cap = tipCapPx(660);
+      expect(cap).toBeCloseTo(13.2, 9);
+      expect(Math.min(uncapped, cap)).toBe(cap);
+      expect(uncapped / cap).toBeGreaterThan(6);
+    });
   });
 });
 
