@@ -129,6 +129,46 @@ export function clearField(field: GardenField): void {
   field.v.fill(0);
 }
 
+/**
+ * Carry a growing bed across onto a grid of a different size.
+ *
+ * Nearest neighbour, and the two substances move together. Interpolating would
+ * average a peak of the eater against the bare soil beside it and invent
+ * concentrations the rule never produced, and a cell's u and v are two halves of
+ * one state: mixing them from different source cells is a chemistry the bed was
+ * never in.
+ *
+ * WHEN THIS IS THE RIGHT ANSWER AND WHEN IT IS NOT
+ *
+ * A bed that changed shape because the CHILD changed it, by turning the tablet
+ * or opening the keyboard, still starts fresh. Bare soil is honest there: they
+ * changed the container, and a resampled field would read as the garden
+ * convulsing in their hands.
+ *
+ * The quality ladder is the opposite case. Nothing the child did caused it, they
+ * were never told it exists, and it fires exactly when the device is struggling,
+ * which is when the bed is at its fullest and they are most invested in it.
+ * Deleting the garden as a reward for growing too much of it is not a
+ * defensible thing to do to a child, so the bed is carried across instead. The
+ * grain of the pattern visibly coarsens, which is the truth: the grid really did.
+ */
+export function resampleField(src: GardenField, width: number, height: number): GardenField {
+  const dst = createField(width, height);
+  for (let y = 0; y < height; y++) {
+    const sy = Math.min(src.height - 1, Math.floor((y * src.height) / height));
+    const srcRow = sy * src.width;
+    const dstRow = y * width;
+    for (let x = 0; x < width; x++) {
+      const sx = Math.min(src.width - 1, Math.floor((x * src.width) / width));
+      const s = srcRow + sx;
+      const d = dstRow + x;
+      dst.u[d] = src.u[s];
+      dst.v[d] = src.v[s];
+    }
+  }
+  return dst;
+}
+
 /** One rule everywhere. This is what the garden bed itself uses. */
 export function setUniformRule(field: GardenField, feed: number, kill: number): void {
   field.feed.fill(feed);

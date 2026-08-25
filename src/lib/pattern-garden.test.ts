@@ -45,6 +45,7 @@ import {
   hueIsAllowed,
   killCeiling,
   paletteAt,
+  resampleField,
   ruleAt,
   safeHue,
   seedDisc,
@@ -357,5 +358,132 @@ describe('every setting of the control grows a pattern', () => {
     const open = grow(0.5, 0);
     const dense = grow(0.5, 1);
     expect(dense.cover).toBeGreaterThan(open.cover + 0.05);
+  });
+});
+
+/**
+ * How fast the growth actually spreads.
+ *
+ * This exists because a comment in the component claimed a measured front speed
+ * and nothing measured it. A number presented as measured has to be measured
+ * somewhere, or it is decoration that a later reader will trust. The bands are
+ * wide on purpose: the point is to catch a change that makes the activity feel
+ * dead or frantic, not to pin an exact figure.
+ */
+describe('growth front speed', () => {
+  /** Furthest cell carrying pattern from the middle, in cells. */
+  const frontRadius = (f: ReturnType<typeof createField>) => {
+    const cx = f.width / 2;
+    const cy = f.height / 2;
+    let max = 0;
+    for (let y = 0; y < f.height; y++) {
+      for (let x = 0; x < f.width; x++) {
+        if (f.v[y * f.width + x] > 0.2) {
+          const d = Math.hypot(x - cx, y - cy);
+          if (d > max) max = d;
+        }
+      }
+    }
+    return max;
+  };
+
+  const advancePer1000 = (px: number, py: number) => {
+    const f = createField(200, 200);
+    const rule = ruleAt(px, py);
+    setUniformRule(f, rule.feed, rule.kill);
+    seedDisc(f, 100, 100, 4);
+    const before = frontRadius(f);
+    stepField(f, 1000);
+    return frontRadius(f) - before;
+  };
+
+  test('the front advances between sixteen and forty-five cells per thousand steps', () => {
+    for (const [px, py] of [
+      [0.5, 0.5],
+      [0.2, 0.5],
+      [0.8, 0.5],
+      [0.5, 0.2],
+      [0.5, 0.8],
+    ]) {
+      const advance = advancePer1000(px, py);
+      expect(advance).toBeGreaterThan(14);
+      expect(advance).toBeLessThan(50);
+    }
+  });
+
+  test('the middle of the control sits around twenty-six to thirty-two', () => {
+    const advance = advancePer1000(0.5, 0.5);
+    expect(advance).toBeGreaterThan(22);
+    expect(advance).toBeLessThan(38);
+  });
+});
+
+/**
+ * Carrying a bed across a change of grid.
+ *
+ * The quality ladder steps down without asking and without telling, and it does
+ * it when the bed is at its fullest. Before this existed that deleted the
+ * garden, so these tests are the guard on the thing that made it not.
+ */
+describe('resampling a bed onto a different grid', () => {
+  const grown = (w: number, h: number) => {
+    const f = createField(w, h);
+    const rule = ruleAt(0.5, 0.5);
+    setUniformRule(f, rule.feed, rule.kill);
+    seedDisc(f, w / 2, h / 2, Math.max(3, w * 0.08));
+    stepField(f, 900);
+    return f;
+  };
+
+  test('the growth survives a step down', () => {
+    const src = grown(120, 90);
+    const before = coverage(src);
+    expect(before).toBeGreaterThan(0.02);
+
+    const dst = resampleField(src, 90, 68);
+    expect(dst.width).toBe(90);
+    expect(dst.height).toBe(68);
+    // Nearest neighbour on a coarser grid moves coverage a little, never to nothing.
+    expect(coverage(dst)).toBeGreaterThan(before * 0.6);
+    expect(coverage(dst)).toBeLessThan(before * 1.6);
+  });
+
+  test('it keeps real structure rather than a wash', () => {
+    const src = grown(120, 90);
+    const dst = resampleField(src, 90, 68);
+    expect(edgeDensity(dst)).toBeGreaterThan(0);
+    expect(structure(dst)).toBeGreaterThan(structure(createField(90, 68)) + 0.02);
+  });
+
+  test('the two substances stay paired, so no cell is a chemistry the bed was never in', () => {
+    const src = grown(60, 60);
+    const dst = resampleField(src, 30, 30);
+    for (let y = 0; y < 30; y++) {
+      for (let x = 0; x < 30; x++) {
+        const sx = Math.min(59, Math.floor((x * 60) / 30));
+        const sy = Math.min(59, Math.floor((y * 60) / 30));
+        const s = sy * 60 + sx;
+        const d = y * 30 + x;
+        expect(dst.u[d]).toBe(src.u[s]);
+        expect(dst.v[d]).toBe(src.v[s]);
+      }
+    }
+  });
+
+  test('a bare bed resamples to a bare bed', () => {
+    const src = createField(80, 60);
+    const dst = resampleField(src, 40, 30);
+    expect(coverage(dst)).toBe(0);
+    expect(dst.u.every((u) => u === 1)).toBe(true);
+  });
+
+  test('it is usable at the sizes the ladder actually produces', () => {
+    // The iPhone-portrait bed measured in review: 101x146 to 78x112 to 59x84.
+    let f = grown(101, 146);
+    expect(coverage(f)).toBeGreaterThan(0.02);
+    f = resampleField(f, 78, 112);
+    expect(coverage(f)).toBeGreaterThan(0.01);
+    f = resampleField(f, 59, 84);
+    expect(coverage(f)).toBeGreaterThan(0.01);
   });
 });

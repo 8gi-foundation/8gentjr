@@ -15,6 +15,7 @@ import {
   describeGarden,
   killCeiling,
   paletteAt,
+  resampleField,
   ruleAt,
   seedDisc,
   setUniformRule,
@@ -155,8 +156,13 @@ const MAX_CELLS = 26000;
 /**
  * Chemistry steps per frame.
  *
- * Measured, not chosen. The growth front advances about twenty-six cells every
- * thousand steps, so on a bed a couple of hundred cells across the growth
+ * Measured, not chosen, and the measurement lives in the suite rather than in
+ * this sentence: `growth front speed` in pattern-garden.test.ts runs the real
+ * chemistry and fails if these numbers drift.
+ *
+ * The front advances between about sixteen and forty-five cells every thousand
+ * steps depending on where the control sits, and around twenty-six to thirty-two
+ * at the middle of it, so on a bed a couple of hundred cells across the growth
  * reaches the far side in roughly four thousand steps. At sixteen steps a
  * frame that is about eight seconds: movement is obvious within a second of a
  * touch, and the bed fills while the child is still watching.
@@ -289,6 +295,23 @@ export default function PatternGarden() {
   const lastActed = useRef(0);
   /** How much the bed changed lately, which is what the sound follows. */
   const churn = useRef(0);
+  /**
+   * The CSS size the bed was last built at, kept across effect instances.
+   *
+   * The render effect closes over its own cssW/cssH, so when a quality change
+   * re-runs it those start at zero and it cannot tell "the child rotated the
+   * tablet" from "the ladder just stepped down". This ref is the memory that
+   * survives the re-run, and it is the whole basis of that distinction.
+   */
+  const builtCss = useRef<{ w: number; h: number } | null>(null);
+  /**
+   * True while the bed has nothing growing on it.
+   *
+   * Cheaper and exact where a sampled scan would be neither: a seed too small
+   * to land on a sampled cell would read as bare and cost the child a frame of
+   * their own growth.
+   */
+  const bedBare = useRef(true);
 
   /* Guided naming */
   const discovery = useRef<PatternGardenDiscoveryState>(initialDiscoveryState());
@@ -654,6 +677,7 @@ export default function PatternGarden() {
     if (!f) return;
     clearField(f);
     bedDirty.current = true;
+    bedBare.current = true;
     acted();
     // Deliberately does NOT reset the naming state. Those lines are once each
     // per session however many gardens the child grows, because repeating them
@@ -741,13 +765,34 @@ export default function PatternGarden() {
         h = Math.max(24, Math.round(h * shrink));
       }
 
+      /*
+       * Who moved the bed decides what happens to the garden in it.
+       *
+       * A CSS size that really changed means the CHILD changed it, by turning
+       * the tablet or opening the keyboard. That starts a fresh bed: they
+       * changed the container, and bare soil is the honest answer.
+       *
+       * A CSS size that did NOT change, on a build that is still producing a
+       * different grid, can only be the quality ladder stepping down under us.
+       * The child did not ask for that, was never told the ladder exists, and it
+       * fires exactly when the bed is at its fullest. So the garden is carried
+       * across rather than deleted.
+       */
+      const prevCss = builtCss.current;
+      const childResized =
+        !prevCss ||
+        Math.round(prevCss.w) !== Math.round(cssW) ||
+        Math.round(prevCss.h) !== Math.round(cssH);
+      builtCss.current = { w: cssW, h: cssH };
+
       const old = field.current;
       if (!old || old.width !== w || old.height !== h) {
-        // A resize starts a fresh bed. Resampling a reaction-diffusion field
-        // is not a stretch of pixels, it is a different chemistry mid-growth,
-        // and it would show up as the garden convulsing when the keyboard
-        // opened. Bare soil is the honest answer to "the bed changed shape".
-        field.current = createField(w, h);
+        if (old && !childResized) {
+          field.current = resampleField(old, w, h);
+        } else {
+          field.current = createField(w, h);
+          bedBare.current = true;
+        }
       }
       cells = w * h;
 
@@ -835,6 +880,7 @@ export default function PatternGarden() {
         lastPaint.current = { x: cx, y: cy };
       }
       q.length = 0;
+      bedBare.current = false;
       return true;
     };
 
@@ -1005,20 +1051,34 @@ export default function PatternGarden() {
 
       if (steps > 0) stepField(f, steps);
 
-      // Nothing moved and nothing changed colour, so there is nothing to
-      // draw. This is what makes reduced motion a still bed rather than a
-      // still picture with a loop running behind it, and it is why a resting
-      // garden does not warm a child's hands.
-      const repaint = steps > 0 || planted || retuned || bedDirty.current;
+      // Measured every frame now rather than only on the frames that draw, so
+      // the shimmer follows the bed instead of following the repaint decision.
+      // It falls to nothing on its own when the bed stops moving, which is what
+      // the old decay was imitating.
+      churn.current = measureChurn(f);
+
+      /*
+       * Whether there is anything worth drawing.
+       *
+       * Something the child did always draws. Beyond that:
+       *
+       *   - No steps ran, so nothing moved. This is what makes reduced motion a
+       *     still bed rather than a still picture with a loop running behind it.
+       *   - Steps ran but the bed has nothing growing on it. Bare soil under a
+       *     drifting light is a flat field either way, so the thirty thousand
+       *     cells would be spent producing the picture that is already on
+       *     screen. An untouched activity left open on a tablet should not be
+       *     warming it.
+       *
+       * Once anything is growing this is true every frame, so the drifting sheen
+       * on a real garden is untouched.
+       */
+      const forced = planted || retuned || bedDirty.current;
       bedDirty.current = false;
-      if (!repaint) {
-        // Let the shimmer fall away rather than cut off.
-        churn.current *= 0.6;
-        return;
-      }
+      const repaint = forced || (steps > 0 && !bedBare.current);
+      if (!repaint) return;
 
       paint(f, (nowMs - start) / 1000);
-      churn.current = measureChurn(f);
 
       costSum += performance.now() - t0;
       costCount++;
@@ -1140,6 +1200,25 @@ export default function PatternGarden() {
         seedDisc(atlas, rnd() * w, rnd() * h, 2.2);
       }
 
+      /*
+       * Under reduced motion the map is grown here, in one go, and never
+       * animated.
+       *
+       * The bed honours the setting and this did not, which made the setting a
+       * half measure: a child who needs the screen to hold still got a hundred
+       * frames of chemistry crawling across the control the moment the activity
+       * opened, and unlike the bed it was not even something they had done. It
+       * is also the worst offender of the two, because it starts at mount, so it
+       * greets them with it.
+       *
+       * The whole run costs a few tens of milliseconds once, against a map that
+       * is then painted a single time and holds.
+       */
+      if (reduceMotion) {
+        stepField(atlas, ATLAS_STEPS_TOTAL);
+        grown = ATLAS_STEPS_TOTAL;
+      }
+
       img = ctx.createImageData(w, h);
       px = img.data;
       for (let i = 3; i < px.length; i += 4) px[i] = 255;
@@ -1206,15 +1285,17 @@ export default function PatternGarden() {
       // Grown in. The map does not change again, so nothing keeps running.
     };
 
+    // Grown already under reduced motion, so there is no loop to start. Not
+    // merely a loop that would exit on its own: nothing is scheduled at all.
     build();
     paint();
-    raf = requestAnimationFrame(tick);
+    if (!reduceMotion) raf = requestAnimationFrame(tick);
 
     const ro = new ResizeObserver(() => {
       build();
       paint();
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(tick);
+      if (!reduceMotion) raf = requestAnimationFrame(tick);
     });
     ro.observe(canvas);
 
@@ -1223,7 +1304,7 @@ export default function PatternGarden() {
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [calm]);
+  }, [calm, reduceMotion]);
 
   /* ── UI ────────────────────────────────────────────────────────────────── */
 
