@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   initPwaInstall,
   subscribePwaInstall,
@@ -28,6 +28,7 @@ const DISMISS_KEY = "8gentjr_install_dismissed";
 export function InstallPrompt() {
   const [platform, setPlatform] = useState<InstallPlatform | null>(null);
   const [show, setShow] = useState(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Start capturing the deferred prompt app-wide (idempotent).
@@ -67,15 +68,59 @@ export function InstallPrompt() {
     localStorage.setItem(DISMISS_KEY, "1");
   }, []);
 
+  /**
+   * The banner is fixed above the dock, so it used to be the hit-target over
+   * whatever list happened to be underneath it - Pattern Garden and Fractal
+   * Grower on /science, two cards on /games (#230 C5 / #229). Measure how far
+   * up the viewport the banner actually reaches and publish that as
+   * --bottom-chrome-h; `.pb-safe-dock` on <main> reserves exactly that much,
+   * so the last cards scroll clear of it instead of sitting underneath.
+   */
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const clearReserve = () => {
+      root.style.setProperty("--bottom-chrome-h", "0px");
+    };
+
+    if (!show) {
+      clearReserve();
+      return;
+    }
+
+    const publishReserve = () => {
+      const el = bannerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      // Distance from the top of the banner to the bottom of the viewport,
+      // plus a small gap so the last card is not flush against it.
+      const reserve = Math.max(0, window.innerHeight - rect.top) + 12;
+      root.style.setProperty("--bottom-chrome-h", `${Math.round(reserve)}px`);
+    };
+
+    publishReserve();
+
+    const observer = new ResizeObserver(publishReserve);
+    if (bannerRef.current) observer.observe(bannerRef.current);
+    window.addEventListener("resize", publishReserve);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", publishReserve);
+      clearReserve();
+    };
+  }, [show]);
+
   if (!show) return null;
 
   return (
     <div
+      ref={bannerRef}
       role="dialog"
       aria-label="Install 8gent Jr as an app"
-      className="fixed bottom-20 inset-x-0 z-[9990] flex justify-center px-4 animate-slide-up"
+      className="fixed bottom-20 inset-x-0 z-[9990] flex justify-center px-4 animate-slide-up pointer-events-none"
     >
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-[#f0e6d6] p-4">
+      <div className="pointer-events-auto w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-[#f0e6d6] p-4">
         {/* Header */}
         <div className="flex items-start gap-3">
           <div className="w-11 h-11 shrink-0 rounded-xl bg-[#0E0F0F] flex items-center justify-center">

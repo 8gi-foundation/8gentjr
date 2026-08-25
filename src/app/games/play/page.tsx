@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useCallback, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import GameCard from "@/components/games/GameCard";
 
 // Speech games
@@ -138,22 +139,67 @@ const games: GameDef[] = [
   { id: "pattern-garden", category: "science", emoji: "\u{1F33F}", title: "Pattern Garden", description: "Paint seeds in the dark. Watch patterns grow.", color: "#3FA98A", component: PatternGarden },
 ];
 
-export default function GamesPlayPage() {
+/**
+ * The open game lives in the URL (`?game=<id>`), not in component state.
+ * With it in state, system/browser back had no hub entry to return to and
+ * exited the app to /talk (#230 C3). Now every game is a real history entry.
+ */
+function GamesPlayHub() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<Category>("speech");
-  const [activeGame, setActiveGame] = useState<string | null>(null);
+
+  // True once this page pushed the game entry itself, so we know whether
+  // back() returns to our hub or would leave the app (deep link / refresh).
+  const pushedRef = useRef(false);
+
+  const requestedGame = searchParams.get("game");
+  const activeGame = requestedGame
+    ? games.find((g) => g.id === requestedGame) ?? null
+    : null;
+
+  const openGame = useCallback(
+    (id: string) => {
+      pushedRef.current = true;
+      router.push(`/games/play?game=${encodeURIComponent(id)}`, { scroll: false });
+    },
+    [router],
+  );
+
+  const closeGame = useCallback(() => {
+    if (pushedRef.current) {
+      pushedRef.current = false;
+      router.back();
+      return;
+    }
+    router.replace("/games/play", { scroll: false });
+  }, [router]);
+
+  // An unknown ?game= id is a bad link, not a game: fall back to the hub.
+  if (requestedGame && !activeGame) {
+    return (
+      <div className="min-h-screen bg-[#FFF8F0] px-4 pt-6 pb-24 text-center">
+        <p className="text-base font-bold text-gray-800">That game has moved.</p>
+        <button
+          onClick={closeGame}
+          className="mt-4 min-h-[44px] rounded-[20px] border-none bg-[#E8610A] px-5 font-bold text-white cursor-pointer"
+        >
+          Back to the game hub
+        </button>
+      </div>
+    );
+  }
 
   if (activeGame) {
-    const game = games.find((g) => g.id === activeGame);
-    if (!game) return null;
-    const GameComponent = game.component;
+    const GameComponent = activeGame.component;
     return (
       <div className="min-h-screen bg-[#FFF8F0]">
         <div className="flex items-center px-4 py-3 border-b border-[#F0DECA]">
-          <button onClick={() => setActiveGame(null)}
+          <button onClick={closeGame}
             className="border-none bg-transparent text-xl cursor-pointer px-2 py-1 text-[#E8610A] font-bold">
             &larr; Back
           </button>
-          <span className="font-bold text-base text-gray-800 ml-2">{game.title}</span>
+          <span className="font-bold text-base text-gray-800 ml-2">{activeGame.title}</span>
         </div>
         <div className="h-[calc(100vh-60px)]">
           <GameComponent />
@@ -191,9 +237,19 @@ export default function GamesPlayPage() {
       <div className="grid grid-cols-2 gap-3.5 max-w-[400px] mx-auto">
         {filtered.map((g) => (
           <GameCard key={g.id} emoji={g.emoji} title={g.title} description={g.description} color={g.color}
-            onClick={() => setActiveGame(g.id)} />
+            onClick={() => openGame(g.id)} />
         ))}
       </div>
     </div>
+  );
+}
+
+export default function GamesPlayPage() {
+  return (
+    <Suspense
+      fallback={<div className="min-h-screen bg-[#FFF8F0]" aria-busy="true" />}
+    >
+      <GamesPlayHub />
+    </Suspense>
   );
 }

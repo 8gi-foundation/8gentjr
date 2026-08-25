@@ -191,9 +191,15 @@ button, a, [role="button"] {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Extra bottom padding for dock */
+/* Extra bottom padding for whatever fixed chrome sits at the bottom: the dock
+   (72px) at minimum, more while the install banner is showing. InstallPrompt
+   measures how far up the screen it actually reaches and publishes it as
+   --bottom-chrome-h, so the banner can never end up as the hit-target over a
+   card the way it did on /science and /games (#230 C5 / #229). */
 .pb-safe-dock {
-  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(
+    max(72px, var(--bottom-chrome-h, 0px)) + env(safe-area-inset-bottom, 0px)
+  );
 }
 
 /* AAC Card specific styles */
