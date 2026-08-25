@@ -34,7 +34,8 @@ export type GuidedActivityId =
   | 'water-sphere'
   | 'pattern-garden'
   | 'fractal'
-  | 'harmonograph';
+  | 'harmonograph'
+  | 'dimensions';
 
 /**
  * Stage bands. GLP stages 1-6 collapse to five phrasing shapes because stages 1
@@ -477,6 +478,82 @@ const DISCOVERIES: Record<GuidedActivityId, Discovery[]> = {
         early: 'It never joins',
         complex: 'In between, the line never joins up.',
         full: 'Between the simple numbers the line drifts and never joins up.',
+      },
+    },
+  ],
+
+  /**
+   * Shape Ladder. A point, dragged, leaves a line. The line, dragged, leaves a
+   * square. The square leaves a cube, and the cube leaves a shape whose shadow
+   * is all a screen can hold. One rule, run four times, and the child's own
+   * finger is what runs it.
+   *
+   * The four lines are the four things in front of the child, in the order a
+   * pair of hands finds them:
+   *
+   *   - a drag left a line behind it,
+   *   - and doing it again added another direction rather than a different
+   *     shape,
+   *   - the last shape casts a shadow that moves when it is turned in a
+   *     direction the screen has no room for,
+   *   - and the rule that made the line is the rule that made all of it.
+   *
+   * The last one is the one worth the activity, and it is not a flourish:
+   * `dimensions.test.ts` asserts structurally that the figure at every rung
+   * contains two exact copies of the figure below it, joined corner to corner,
+   * with no rung special-cased anywhere. The corner and edge counts are checked
+   * against 2^k and k*2^(k-1) rather than against a table, and the shadow
+   * sliding out is measured on the halves the builder produced.
+   *
+   * With the sound on, each rung adds one harmonic to a stack that never
+   * replaces anything, from the same table the rungs beside the shape are drawn
+   * from. Nothing here says that to a child. The activity plays it and draws it
+   * and lets them be one thing.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `dimensions-discovery.ts`, and the ids here are the ones it emits. The two
+   * files are held together by a test in both directions, so neither a rename
+   * nor a piece of dead copy can survive the suite.
+   */
+  dimensions: [
+    {
+      id: 'swept-a-line',
+      lines: {
+        gestalt: 'Your drag swept a line.',
+        single: 'Line',
+        early: 'Swept a line',
+        complex: 'Dragging the dot swept out a line.',
+        full: 'The dot moved, and the path it swept behind is a line.',
+      },
+    },
+    {
+      id: 'each-drag-a-direction',
+      lines: {
+        gestalt: 'Each drag adds a direction.',
+        single: 'Direction',
+        early: 'One more direction',
+        complex: 'Each drag adds one new direction.',
+        full: 'Every drag you make adds one more direction to the shape.',
+      },
+    },
+    {
+      id: 'cube-shadow',
+      lines: {
+        gestalt: "That is the cube's shadow.",
+        single: 'Shadow',
+        early: "The cube's shadow",
+        complex: "You are moving the cube's shadow.",
+        full: 'The cube turned a way you cannot see, so its shadow slid.',
+      },
+    },
+    {
+      id: 'same-rule-again',
+      lines: {
+        gestalt: 'Same rule made every shape.',
+        single: 'Same',
+        early: 'Same rule again',
+        complex: 'The same rule made every shape.',
+        full: 'One rule made the line, the square, the cube and this.',
       },
     },
   ],

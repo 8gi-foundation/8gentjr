@@ -52,6 +52,13 @@ const activities = [
     desc: "Slide the weights on two swinging strings. Watch the pen draw what they make together.",
     icon: "\u3030\ufe0f",
   },
+  {
+    id: "dimensions",
+    href: "/science/dimensions",
+    title: "Shape Ladder",
+    desc: "Pull a dot into a line. Pull the line into a square. Keep pulling and watch the shadow.",
+    icon: "\ud83e\uddca",
+  },
 ];
 
 export default function SciencePage() {
