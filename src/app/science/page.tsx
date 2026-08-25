@@ -38,6 +38,13 @@ const activities = [
     desc: "Paint seeds in the dark. Watch patterns grow out of your finger.",
     icon: "\ud83c\udf3f",
   },
+  {
+    id: "fractal",
+    href: "/science/fractal",
+    title: "Fractal Grower",
+    desc: "Drag a stem up out of a seed. Bend the split and the whole tree changes.",
+    icon: "\ud83c\udf33",
+  },
 ];
 
 export default function SciencePage() {

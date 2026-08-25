@@ -32,7 +32,8 @@ export type GuidedActivityId =
   | 'interference'
   | 'light-mix'
   | 'water-sphere'
-  | 'pattern-garden';
+  | 'pattern-garden'
+  | 'fractal';
 
 /**
  * Stage bands. GLP stages 1-6 collapse to five phrasing shapes because stages 1
@@ -324,6 +325,74 @@ const DISCOVERIES: Record<GuidedActivityId, Discovery[]> = {
         early: 'Same size shapes',
         complex: 'Big and small seeds grew the same size.',
         full: 'A big smear and a small dab grew shapes the same size.',
+      },
+    },
+  ],
+
+  /**
+   * Fractal Grower. The child drags a stem up out of a seed, it splits, and
+   * every piece then does exactly what the stem did. Their fingers hold the two
+   * numbers the split uses, so one drag changes every branch at every size at
+   * once.
+   *
+   * The four lines are the four things that are on the screen in front of them,
+   * in the order a pair of hands finds them:
+   *
+   *   - a split exists,
+   *   - the small branches are the same shape as the big ones,
+   *   - moving one thing a little moved everything a lot,
+   *   - and the same rule, given a different split, made a different nature.
+   *
+   * The third and fourth are the ones worth the activity. Neither is a
+   * flourish: `fractal-grower.test.ts` sweeps the angle and measures the
+   * bounding box widening and shortening across the whole range, and the four
+   * seeds are four lists of multipliers handed to one recursion, with a test
+   * asserting none of them reaches code of its own.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `fractal-grower-discovery.ts`, and the ids here are the ones it emits. The
+   * two files are held together by a test in both directions, so neither a
+   * rename nor a piece of dead copy can survive the suite.
+   */
+  fractal: [
+    {
+      id: 'branch',
+      lines: {
+        gestalt: 'Your stem split in two.',
+        single: 'Branch',
+        early: 'A branch grew',
+        complex: 'The stem split into two branches.',
+        full: 'You grew it taller and the stem split into two branches.',
+      },
+    },
+    {
+      id: 'pattern-repeats',
+      lines: {
+        gestalt: 'Small branches copy big branches.',
+        single: 'Again',
+        early: 'Small copies big',
+        complex: 'The small branches copy the big ones.',
+        full: 'Every small branch is the same shape as the big one.',
+      },
+    },
+    {
+      id: 'small-change-big-change',
+      lines: {
+        gestalt: 'A small change moved everything.',
+        single: 'Changed',
+        early: 'Everything moved',
+        complex: 'You moved one thing and everything changed.',
+        full: 'You changed the angle a little and the whole shape changed.',
+      },
+    },
+    {
+      id: 'same-rule-different-nature',
+      lines: {
+        gestalt: 'One rule made both shapes.',
+        single: 'Both',
+        early: 'Same rule again',
+        complex: 'The same rule made a different shape.',
+        full: 'One rule made the tree, the fern and the lightning.',
       },
     },
   ],
