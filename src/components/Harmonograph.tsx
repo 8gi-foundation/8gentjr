@@ -1435,15 +1435,32 @@ export default function Harmonograph() {
        * Both rules live in `shouldSchedule`, out in the pure module with tests
        * that kill the reverts: a canvas with no size gets no frame however busy
        * everything else is, and a still, unhandled machine gets none either, so
-       * a tablet left open on this activity has no rAF callback at all. cssW is
-       * only ever set by build(), and build() returns without setting it when
-       * the element measures under two pixels, so a hidden subtree parks here
-       * until the ResizeObserver wakes it.
+       * a tablet left open on this activity has no rAF callback at all.
+       *
+       * WHAT THE SIZE GUARD IS EXACT ABOUT. cssW and cssH are only ever set by
+       * build(), and build() returns BEFORE setting either when the element
+       * measures under two pixels on a side. For a canvas that has never had a
+       * size the guard is therefore exact: both sit at their initial zero and a
+       * hidden subtree parks here until the ResizeObserver wakes it. For a
+       * canvas that HAD a size and then collapsed, these two hold the LAST REAL
+       * measurement rather than the current one, so the loop can still schedule
+       * for the frames between the collapse and build() next running against a
+       * real size. That window is why the pair is passed rather than the width
+       * alone: a collapsing subtree usually loses its height while keeping its
+       * width, and only a rule reading both can refuse once build() catches up.
+       *
+       * IT IS ALSO NOT THE ONLY GATE. The frame limiter above reschedules and
+       * returns before ever reaching here, so a frame that arrives inside
+       * FRAME_INTERVAL_MS asks for one more rAF without consulting this rule at
+       * all. That costs at most one extra callback per stop, because the next
+       * frame is outside the interval and does consult it, but a reader
+       * counting callbacks should expect the trailing one.
        */
       const swinging = !reduceMotion && holdAmp.current > 0;
       if (
         !shouldSchedule({
           cssW,
+          cssH,
           dirty: paintNeeded,
           holding: holding.current,
           queued: queue.current.length > 0,

@@ -189,6 +189,11 @@ export function stepDiscovery(
   };
 
   const seeRatio = (ratio: number) => {
+    // Defensive, and unreachable from the component: every ratio handed in here
+    // is a quotient of two `frequencyFor` results, and `clampLength` guarantees
+    // both of those are finite and non-zero. Kept because this is a public
+    // reducer and a caller that grew a new event later should widen the corners
+    // of the ratio with a number, not with a NaN that poisons both of them.
     if (!Number.isFinite(ratio)) return;
     next = {
       ...next,
@@ -224,6 +229,12 @@ export function stepDiscovery(
       // they arrived either.
       if (!next.interacted) break;
 
+      // A HIGH-WATER MARK, not the ink standing on the paper right now. Fresh
+      // paper empties the sheet and deliberately does not empty the child: what
+      // they already drew, they already drew, and a line about it stays earned
+      // across a clean sheet. `event.turns` in its place still passes every
+      // other test in the suite, so the sequence that separates the two is
+      // driven explicitly in `harmonograph-discovery.test.ts`.
       const mostInk = Math.max(next.mostInk, event.turns);
       next = { ...next, mostInk };
       seeRatio(event.ratio);

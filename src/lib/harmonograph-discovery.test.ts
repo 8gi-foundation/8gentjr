@@ -105,6 +105,39 @@ describe('drew a figure', () => {
     expect(emitted).toEqual(['drew-a-figure']);
   });
 
+  test('a line still unearned when the paper goes fresh can be earned after it', () => {
+    /*
+     * THE HIGH-WATER MARK, driven where it is the only thing deciding the
+     * answer. The test above cannot see it: `drew-a-figure` is already named
+     * before the sheet is emptied, so reading the ink standing on the paper
+     * right now instead of the most there has ever been passes it, and passes
+     * every other test in both suites.
+     *
+     * The sequence that separates them is a child who draws a real figure with
+     * both strings, then takes one string a long way, then looks at a nearly
+     * empty sheet. `more-loops` is the only line whose evidence is complete on
+     * that last look, and its ink condition has to be answered by the figure
+     * they drew a moment ago rather than by the fresh paper in front of them.
+     *
+     * That is exactly the fresh-paper promise: emptying the sheet empties the
+     * sheet, never the child. Replace the `Math.max` with `event.turns` and the
+     * third line disappears from this list.
+     */
+    const { emitted } = run([
+      string('x', 1),
+      string('y', 1),
+      // A real figure, at a ratio that has gone nowhere yet.
+      settle(1, 3),
+      // One string taken a long way: the ratio has now travelled 1 to 2.2,
+      // which clears LOOP_JOURNEY comfortably.
+      string('y', 2.2),
+      // Fresh paper. Barely any ink standing on it.
+      settle(2.2, 0.3),
+    ]);
+    expect(2.2 / 1).toBeGreaterThanOrEqual(LOOP_JOURNEY);
+    expect(emitted).toEqual(['drew-a-figure', 'both-strings', 'more-loops']);
+  });
+
   test('it names once and never again, however much more they draw', () => {
     const events = [paper(), settle(1.5, 2)];
     for (let i = 0; i < 40; i++) events.push(settle(1.5, 2 + i * 0.2));

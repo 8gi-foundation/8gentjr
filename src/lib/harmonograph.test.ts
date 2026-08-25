@@ -266,13 +266,54 @@ describe('the picture is the ratio and not the size', () => {
 // ---------------------------------------------------------------------------
 
 describe('a shorter string makes more loops', () => {
-  test('the loops on the paper are the ratio, counted', () => {
+  test('where the second string completes whole turns, the count is those turns', () => {
+    /*
+     * SCOPE OF THIS CLAIM, stated because the obvious reading of it is wrong.
+     * Every ratio here makes `8 * ratio` a whole number, which is the case
+     * where the second pendulum finishes its last loop exactly as the drawing
+     * ends and the count has nothing to round. It is NOT a law across the
+     * control: at a ratio that leaves a PARTIAL final lobe, whether that lobe
+     * has reached its top before the paper runs out decides the last loop, so
+     * the count sits either side of `round(8 * ratio)` at roughly a quarter of
+     * the reachable settings. That is the drawing being honest about itself,
+     * not the counter being wrong - the count is what is on the paper, and half
+     * a loop is not a loop. The property that holds everywhere is the
+     * monotonicity measured in the next test, which is also the only one the
+     * child is ever told.
+     */
     for (const ratio of [0.25, 0.5, 1, 1.5, 2, 3, 4]) {
-      // Counted from the sampled path, then checked against what the machine
-      // is doing: eight swings of the first string is eight times the ratio
-      // turns of the second.
-      expect(loopCount(fig({ ratio, turns: 8 }))).toBe(Math.round(8 * ratio));
+      expect(Number.isInteger(8 * ratio), `${ratio} is outside this test's scope`).toBe(true);
+      expect(loopCount(fig({ ratio, turns: 8 }))).toBe(8 * ratio);
     }
+  });
+
+  test('a flat top is one loop, not two', () => {
+    /*
+     * The mutation this kills: relaxing the rising comparison in `loopCount`
+     * from `>` to `>=`, which would make the two comparisons the same and count
+     * every sample of a plateau.
+     *
+     * The plateau is real and reachable, not contrived. The sample grid lands
+     * symmetrically about the peak whenever the second pendulum's period is a
+     * half-integer number of samples, which at 0.64 against four swings puts
+     * two exactly equal samples on top of each of the three loops. The pair is
+     * asserted first, so that a platform which somehow did not produce it would
+     * fail loudly here rather than leave the real assertion vacuous.
+     *
+     * It matters because `describeFigure` reads this number out to a child
+     * using a screen reader. Six is not a hedge against three; it is a
+     * different sentence about the same picture.
+     */
+    const params = fig({ ratio: 0.64, turns: 4 });
+    const path = traceFigure(params);
+
+    const plateaus: number[] = [];
+    for (let i = 1; i < path.count - 1; i++) {
+      if (path.ys[i] === path.ys[i - 1] && path.ys[i] > path.ys[i + 1]) plateaus.push(i);
+    }
+    expect(plateaus.length, 'no flat top in the sampled path to count twice').toBe(3);
+
+    expect(loopCount(params)).toBe(3);
   });
 
   test('shortening the second string never takes loops away, anywhere', () => {
@@ -300,6 +341,14 @@ describe('a shorter string makes more loops', () => {
 
 describe('simple numbers draw a line that comes back over itself', () => {
   test('every simple ratio closes exactly, at every length of drawing', () => {
+    /*
+     * COUNT, stated correctly because it has been stated loosely elsewhere:
+     * this sweeps all 25 (p, q) pairs inside the term limit, and those 25 pairs
+     * are only 19 DISTINCT RATIOS, because six of them reduce (2:2, 3:3, 4:4,
+     * 5:5, 4:2, 2:4). Nineteen is also what `nearestSimpleRatio` searches, and
+     * the six duplicates are swept deliberately: an unreduced pair is a real
+     * setting of the machine and has to close like the ratio it reduces to.
+     */
     for (let q = 1; q <= MAX_TERM; q++) {
       for (let p = 1; p <= MAX_TERM; p++) {
         for (const turns of [2 * MAX_TERM, 12, INK_MAX]) {
@@ -600,22 +649,55 @@ describe('reduced motion takes the clock out and leaves the hand in', () => {
       frames++;
     }
     // It reaches exactly zero rather than crawling towards it forever, which
-    // is what lets the render loop stop.
+    // is what lets the render loop stop. The DECAY is what does that: it is
+    // linear and floored at zero by `Math.max`, so it lands on zero with or
+    // without HOLD_FLOOR. The floor only snaps the last unseeable fraction of a
+    // swing, worth about one frame, which is what the two assertions below say
+    // separately rather than crediting the floor with the stop.
     expect(amp).toBe(0);
     expect(frames).toBeLessThan(Math.ceil(32 / HOLD_DECAY) + 4);
     expect(HOLD_FLOOR).toBeGreaterThan(0);
+
+    let unfloored = 1;
+    let unflooredFrames = 0;
+    while (unfloored > 0 && unflooredFrames < 1000) {
+      unfloored = Math.max(0, unfloored - (1 / 32) * HOLD_DECAY);
+      unflooredFrames++;
+    }
+    expect(unfloored).toBe(0);
+    expect(unflooredFrames - frames).toBeLessThanOrEqual(1);
   });
 });
 
 describe('the render loop stops itself', () => {
-  const base = { cssW: 800, dirty: false, holding: false, queued: false, swinging: false };
+  const base = {
+    cssW: 800,
+    cssH: 600,
+    dirty: false,
+    holding: false,
+    queued: false,
+    swinging: false,
+  };
 
-  test('a canvas with no size gets no frame, whatever else is true', () => {
-    // The mutation this kills: dropping the size guard. A hidden or unlaid-out
-    // canvas would then spin the loop forever, painting nothing.
+  test('a canvas with no width gets no frame, whatever else is true', () => {
+    // The mutation this kills: dropping the width half of the size guard. A
+    // hidden or unlaid-out canvas would then spin the loop forever, painting
+    // nothing.
     for (const cssW of [0, 1, MIN_CANVAS_PX - 0.01, Number.NaN]) {
       expect(
         shouldSchedule({ ...base, cssW, dirty: true, holding: true, queued: true, swinging: true }),
+      ).toBe(false);
+    }
+  });
+
+  test('a canvas with no height gets no frame either, however wide it is', () => {
+    // The mutation this kills: dropping the height half. A subtree that
+    // collapses keeps its width far more often than it keeps its height, so a
+    // width-only rule hands frames to an element two pixels wide and zero tall
+    // for as long as it stays collapsed.
+    for (const cssH of [0, 1, MIN_CANVAS_PX - 0.01, Number.NaN]) {
+      expect(
+        shouldSchedule({ ...base, cssH, dirty: true, holding: true, queued: true, swinging: true }),
       ).toBe(false);
     }
   });
@@ -632,7 +714,9 @@ describe('the render loop stops itself', () => {
   });
 
   test('a canvas that has just been given a size may paint again', () => {
-    expect(shouldSchedule({ ...base, cssW: MIN_CANVAS_PX, dirty: true })).toBe(true);
+    expect(
+      shouldSchedule({ ...base, cssW: MIN_CANVAS_PX, cssH: MIN_CANVAS_PX, dirty: true }),
+    ).toBe(true);
   });
 });
 

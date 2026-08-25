@@ -397,6 +397,15 @@ export function openness(params: FigureParams, samples = 192): number | null {
  * what the line names is the thing a child can point at, and a number derived
  * from the parameters would agree with the parameters even if the drawing on
  * the paper disagreed with both.
+ *
+ * THE TWO COMPARISONS ARE NOT THE SAME COMPARISON, deliberately. Strictly
+ * greater on the way up and greater-or-equal on the way down is what makes a
+ * FLAT TOP count once. The sample grid lands symmetrically about the peak at
+ * plenty of reachable settings, which puts two exactly equal samples at the top
+ * of a loop, and relaxing the first comparison to `>=` counts both of them: at
+ * 0.64 against four swings the same three loops are counted as six. The screen
+ * reader says this number out loud, so a doubled count is a sentence that
+ * contradicts the picture. `harmonograph.test.ts` pins the plateau case.
  */
 export function loopCount(params: FigureParams, perTurn = SAMPLES_PER_TURN): number {
   const figure = traceFigure(params, perTurn);
@@ -577,7 +586,17 @@ export function projectPoint(x: number, y: number, z: number, cam: Camera): Proj
 // Motion
 // ---------------------------------------------------------------------------
 
-/** Below this the settle is over, the last frame is painted, and the loop stops. */
+/**
+ * Where a settle that is visually over is called over.
+ *
+ * It is NOT what stops the loop. The decay is linear and floored at zero by
+ * `Math.max(0, ...)`, so the amplitude reaches exactly zero on its own and the
+ * loop would stop without this constant at all. What the floor buys is about
+ * ONE frame: it snaps the last four-thousandths of a swing to nothing instead
+ * of painting a frame nobody can see. Do not read it as the thing that makes
+ * the loop terminate, because a later change to the decay curve would then be
+ * made against a guarantee this constant is not giving.
+ */
 export const HOLD_FLOOR = 0.004;
 /** How fast the machine winds up under a finger. Per second. */
 export const HOLD_RISE = 4;
@@ -640,7 +659,7 @@ export function motionAmplitudes(args: {
   };
 }
 
-/** Under this many CSS pixels wide there is nothing to paint into. */
+/** Under this many CSS pixels on a side there is nothing to paint into. */
 export const MIN_CANVAS_PX = 2;
 
 /**
@@ -654,18 +673,26 @@ export const MIN_CANVAS_PX = 2;
  *      long as it stays hidden, painting nothing. The ResizeObserver wakes it
  *      when a size arrives, so nothing is lost by refusing here.
  *
+ *      BOTH SIDES ARE CHECKED. A collapsed subtree usually loses its height
+ *      first and keeps its width, so a width-only rule would let a canvas that
+ *      is two pixels wide and zero tall keep asking for frames. The caller's
+ *      measurement is what makes this exact or approximate, not this function:
+ *      see the note at the call site in `Harmonograph.tsx`.
+ *
  *   2. A machine that is still and unhandled gets NO frame. The loop stops
  *      itself rather than running forever and returning early, so a tablet left
  *      open on this activity has no rAF callback at all.
  */
 export function shouldSchedule(args: {
   cssW: number;
+  cssH: number;
   dirty: boolean;
   holding: boolean;
   queued: boolean;
   swinging: boolean;
 }): boolean {
   if (!(args.cssW >= MIN_CANVAS_PX)) return false;
+  if (!(args.cssH >= MIN_CANVAS_PX)) return false;
   return args.dirty || args.holding || args.queued || args.swinging;
 }
 
