@@ -72,6 +72,7 @@ describe('activity catalogue', () => {
       'fractal',
       'harmonograph',
       'interference',
+      'light-bender',
       'light-mix',
       'pattern-garden',
       'water-sphere',

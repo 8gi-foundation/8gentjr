@@ -848,6 +848,16 @@ describe('what a child using a screen reader is told', () => {
     // cube. 16 corners, 32 edges", which is a cube with a tesseract's corners.
     // Building at the rung when it is at one is what keeps the name and the
     // count coming from the same figure; reverting that fails here.
+    //
+    // Drift protection on the tolerance itself, raised by Shape Ladder's gate.
+    // The offsets below are written as fractions of SETTLED_CLIMB, so widening
+    // the constant would widen the offsets with it and this test would stay
+    // green while the product began calling a visibly half-made shape finished.
+    // Two hundredths of a sweep is about three pixels of finger travel against
+    // CLIMB_TRAVEL_PX; five hundredths is roughly eight, which is a gap a child
+    // can see between the shape and the rung it is being named as.
+    expect(SETTLED_CLIMB).toBeLessThan(0.05);
+
     for (const rung of [1, 2, 3, 4]) {
       const whole = buildFigure(rung);
       const edges = `${whole.edges.length} ${whole.edges.length === 1 ? 'edge' : 'edges'}`;

@@ -59,6 +59,13 @@ const activities = [
     desc: "Pull a dot into a line. Pull the line into a square. Keep pulling and watch the shadow.",
     icon: "\ud83e\uddca",
   },
+  {
+    id: "light-bender",
+    href: "/science/light-bender",
+    title: "Light Bender",
+    desc: "Point a torch under water. Swing it until the light stops getting out.",
+    icon: "\ud83c\udf08",
+  },
 ];
 
 export default function SciencePage() {
