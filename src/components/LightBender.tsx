@@ -7,7 +7,6 @@ import { useGuidedDiscovery } from '@/hooks/useGuidedDiscovery';
 import {
   AIM_MAX,
   AIM_MIN,
-  CAUSTIC_BINS,
   LEVEL_MAX,
   LEVEL_MIN,
   PARTIALS,
@@ -20,12 +19,15 @@ import {
   beamHue,
   causticBand,
   causticHue,
+  causticOutline,
   clampAim,
   clampLevel,
   clampOpen,
   describeTank,
   escapedFraction,
+  fitScene,
   glassHue,
+  glassSegments,
   holdAmpNext,
   motionAmplitudes,
   partialHz,
@@ -141,26 +143,6 @@ function hsla(h: number, s: number, l: number, a: number): string {
 /* ─────────────────────────────────────────────────────────────────────────
  * The room
  * ───────────────────────────────────────────────────────────────────────── */
-
-/** How much of the canvas width the scene is allowed, leaving a margin. */
-const FIT_WIDTH = 0.94;
-/**
- * How much of the canvas HEIGHT the scene is allowed.
- *
- * Under one, because a beam that leaves the water is drawn to the edge of the
- * canvas rather than to the edge of the scene, and the room above the tank is
- * where that beam lives.
- *
- * It was 0.62 and the observed pass is what corrected it. On a tall phone the
- * width is the binding constraint and the value does nothing, which is where it
- * was chosen; on a laptop, where the canvas is wider than it is tall, HEIGHT is
- * the binding constraint and 0.62 left the tank occupying a third of the
- * picture with six hundred empty pixels beside it. The sky the beam needs is
- * still here, it is just no longer most of the screen.
- */
-const FIT_HEIGHT = 0.86;
-/** Where down the canvas the middle of the scene sits. More sky above than below. */
-const FIT_ANCHOR = 0.58;
 
 /** How close a finger has to land to take hold of a tab, in CSS pixels. */
 const TAB_GRAB_PX = 46;
@@ -702,16 +684,13 @@ export default function LightBender() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       /* Fitted to the LARGEST the scene can ever be, once per size, rather than
-       * to whatever is on the screen now. A fit that followed the scene would
-       * shrink the tank the moment the spout opened, so pulling the tab would
-       * look like the tank moving away rather than like water coming out. See
-       * WORLD in `light-bender.ts`, which the suite proves bounds every
-       * reachable state. */
-      const worldW = WORLD.x1 - WORLD.x0;
-      const worldH = WORLD.y1 - WORLD.y0;
-      scale = Math.min((cssW * FIT_WIDTH) / worldW, (cssH * FIT_HEIGHT) / worldH);
-      padX = (cssW - worldW * scale) / 2;
-      padY = Math.max(6, cssH * FIT_ANCHOR - (worldH * scale) / 2);
+       * to whatever is on the screen now, by `fitScene`, which lives in
+       * `light-bender.ts` where the suite drives it at real canvas shapes and
+       * asserts how much of the screen the scene comes out covering. */
+      const fit = fitScene({ cssW, cssH });
+      scale = fit.scale;
+      padX = fit.padX;
+      padY = fit.padY;
 
       // The light is untouched by any of this. Its three parameters live in
       // refs, so a resize or a step down the quality ladder gives the child
@@ -813,7 +792,6 @@ export default function LightBender() {
       const left = sx(0);
       const right = sx(TANK_W);
       const floor = sy(0);
-      const top = sy(TANK_H);
       const surface = sy(p.level);
       const slot = slotTop(p.open);
 
@@ -827,27 +805,25 @@ export default function LightBender() {
       /* The caustic. Ray density on the floor, from `causticBand`, which sends
          room light down through the real surface with Snell's law. Flat and
          even under reduced motion, because the amplitude is zero there. */
-      const binW = (right - left) / CAUSTIC_BINS;
       const causticH = Math.min((floor - surface) * 0.72, 0.13 * scale);
       // ONE continuous shape whose top edge follows the ray density, rather than
-      // eighty-four separate rectangles. The rectangles were the first cut and
-      // the observed pass showed what they look like: hard vertical edges every
-      // few pixels, which reads as wallpaper rather than as light pooling. The
-      // three-tap average is a smoothing of the DRAWING and not of the physics;
-      // `causticBand` is untouched and is what the suite measures.
-      const smooth = (i: number) =>
-        (s.caustic[Math.max(0, i - 1)] + s.caustic[i] + s.caustic[Math.min(CAUSTIC_BINS - 1, i + 1)]) /
-        3;
+      // eighty-four separate rectangles. The outline is `causticOutline` in
+      // `light-bender.ts`, where the suite asserts it has no vertical edges and
+      // is smoothed, because the rectangles were the first cut and the observed
+      // pass showed what they look like: hard edges every few pixels, wallpaper
+      // rather than light pooling.
       const pool = ctx.createLinearGradient(0, floor, 0, floor - causticH);
       pool.addColorStop(0, hsla(caustic, calm ? 42 : 60, 74, calm ? 0.26 : 0.38));
       pool.addColorStop(1, hsla(caustic, calm ? 42 : 60, 74, 0));
       ctx.fillStyle = pool;
       ctx.beginPath();
-      ctx.moveTo(left, floor);
-      for (let i = 0; i < CAUSTIC_BINS; i++) {
-        ctx.lineTo(left + (i + 0.5) * binW, floor - causticH * Math.min(1, smooth(i) / 2.2));
+      const outline = causticOutline(s.caustic);
+      for (let i = 0; i < outline.length; i++) {
+        const px = left + outline[i].u * (right - left);
+        const py = floor - outline[i].v * causticH;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
       }
-      ctx.lineTo(right, floor);
       ctx.closePath();
       ctx.fill();
 
@@ -976,11 +952,10 @@ export default function LightBender() {
       ctx.strokeStyle = hsla(glass, calm ? 26 : 38, 62, calm ? 0.34 : 0.46);
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(left, top);
-      ctx.lineTo(left, floor);
-      ctx.lineTo(right, floor);
-      ctx.moveTo(right, top);
-      ctx.lineTo(right, sy(slot));
+      for (const g of glassSegments({ open: p.open })) {
+        ctx.moveTo(sx(g.x0), sy(g.y0));
+        ctx.lineTo(sx(g.x1), sy(g.y1));
+      }
       ctx.stroke();
 
       // The slot itself, so a shut spout still shows where the spout is.

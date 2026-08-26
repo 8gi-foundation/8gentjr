@@ -169,9 +169,34 @@ export const TANK_H = 0.82;
  * there is no critical angle at all and the whole activity has no second half.
  * `light-bender.test.ts` checks the two numbers against each other rather than
  * trusting this comment.
+ *
+ * THE CEILING IS THE RIDE, and it is derived rather than chosen. Filling the
+ * tank does not change what happens at the surface, but it does change how the
+ * beam gets across the tank: the zig-zag runs `level * tan(aim)` sideways per
+ * crossing, so the deeper the water the fewer hops the beam makes and the
+ * shallower the steepest swing that can still arrive inside the slot. Past a
+ * point the only swings that reach the slot at all are under the critical
+ * angle, the light entering the stream cannot be held by it, and the second
+ * half of the activity quietly stops existing for a child who filled the tank.
+ *
+ * `light-bender.test.ts` measures where that happens by driving the real
+ * pipeline, `traceTank` into `slotRay` into `traceStream`, across the whole
+ * swing at every level. Two numbers come out of it:
+ *
+ *   - 0.6242, the last level at which ANY swing at all still rides. At 0.62
+ *     the swings that ride span 0.0014 radians, which is under one pixel of
+ *     pointing: true on paper, unreachable by a child.
+ *   - 0.50, the last level at which the swings that ride still span 0.05
+ *     radians, about a twenty-eighth of the whole swing. A hundredth of a unit
+ *     of water above it that span halves, and it collapses from there.
+ *
+ * The cap is the second one, because a target a finger cannot land on is the
+ * same silent loss as no target at all. The suite pins it from both sides: the
+ * ride is proved reachable at every level up to it, and proved to have narrowed
+ * past holding just above it, so the cap cannot drift either way in silence.
  */
 export const LEVEL_MIN = 0.16;
-export const LEVEL_MAX = 0.72;
+export const LEVEL_MAX = 0.5;
 
 export function clampLevel(level: number): number {
   if (!Number.isFinite(level)) return LEVEL_MIN;
@@ -827,6 +852,45 @@ export function causticBand(args: {
   return bins.map((b) => b / mean);
 }
 
+/**
+ * The ray density that is drawn at the full height of the pool.
+ *
+ * Above the mean of one, so an even band sits at under half height and the
+ * bright ribs have somewhere to rise into.
+ */
+export const CAUSTIC_PEAK = 2.2;
+
+/**
+ * The outline of the pool of light on the floor, as ONE closed shape.
+ *
+ * `u` runs zero to one across the floor of the tank and `v` runs zero to one up
+ * from the floor, so a caller scales it into pixels and knows nothing about how
+ * the density was computed.
+ *
+ * ONE SHAPE, deliberately. The first cut drew eighty-four separate rectangles,
+ * one per bin, and the observed pass showed what that reads as: hard vertical
+ * edges every few pixels, wallpaper rather than light pooling. Both properties
+ * that fix it are here where they can be measured. There is exactly one vertex
+ * per bin, at the middle of the bin, so the shape has no vertical edges at all;
+ * and each vertex is the average of its bin and its two neighbours, so the
+ * outline is a smoothed curve.
+ *
+ * The smoothing is of the DRAWING and not of the physics. `causticBand` is
+ * untouched and is what the suite measures the optics against.
+ */
+export function causticOutline(band: readonly number[]): { u: number; v: number }[] {
+  const n = band.length;
+  if (n === 0) return [];
+  const at = (i: number) => band[Math.min(n - 1, Math.max(0, i))];
+  const points: { u: number; v: number }[] = [{ u: 0, v: 0 }];
+  for (let i = 0; i < n; i++) {
+    const smoothed = (at(i - 1) + at(i) + at(i + 1)) / 3;
+    points.push({ u: (i + 0.5) / n, v: Math.min(1, Math.max(0, smoothed / CAUSTIC_PEAK)) });
+  }
+  points.push({ u: 1, v: 0 });
+  return points;
+}
+
 // ---------------------------------------------------------------------------
 // Sound
 // ---------------------------------------------------------------------------
@@ -908,8 +972,118 @@ export function glassHue(): number {
  * tank whenever the stream was shut off, so opening the spout would look like
  * the tank moving rather than like water coming out. The suite proves nothing
  * reachable lands outside it.
+ *
+ * TIGHT AS WELL AS BIG ENOUGH. A box that only had to contain the scene could
+ * grow without any test noticing, and every extra unit of empty world is the
+ * tank drawn smaller on the child's screen for nothing. The right hand edge is
+ * the far end of the longest stream, 2.8089 units out, plus a fingernail; the
+ * suite asserts both that nothing passes it and that it is not loose.
  */
-export const WORLD = { x0: -0.09, x1: 3.16, y0: -1.03, y1: 0.92 } as const;
+export const WORLD = { x0: -0.09, x1: 2.85, y0: -1.03, y1: 0.92 } as const;
+
+/** How much of the canvas WIDTH the scene is allowed, leaving a margin. */
+export const FIT_WIDTH = 0.94;
+
+/**
+ * How much of the canvas HEIGHT the scene is allowed.
+ *
+ * Under one, because a beam that leaves the water is drawn to the edge of the
+ * canvas rather than to the edge of the scene, and the room above the tank is
+ * where that beam lives.
+ *
+ * It was 0.62 and the observed pass is what corrected it. On a tall phone the
+ * width is the binding constraint and this value does nothing, which is where
+ * it was chosen; on a laptop, where the canvas is wider than it is tall, HEIGHT
+ * binds and 0.62 left the tank occupying a third of the picture with six
+ * hundred empty pixels beside it. The sky the beam needs is still here, it is
+ * just no longer most of the screen.
+ *
+ * It lives out here rather than in the component because a fix nothing can see
+ * is a fix that reverts. `light-bender.test.ts` drives `fitScene` at a laptop
+ * shape and asserts what fraction of the canvas the scene actually covers, so
+ * putting 0.62 back fails a test rather than emptying a screen.
+ */
+export const FIT_HEIGHT = 0.86;
+
+/** Where down the canvas the middle of the scene sits. More sky above than below. */
+export const FIT_ANCHOR = 0.58;
+
+/** The smallest gap left above the scene, in CSS pixels. */
+export const FIT_PAD_MIN = 6;
+
+export interface SceneFit {
+  /** CSS pixels per tank unit. */
+  scale: number;
+  /** Where WORLD.x0 lands, in CSS pixels. */
+  padX: number;
+  /** Where WORLD.y1 lands, in CSS pixels. */
+  padY: number;
+}
+
+/**
+ * Where the world sits on a canvas of a given size.
+ *
+ * Fitted to the LARGEST the scene can ever be, once per size, rather than to
+ * whatever is on the screen now: a fit that followed the scene would shrink the
+ * tank the moment the spout opened, so pulling the tab would look like the tank
+ * moving away rather than like water coming out.
+ */
+export function fitScene(args: { cssW: number; cssH: number }): SceneFit {
+  const worldW = WORLD.x1 - WORLD.x0;
+  const worldH = WORLD.y1 - WORLD.y0;
+  const scale = Math.min((args.cssW * FIT_WIDTH) / worldW, (args.cssH * FIT_HEIGHT) / worldH);
+  return {
+    scale,
+    padX: (args.cssW - worldW * scale) / 2,
+    padY: Math.max(FIT_PAD_MIN, args.cssH * FIT_ANCHOR - (worldH * scale) / 2),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The glass
+// ---------------------------------------------------------------------------
+
+export interface GlassSegment {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+/**
+ * The lines of the glass box, in tank coordinates.
+ *
+ * Out here as DATA rather than as a run of canvas calls, because the first cut
+ * drew the right hand wall in one stroke from the rim to the floor and the
+ * observed pass caught what that looks like: a pane of glass straight across an
+ * open spout, with the water apparently coming through it. That is a geometry
+ * bug, and geometry can be asserted. The wall now stops at the top of the slot,
+ * and `light-bender.test.ts` sweeps every opening the child can set and checks
+ * that no segment crosses the hole.
+ *
+ * The far wall is the only one interrupted. The near wall and the floor are
+ * whole at every setting, and the rim is open because the tank has no lid.
+ */
+export function glassSegments(args: { open: number }): GlassSegment[] {
+  const top = slotTop(args.open);
+  return [
+    // The near wall, from the rim down to the floor.
+    { x0: 0, y0: TANK_H, x1: 0, y1: 0 },
+    // The floor.
+    { x0: 0, y0: 0, x1: TANK_W, y1: 0 },
+    // The far wall, from the rim down to the top of the hole and no further.
+    { x0: TANK_W, y0: TANK_H, x1: TANK_W, y1: top },
+  ];
+}
+
+/**
+ * The interval of the far wall that is a hole, as [bottom, top] in tank units.
+ *
+ * Empty, as bottom equal to top, when the spout is shut.
+ */
+export function slotInterval(open: number): [number, number] {
+  return [0, slotTop(open)];
+}
 
 // ---------------------------------------------------------------------------
 // The frame loop

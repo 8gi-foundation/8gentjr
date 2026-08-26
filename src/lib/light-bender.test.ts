@@ -16,14 +16,19 @@
 
 import { describe, expect, test } from 'bun:test';
 import { hueIsAllowed } from '@/lib/pattern-garden';
+import { BEND_SEEN, RIDE_BOUNCES } from '@/lib/light-bender-discovery';
 import {
   AIM_MAX,
   AIM_MIN,
   BASE_HZ,
   CAUSTIC_BINS,
+  CAUSTIC_PEAK,
   CAUSTIC_RAYS,
   CRITICAL,
   ESCAPE_VISIBLE,
+  FIT_ANCHOR,
+  FIT_HEIGHT,
+  FIT_WIDTH,
   HOLD_DECAY,
   HOLD_FLOOR,
   INTENSITY_FLOOR,
@@ -34,6 +39,7 @@ import {
   N_AIR,
   N_WATER,
   PARTIALS,
+  RIPPLE_HEIGHT,
   SLOT_MAX,
   STREAM_DROP,
   TANK_H,
@@ -45,19 +51,23 @@ import {
   beamHue,
   causticBand,
   causticHue,
+  causticOutline,
   clampAim,
   clampLevel,
   clampOpen,
   criticalAngle,
   describeTank,
   escapedFraction,
+  fitScene,
   glassHue,
+  glassSegments,
   holdAmpNext,
   interfaceSplit,
   motionAmplitudes,
   partialHz,
   rippleAt,
   shouldSchedule,
+  slotInterval,
   slotMid,
   slotTop,
   streamCentreDrop,
@@ -95,6 +105,57 @@ function streamEntry(angle: number, open = 1) {
     dy: -Math.cos(angle),
     intensity: 1,
   };
+}
+
+/**
+ * How wide, in radians, the band of swings that ride has to be.
+ *
+ * Not a tolerance. It is the difference between a target and a needle. The
+ * whole swing is 1.42 radians wide and the child aims the torch by pointing at
+ * the place they want it to shine, so on a laptop this is a dozen pixels of
+ * pointing and on a phone it is fewer: small, but a width a finger sweeping
+ * across can stop inside and a keyboard step of 0.06 can very nearly not jump
+ * over. A band a tenth of this wide is real in the arithmetic and is not there
+ * for the child, which is the state this whole fix is about.
+ */
+const RIDE_WINDOW = 0.05;
+
+/**
+ * Drive the child's actual pipeline across the whole swing at one setting.
+ *
+ * `traceTank` to find the swings whose beam arrives inside the slot, `slotRay`
+ * as the light that got through it, `traceStream` to follow that light down the
+ * falling water. Nothing is hand placed anywhere in here.
+ *
+ * Returns the best ride found and the width of the widest unbroken band of
+ * swings that ride, which is the number that says whether a child can find it.
+ */
+function rideSweep(level: number, open: number, step = 0.0005) {
+  const stream = streamShape({ level, open });
+  let bestBounces = 0;
+  let widest = 0;
+  let runStart = -1;
+  let runEnd = -1;
+  for (let i = 0; ; i++) {
+    const aim = AIM_MIN + i * step;
+    if (aim > AIM_MAX + 1e-12) break;
+    const tank = traceTank({ aim, level, open });
+    let rides = false;
+    if (tank.slotRay) {
+      const ride = traceStream({ stream, entry: tank.slotRay });
+      if (ride.tirBounces > bestBounces) bestBounces = ride.tirBounces;
+      rides = ride.tirBounces >= RIDE_BOUNCES;
+    }
+    if (rides) {
+      if (runStart < 0) runStart = aim;
+      runEnd = aim;
+    } else if (runStart >= 0) {
+      widest = Math.max(widest, runEnd - runStart + step);
+      runStart = -1;
+    }
+  }
+  if (runStart >= 0) widest = Math.max(widest, runEnd - runStart + step);
+  return { bestBounces, widest };
 }
 
 // ---------------------------------------------------------------------------
@@ -242,8 +303,13 @@ describe('total internal reflection', () => {
     const dropAtTheEdge = justBelow.transmitted;
     expect(dropAtTheEdge).toBeGreaterThan(0.55);
 
-    // And nothing anywhere else in the swing behaves like that. Every other
-    // 0.01 radian window below the last two hundredths loses at most an eighth.
+    // And nothing anywhere else in the swing behaves like that. SCOPED, because
+    // the figure is meaningless without its scope: the sweep runs over
+    // incidences a with a < CRITICAL - 0.02 and compares each against a + 0.01,
+    // so the windows measured all END at or before CRITICAL - 0.01 and the
+    // cliff itself is deliberately outside them. Over that range the worst
+    // 0.01 radian window loses 0.12035 of the transmission, about an eighth,
+    // against the 0.55685 lost in the window the scope excludes.
     let worstElsewhere = 0;
     for (let a = 0; a < CRITICAL - 0.02; a += 0.0005) {
       const here = interfaceSplit({ incidence: a, n1: N_WATER, n2: N_AIR }).transmitted;
@@ -325,34 +391,57 @@ describe('tracing the beam in the tank', () => {
     // child's finger therefore decides everything that happens to the light,
     // which is why swinging the torch feels like one continuous control rather
     // than like poking a simulation.
+    //
+    // THE SIZE OF THE SWEEP, counted: 637 states, thirteen water levels against
+    // forty-nine swings, and the interfaces those states produce carry 1236
+    // assertions between them. A state whose beam never reaches the surface
+    // contributes none, which is why the two numbers are not multiples.
+    let checked = 0;
     for (const level of levels(12)) {
       for (const aim of aims(48)) {
         const trace = traceTank({ aim, level, open: 0 });
         for (const hit of trace.hits) {
           expect(hit.incidence).toBeCloseTo(aim, 12);
+          checked++;
         }
       }
     }
+    expect(checked).toBe(1236);
   });
 
   test('all of the light is accounted for, everywhere in the control space', () => {
     // Escaped, soaked up by a side wall, gone out through the slot, or still
     // bouncing when the trace ran out of budget. Nothing else can happen to it,
     // and the four add to one to within floating point.
+    //
+    // THE SIZE OF THE SWEEP, counted rather than estimated: 4165 traces, being
+    // seventeen water levels by five spout openings by forty-nine swings, and
+    // 16661 assertions, being four per trace and one at the end. The tolerance
+    // asserted is 1e-12 and the worst error measured across the whole of it is
+    // 1.11e-16, which is one bit of a double. The first version of this line
+    // reported 52029 states within 2.2e-16; neither number was the sweep's, and
+    // this counts both of them in the test rather than in a comment.
     let worst = 0;
+    let traces = 0;
+    let assertions = 0;
     for (const level of levels(16)) {
       for (const open of [0, 0.25, 0.5, 0.75, 1]) {
         for (const aim of aims(48)) {
           const t = traceTank({ aim, level, open });
+          traces++;
           worst = Math.max(worst, Math.abs(t.escaped + t.intoWall + t.intoSlot + t.left - 1));
           expect(t.escaped).toBeGreaterThanOrEqual(0);
           expect(t.intoWall).toBeGreaterThanOrEqual(0);
           expect(t.intoSlot).toBeGreaterThanOrEqual(0);
           expect(t.left).toBeGreaterThanOrEqual(0);
+          assertions += 4;
         }
       }
     }
     expect(worst).toBeLessThan(1e-12);
+    expect(worst).toBeLessThan(2 * Number.EPSILON);
+    expect(traces).toBe(4165);
+    expect(assertions + 1).toBe(16661);
   });
 
   test('the beam is one unbroken path: each piece starts where the last one stopped', () => {
@@ -424,22 +513,24 @@ describe('tracing the beam in the tank', () => {
     // end before it ever reaches the surface, and that beam has not failed to
     // escape, it has not arrived. The claim is about beams that got there.
     //
-    // The floor is 0.85 and the worst case measured over this grid is 0.8881,
-    // which happens at a nearly full tank at forty-four degrees: the beam meets
-    // the surface once at a steep enough angle to send an eighth of itself back
-    // down, and that eighth runs into the far wall before it can meet another
-    // interface. Nothing is lost by the model; it is soaked up by a wall.
+    // The floor is 0.98 and the worst case measured over this grid is 0.9875.
+    // It used to be 0.8881, at a nearly full tank at forty-four degrees, where
+    // the beam met the surface once steeply enough to send an eighth of itself
+    // back down and that eighth ran into the far wall before it could meet
+    // another interface. Capping the water at the rideable ceiling took that
+    // state out of the child's reach, so the floor moved up with it. Nothing is
+    // lost by the model in either case; it is soaked up by a wall.
     let worst = 1;
     for (const level of levels(12)) {
       for (const aim of aims(48)) {
         if (aim > CRITICAL - 0.05) continue;
         const t = traceTank({ aim, level, open: 0 });
         if (t.hits.length === 0) continue;
-        expect(t.escaped).toBeGreaterThan(0.85);
+        expect(t.escaped).toBeGreaterThan(0.98);
         worst = Math.min(worst, t.escaped);
       }
     }
-    expect(worst).toBeCloseTo(0.8881, 3);
+    expect(worst).toBeCloseTo(0.98748, 4);
   });
 
   test('the escaping ray is a real direction, bent away from the normal, on the right side', () => {
@@ -479,13 +570,18 @@ describe('tracing the beam in the tank', () => {
     // the rest of the activity does: a low tank makes the beam zig-zag, so it
     // crosses the height of the slot many times on its way down the tank and
     // there are many swings that work. At the fullest tank the beam reaches the
-    // far wall in one or two hops and there are only four windows in this
-    // sampling. Both numbers are asserted, because a change that made the full
-    // tank easier by making the empty one harder should not pass quietly.
+    // far wall in fewer hops and there are only seven windows in this sampling.
+    // Both numbers are asserted, because a change that made the full tank
+    // easier by making the empty one harder should not pass quietly.
+    //
+    // Finding the slot is NOT the same as riding the stream, and the difference
+    // is what the cap in LEVEL_MAX is about. There were still four windows at
+    // the old ceiling of 0.72; every one of them was under the critical angle,
+    // so the light went into the water and straight back out of the side of it.
     const windowsAt = (level: number) =>
       aims(200).filter((aim) => traceTank({ aim, level, open: 1 }).slotRay !== null).length;
-    for (const level of levels(10)) expect(windowsAt(level)).toBeGreaterThanOrEqual(4);
-    expect(windowsAt(LEVEL_MAX)).toBe(4);
+    for (const level of levels(10)) expect(windowsAt(level)).toBeGreaterThanOrEqual(7);
+    expect(windowsAt(LEVEL_MAX)).toBe(7);
     expect(windowsAt(LEVEL_MIN)).toBeGreaterThan(25);
   });
 
@@ -658,11 +754,17 @@ describe('light inside the falling stream', () => {
     expect(leastLeaked).toBeGreaterThan(0.99);
   });
 
-  test('but a swing the child can actually reach holds every stream completely', () => {
-    // The other half. Bend loss would be a cruel piece of physics to build an
-    // activity on if the margin it demands were outside the range of the
-    // control, so the margin is measured: the worst stream needs about 1.30
-    // radians and the torch goes to 1.42.
+  test('and the swing that would hold it is not the swing the child can aim into the slot', () => {
+    // The other half, and the correction. A hand-placed ray laid on the axis of
+    // the mouth needs about 1.30 radians to be held completely, and the torch
+    // goes to 1.42, so on paper there is margin. That measurement was the whole
+    // of the old evidence for "every stream can be lit", and it was NOT the
+    // child's pipeline: it starts the ray at the slot instead of aiming a torch
+    // at it, and what a torch can aim into the slot is decided by the tank, not
+    // by the range of the swing.
+    //
+    // The number is kept because it is a true statement about the stream. What
+    // it is not is a statement about reachability, and the test below is.
     let worstNeeded = 0;
     for (const level of levels(20)) {
       const holds = (angle: number) =>
@@ -680,7 +782,7 @@ describe('light inside the falling stream', () => {
     }
     expect(worstNeeded).toBeGreaterThan(CRITICAL);
     expect(worstNeeded).toBeLessThan(AIM_MAX);
-    expect(worstNeeded).toBeCloseTo(1.303, 2);
+    expect(worstNeeded).toBeCloseTo(1.30305, 4);
   });
 
   test('a flatter stream carries the light through many more bounces than a tight one', () => {
@@ -702,34 +804,236 @@ describe('light inside the falling stream', () => {
       shallow += bouncesAt(LEVEL_MIN + (span * i) / 32);
       deep += bouncesAt(LEVEL_MIN + (span * (24 + i)) / 32);
     }
-    expect(shallow / 8).toBeCloseTo(10.13, 1);
-    expect(deep / 8).toBeCloseTo(23.38, 1);
+    expect(shallow / 8).toBeCloseTo(9.0, 1);
+    expect(deep / 8).toBeCloseTo(18.375, 1);
     expect(deep).toBeGreaterThan(shallow * 2);
     expect(streamCurvature(clampLevel(LEVEL_MIN) - slotMid(1))).toBeGreaterThan(
       streamCurvature(clampLevel(LEVEL_MAX) - slotMid(1)),
     );
   });
 
-  test('the whole ride is reachable through the real controls, not only by hand-placed rays', () => {
-    // Driven the way a child drives it: swing the torch until the beam finds
-    // the slot, then follow whatever came out. At a low water level there are
-    // dozens of swings that work and the best of them carries the light round
-    // more than twenty corners without losing any of it.
-    let best = 0;
-    for (let aim = 0; aim <= AIM_MAX; aim += 0.002) {
-      const tank = traceTank({ aim, level: LEVEL_MIN, open: 1 });
-      if (!tank.slotRay) continue;
-      const trace = traceStream({
-        stream: streamShape({ level: LEVEL_MIN, open: 1 }),
-        entry: tank.slotRay,
-      });
-      best = Math.max(best, trace.tirBounces);
+  test('the ride is reachable through the real controls at EVERY level the child can set', () => {
+    // THE CLAIM, DRIVEN THE WAY A CHILD DRIVES IT. Swing the torch, take
+    // whatever went through the slot, follow it down the water: traceTank into
+    // slotRay into traceStream, over the whole swing, at every level and at the
+    // fully open spout.
+    //
+    // This test exists because the claim it replaces was false. The old
+    // evidence was a ray hand-placed on the axis of the mouth, which cannot
+    // fail to enter the stream because it is already in it. Through the real
+    // controls the steepest swing that arrives inside the slot FALLS as the
+    // tank fills, and past the cap the only swings that reach it are under the
+    // critical angle, so a child who filled the tank lost the second half of
+    // the activity and was told nothing.
+    //
+    // Two things are asserted at every level, because either one alone can be
+    // satisfied while the activity is broken. The ride has to be there, and the
+    // swings that find it have to be a target a hand can land on.
+    let worstBounces = Number.POSITIVE_INFINITY;
+    let worstWindow = Number.POSITIVE_INFINITY;
+    const steps = 68;
+    for (let i = 0; i <= steps; i++) {
+      const level = LEVEL_MIN + ((LEVEL_MAX - LEVEL_MIN) * i) / steps;
+      const swept = rideSweep(level, 1);
+      expect(swept.bestBounces).toBeGreaterThanOrEqual(RIDE_BOUNCES);
+      expect(swept.widest).toBeGreaterThanOrEqual(RIDE_WINDOW - 1e-9);
+      worstBounces = Math.min(worstBounces, swept.bestBounces);
+      worstWindow = Math.min(worstWindow, swept.widest);
     }
-    expect(best).toBeGreaterThanOrEqual(20);
+    // The margins, recorded. The worst level in the range still rides eleven
+    // corners without losing anything, which is more than three times what the
+    // naming line asks for, so this is not a claim balanced on the threshold.
+    expect(worstBounces).toBeGreaterThanOrEqual(RIDE_BOUNCES * 3);
+    expect(worstBounces).toBe(11);
+    expect(worstWindow).toBeCloseTo(RIDE_WINDOW, 9);
+  });
+
+  test('and at every opening of the spout, not only the widest one', () => {
+    // The slot is the target, so the target narrows with it, near enough in
+    // proportion. What must not happen is the ride disappearing at a part-open
+    // spout, and it does not: a thinner stream bends the light MORE often, so
+    // the quarter-open spout is the setting that rides furthest of all.
+    for (const open of [0.25, 0.5, 0.75]) {
+      for (let i = 0; i <= 20; i++) {
+        const level = LEVEL_MIN + ((LEVEL_MAX - LEVEL_MIN) * i) / 20;
+        const swept = rideSweep(level, open);
+        expect(swept.bestBounces).toBeGreaterThanOrEqual(RIDE_BOUNCES);
+        expect(swept.widest).toBeGreaterThanOrEqual(RIDE_WINDOW * open - 1e-9);
+      }
+    }
+    expect(rideSweep(LEVEL_MAX, 0.25).bestBounces).toBeGreaterThan(
+      rideSweep(LEVEL_MAX, 1).bestBounces,
+    );
+  });
+
+  test('and the cap sits exactly where that stops being true', () => {
+    // THE CAP IS PINNED FROM BOTH SIDES. The test above fails if LEVEL_MAX is
+    // raised, because the window has narrowed past holding. This one fails if
+    // it is lowered, because the window at the top of the range would then be
+    // wider than the floor: at the cap it is the floor, to the radian.
+    //
+    // Nothing above the cap can be driven through this pipeline to show what
+    // was there, because `clampLevel` is doing its job and the states no longer
+    // exist. What can be shown is the slope that runs into it, and it is steep:
+    // the window loses a fifth of its width over the last tenth of the range,
+    // and the measurements that found the cliff are written into LEVEL_MAX's
+    // own comment in `light-bender.ts`.
+    const atCap = rideSweep(LEVEL_MAX, 1);
+    expect(atCap.widest).toBeLessThan(RIDE_WINDOW + 1e-9);
+
+    const tenthDown = rideSweep(LEVEL_MAX - (LEVEL_MAX - LEVEL_MIN) / 10, 1);
+    expect(tenthDown.widest).toBeGreaterThan(atCap.widest);
+    expect(rideSweep(LEVEL_MIN, 1).widest).toBeGreaterThan(atCap.widest * 1.4);
   });
 });
 
 // ---------------------------------------------------------------------------
+
+describe('the three fixes the observed pass bought, kept where they can be seen', () => {
+  // Each of these three was a real defect in a screenshot, each was fixed in the
+  // same commit that shipped the activity, and NONE of the three had a test.
+  // The fix lived in a component constant or in a run of canvas calls, so
+  // putting any of them back was a silent one-line revert. The geometry now
+  // lives in `light-bender.ts` as data, and this is what watches it.
+
+  test('the scene fills the screen it is given, on a laptop as well as on a phone', () => {
+    // FIT_HEIGHT was 0.62 and left two thirds of a laptop empty. The constant
+    // is pinned, and then the thing the constant is FOR is measured: how much
+    // of a real canvas the scene actually covers once `fitScene` has fitted it.
+    expect(FIT_HEIGHT).toBeGreaterThanOrEqual(0.8);
+    expect(FIT_HEIGHT).toBeLessThan(1);
+    expect(FIT_WIDTH).toBeLessThan(1);
+    expect(FIT_ANCHOR).toBeGreaterThan(0.5);
+
+    const worldW = WORLD.x1 - WORLD.x0;
+    const worldH = WORLD.y1 - WORLD.y0;
+
+    // A laptop. Wider than it is tall, so HEIGHT binds and this is exactly the
+    // case 0.62 spoiled: the scene has to cover most of the picture.
+    for (const [cssW, cssH] of [
+      [1440, 800],
+      [1180, 700],
+      [900, 560],
+    ]) {
+      const fit = fitScene({ cssW, cssH });
+      expect((worldH * fit.scale) / cssH).toBeGreaterThan(0.8);
+      expect(worldW * fit.scale).toBeLessThanOrEqual(cssW * FIT_WIDTH + 1e-9);
+      expect(fit.padX).toBeGreaterThanOrEqual(0);
+      expect(fit.padY).toBeGreaterThanOrEqual(0);
+    }
+
+    // A phone held upright. WIDTH binds here, the height fraction is small and
+    // that is correct, so the assertion above is scoped to the shape it is
+    // about rather than being asserted everywhere and quietly weakened.
+    for (const [cssW, cssH] of [
+      [390, 780],
+      [360, 900],
+    ]) {
+      const fit = fitScene({ cssW, cssH });
+      expect(worldW * fit.scale).toBeCloseTo(cssW * FIT_WIDTH, 9);
+      expect(fit.padY).toBeGreaterThanOrEqual(0);
+    }
+
+    // Nothing about the fit can divide by zero or go backwards on a canvas
+    // smaller than the guard lets it draw into.
+    expect(fitScene({ cssW: 1, cssH: 1 }).scale).toBeGreaterThan(0);
+  });
+
+  test('no piece of glass is ever drawn across the open spout', () => {
+    // The right wall used to be one stroke from rim to floor, so an open spout
+    // had a pane across it and the water appeared to come through the glass.
+    // The geometry is data now, and this sweeps every opening the child can set.
+    for (let i = 0; i <= 40; i++) {
+      const open = i / 40;
+      const [bottom, top] = slotInterval(open);
+      const segments = glassSegments({ open });
+      for (const g of segments) {
+        const onFarWall = Math.abs(g.x0 - TANK_W) < 1e-12 && Math.abs(g.x1 - TANK_W) < 1e-12;
+        if (!onFarWall) continue;
+        // The hole is the half open interval from the floor to the top of the
+        // slot. No part of any far wall segment may lie inside it.
+        const lo = Math.min(g.y0, g.y1);
+        const hi = Math.max(g.y0, g.y1);
+        expect(lo).toBeGreaterThanOrEqual(top - 1e-12);
+        expect(hi > bottom).toBe(true);
+      }
+      // And the wall is still there above the hole, at every opening, because a
+      // tank drawn with no far wall at all would also pass the test above.
+      const far = segments.filter(
+        (g) => Math.abs(g.x0 - TANK_W) < 1e-12 && Math.abs(g.x1 - TANK_W) < 1e-12,
+      );
+      expect(far).toHaveLength(1);
+      expect(Math.min(far[0].y0, far[0].y1)).toBeCloseTo(top, 12);
+      expect(Math.max(far[0].y0, far[0].y1)).toBeCloseTo(TANK_H, 12);
+    }
+
+    // A shut spout has no hole, so the far wall runs the whole way down.
+    const shut = glassSegments({ open: 0 }).find((g) => Math.abs(g.x0 - TANK_W) < 1e-12)!;
+    expect(Math.min(shut.y0, shut.y1)).toBe(0);
+
+    // The near wall and the floor are whole at every opening, which is the
+    // control: only ONE of the four lines is allowed to have a hole in it.
+    for (const open of [0, 0.5, 1]) {
+      const segs = glassSegments({ open });
+      expect(segs.some((g) => g.x0 === 0 && g.x1 === 0 && Math.abs(g.y0 - g.y1) === TANK_H)).toBe(
+        true,
+      );
+      expect(segs.some((g) => g.y0 === 0 && g.y1 === 0 && Math.abs(g.x0 - g.x1) === TANK_W)).toBe(
+        true,
+      );
+    }
+  });
+
+  test('the caustic is one smooth pool, not eighty-four rectangles', () => {
+    // The first cut drew a rectangle per bin and the observed pass showed what
+    // that reads as: hard vertical edges every few pixels, wallpaper rather
+    // than light pooling. Both properties that fix it are asserted, because
+    // either one alone can be true of a picture that is still wrong.
+    const band = causticBand({ level: 0.35, phase: 0.7, amplitude: 1 });
+    const outline = causticOutline(band);
+
+    // ONE vertex per bin, plus the two feet on the floor that close the shape.
+    expect(outline).toHaveLength(CAUSTIC_BINS + 2);
+    expect(outline[0]).toEqual({ u: 0, v: 0 });
+    expect(outline[outline.length - 1]).toEqual({ u: 1, v: 0 });
+
+    // NO VERTICAL EDGES. This is the rectangles, killed: a rectangle needs two
+    // vertices at the same u, and every step across this shape moves sideways.
+    for (let i = 1; i < outline.length; i++) {
+      expect(outline[i].u).toBeGreaterThan(outline[i - 1].u);
+    }
+
+    // And it is smoothed. Measured as total variation against the raw band,
+    // over every phase of the ripple and at the two ends of the water range, so
+    // this is not one lucky frame. Dropping the three tap average puts the
+    // ratio at exactly one.
+    let worstRatio = 0;
+    for (let phase = 0; phase < 6.3; phase += 0.1) {
+      for (const level of [LEVEL_MIN, 0.3, LEVEL_MAX]) {
+        const b = causticBand({ level, phase, amplitude: 1 });
+        const o = causticOutline(b);
+        let rawTV = 0;
+        for (let i = 1; i < b.length; i++) rawTV += Math.abs(b[i] - b[i - 1]) / CAUSTIC_PEAK;
+        let outTV = 0;
+        for (let i = 2; i < o.length - 1; i++) outTV += Math.abs(o[i].v - o[i - 1].v);
+        if (rawTV > 0) worstRatio = Math.max(worstRatio, outTV / rawTV);
+      }
+    }
+    expect(worstRatio).toBeLessThan(0.85);
+
+    // The height is a fraction, so a caller can scale it without clamping, and
+    // a flat surface gives a flat pool with no ribs in it at all.
+    for (const point of outline) {
+      expect(point.v).toBeGreaterThanOrEqual(0);
+      expect(point.v).toBeLessThanOrEqual(1);
+    }
+    const flat = causticOutline(causticBand({ level: 0.35, phase: 0.7, amplitude: 0 }));
+    for (let i = 2; i < flat.length - 1; i++) {
+      expect(flat[i].v).toBeCloseTo(flat[i - 1].v, 12);
+    }
+    expect(flat[1].v).toBeCloseTo(1 / CAUSTIC_PEAK, 12);
+  });
+});
 
 describe('the world the scene is drawn into', () => {
   test('holds every tank beam, every stream and every lamp position the child can reach', () => {
@@ -754,6 +1058,29 @@ describe('the world the scene is drawn into', () => {
     }
     expect(WORLD.x0).toBeLessThan(0);
     expect(WORLD.y1).toBeGreaterThan(TANK_H);
+  });
+
+  test('and is not one unit wider than it has to be', () => {
+    // ONE SIDED IS HALF A TEST. Everything above says nothing reaches past the
+    // right hand edge, and a box ten units wide would satisfy every line of it
+    // while drawing the tank at a tenth of the size on the child's screen. The
+    // far edge is therefore measured from the other direction as well: it is
+    // the end of the longest stream the child can make plus a fingernail.
+    let reach = 0;
+    for (let i = 0; i <= 200; i++) {
+      const level = LEVEL_MIN + ((LEVEL_MAX - LEVEL_MIN) * i) / 200;
+      for (const open of [0, 0.25, 0.5, 0.75, 1]) {
+        for (const p of streamShape({ level, open }).points) reach = Math.max(reach, p.x + p.w);
+        for (const aim of aims(64)) {
+          for (const seg of traceTank({ aim, level, open }).segments) {
+            reach = Math.max(reach, seg.x1);
+          }
+        }
+      }
+    }
+    expect(reach).toBeCloseTo(2.80894, 4);
+    expect(WORLD.x1).toBeGreaterThanOrEqual(reach);
+    expect(WORLD.x1 - reach).toBeLessThan(0.05);
   });
 });
 
@@ -800,6 +1127,44 @@ describe('the caustic on the tank floor', () => {
     expect(rippleAt(0.3, 1.1, 0)).toEqual({ height: 0, slope: 0 });
     expect(rippleAt(0.3, 1.1, 1)).toEqual(rippleAt(0.3, 1.1, 1));
     expect(rippleAt(0.3, 1.1, 1).height).not.toBe(rippleAt(0.3, 2.2, 1).height);
+  });
+
+  test('RIPPLE_HEIGHT is bounded by the water above and by the caustic below', () => {
+    // PINNED, in both directions, and neither bound is a round number chosen
+    // for looking reasonable. The height of the ripple was free to be set to
+    // anything, and two different things go wrong at the two ends.
+    //
+    // TOO TALL and the surface stops being a surface. A trough at full
+    // amplitude has to stay above the top of the slot even in the emptiest tank
+    // the child can set, or the water would appear to fall away from its own
+    // spout, and a crest has to stay under the rim of the glass in the fullest.
+    // The ripple is a sum of two sines whose amplitudes are 1 and 0.6, so the
+    // deepest trough is 1.6 times the height.
+    const deepest = RIPPLE_HEIGHT * 1.6;
+    expect(deepest).toBeLessThan(LEVEL_MIN - SLOT_MAX);
+    expect(LEVEL_MAX + deepest).toBeLessThan(TANK_H);
+
+    // TOO SHORT and the caustic stops existing. This is the honest lower bound,
+    // because it is the only thing the height is FOR: the drift of a ray on the
+    // floor is the tangent of the bend times the depth, so a flatter surface
+    // bunches less light and the bright ribs fade into the even band. Measured
+    // at the fullest tank over a whole cycle of the ripple: the brightest bin
+    // has to be at least three times the mean at every phase. Three quarters of
+    // the current height already fails this.
+    let dimmestPeak = Infinity;
+    for (let phase = 0; phase < 6.3; phase += 0.05) {
+      dimmestPeak = Math.min(
+        dimmestPeak,
+        Math.max(...causticBand({ level: LEVEL_MAX, phase, amplitude: 1 })),
+      );
+    }
+    expect(dimmestPeak).toBeCloseTo(3.66316, 4);
+    expect(dimmestPeak).toBeGreaterThan(3);
+
+    // The amplitude the caller passes multiplies the height, so the two are the
+    // same knob and the measurement above is a measurement of RIPPLE_HEIGHT.
+    expect(rippleAt(0.31, 0.9, 0.5).height * 2).toBeCloseTo(rippleAt(0.31, 0.9, 1).height, 12);
+    expect(RIPPLE_HEIGHT).toBeGreaterThan(0);
   });
 });
 
@@ -1076,9 +1441,11 @@ describe('what the naming reducer is told', () => {
 
 describe('the thresholds the naming lines are set against', () => {
   test('a visible bend is about thirty-eight degrees of incidence, and the light is still bright there', () => {
-    // The naming threshold for "light bends" is 0.30 radians of BEND. This
-    // measures what swing that corresponds to, so the constant in the discovery
-    // reducer can be read against something rather than trusted.
+    // The naming threshold for "light bends" is BEND_SEEN radians of BEND, and
+    // it is the REAL CONSTANT that is driven here, imported from the reducer.
+    // It used to be the literal 0.3 typed in again, which measured a number
+    // that happened to match the constant rather than measuring the constant,
+    // and left the reducer free to be changed to anything without this failing.
     const bendAt = (incidence: number) => {
       const split = interfaceSplit({ incidence, n1: N_WATER, n2: N_AIR });
       return (split.refracted ?? incidence) - incidence;
@@ -1087,7 +1454,7 @@ describe('the thresholds the naming lines are set against', () => {
     let hi = CRITICAL;
     for (let i = 0; i < 80; i++) {
       const mid = (lo + hi) / 2;
-      if (bendAt(mid) >= 0.3) hi = mid;
+      if (bendAt(mid) >= BEND_SEEN) hi = mid;
       else lo = mid;
     }
     expect(hi / DEG).toBeCloseTo(38.04, 1);
@@ -1097,6 +1464,55 @@ describe('the thresholds the naming lines are set against', () => {
     expect(interfaceSplit({ incidence: hi, n1: N_WATER, n2: N_AIR }).transmitted).toBeGreaterThan(
       0.95,
     );
+  });
+
+  test('BEND_SEEN is a bend a child can see, and it is bounded from both sides', () => {
+    // PINNED, because it was not. The reducer's own tests feed BEND_SEEN in as
+    // their own input, so they stay self-consistently green whatever it is set
+    // to: dropping it to 0.02 leaves the whole suite passing and hands a child
+    // the sentence "light bends" for a beam that has barely moved.
+    //
+    // The floor. Above 0.2 radians, which is eleven and a half degrees of
+    // daylight between the beam in the water and the beam in the air. A tenth
+    // of that is a beam that looks straight.
+    expect(BEND_SEEN).toBeGreaterThan(0.2);
+
+    // The ceiling, measured rather than chosen: the bend has to be one the
+    // child can actually reach while the beam is still bright enough to point
+    // at. The biggest bend carrying visible light is measured here, and
+    // BEND_SEEN has to be under it with room to spare, or the first sentence
+    // of the activity would be unreachable.
+    let biggestVisible = 0;
+    for (const aim of aims(400)) {
+      const trace = traceTank({ aim, level: 0.35, open: 0 });
+      for (const e of trace.escapes) {
+        if (e.intensity >= ESCAPE_VISIBLE) {
+          biggestVisible = Math.max(biggestVisible, e.refracted - e.incidence);
+        }
+      }
+    }
+    expect(biggestVisible).toBeCloseTo(0.64786, 4);
+    expect(BEND_SEEN).toBeLessThan(biggestVisible * 0.75);
+  });
+
+  test('RIDE_BOUNCES is enough turns that a glance off a wall cannot pass for a ride', () => {
+    // PINNED, for the same reason and with the same hole: the reducer's tests
+    // supply RIDE_BOUNCES as their own input, so setting it to 1 leaves the
+    // suite green while "the light follows the water" starts being said for
+    // light that touched the inside of the stream once and left.
+    //
+    // One bounce is light glancing off a wall, which happens in any container
+    // and in a straight pipe. Two is a corner. THREE is light turned back on
+    // itself twice and still inside water that is falling away underneath it,
+    // and there is nothing else in the scene that can produce it.
+    expect(RIDE_BOUNCES).toBeGreaterThanOrEqual(3);
+    expect(Number.isInteger(RIDE_BOUNCES)).toBe(true);
+
+    // And it has to be reachable at every level, which is the assertion the
+    // whole cap on LEVEL_MAX exists to keep true. Measured there; the margin is
+    // restated here so the two constants are read against each other.
+    expect(rideSweep(LEVEL_MAX, 1).bestBounces).toBeGreaterThanOrEqual(RIDE_BOUNCES);
+    expect(rideSweep(LEVEL_MIN, 1).bestBounces).toBeGreaterThan(RIDE_BOUNCES * 3);
   });
 
   test('the visible-escape floor is above the light that comes back off a flat surface', () => {
