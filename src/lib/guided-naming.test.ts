@@ -75,6 +75,7 @@ describe('activity catalogue', () => {
       'light-bender',
       'light-mix',
       'pattern-garden',
+      'shadow-globe',
       'water-sphere',
     ]);
   });

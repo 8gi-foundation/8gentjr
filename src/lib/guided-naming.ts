@@ -36,7 +36,8 @@ export type GuidedActivityId =
   | 'fractal'
   | 'harmonograph'
   | 'dimensions'
-  | 'light-bender';
+  | 'light-bender'
+  | 'shadow-globe';
 
 /**
  * Stage bands. GLP stages 1-6 collapse to five phrasing shapes because stages 1
@@ -647,6 +648,90 @@ const DISCOVERIES: Record<GuidedActivityId, Discovery[]> = {
         early: 'The same rule',
         complex: 'The same rule holds the light both times.',
         full: 'One rule traps the light in the tank and in the stream.',
+      },
+    },
+  ],
+
+  /**
+   * Shadow Globe. Four lines, and they are the four things stereographic
+   * projection does that nothing in a child's ordinary experience of shadows
+   * does.
+   *
+   * A shadow you can move is the first one and it is the plainest: the shadow
+   * on the floor is a PICTURE of the pattern on the glass and not the pattern
+   * itself, which is not obvious to anybody until they have watched one thing
+   * make several shadows.
+   *
+   * The second is the theorem. Roll the globe far enough and the shadow is
+   * unrecognisable, stretched five times harder on one side than the other, and
+   * every ring in it is still exactly a ring. `shadow-globe.test.ts` fits a
+   * circle to the points that are actually drawn and requires the residual to
+   * be within a part in a billion of the radius, at many orientations, so the
+   * sentence is a measurement rather than a claim.
+   *
+   * The third is what makes it wild rather than merely true. The scale of the
+   * map is 1 / (1 - z), so a ring creeping toward the lamp is thrown outward
+   * without bound, and a speck under the ball becomes an arc running off the
+   * floor. The naming line says the nearer the lamp, the bigger, and the suite
+   * measures that the relation is monotone rather than only large.
+   *
+   * The fourth is the one worth the activity, and it is a claim about
+   * information rather than about pictures. Nothing that happened to the shadow
+   * was destructive: the map has an inverse, checked to twelve places, so the
+   * shape was recoverable from its shadow at every moment however mangled it
+   * looked. A child cannot be told that. They can roll it back and see it.
+   *
+   * What is NOT claimed, and is worth writing down because the tempting version
+   * of the second sentence would be: circles do not ALWAYS stay circles. A
+   * circle whose plane contains the lamp projects to a straight LINE, which is
+   * a circle only in the sense a mathematician means it. The activity draws
+   * that case, the pure module has a separate branch for it, and the line the
+   * child gets is careful to be about the rings they are looking at.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `shadow-globe-discovery.ts`, and the ids here are the ones it emits. The
+   * two files are held together by a test in both directions, so neither a
+   * rename nor a piece of dead copy can survive the suite.
+   */
+  'shadow-globe': [
+    {
+      id: 'a-shadow',
+      lines: {
+        gestalt: 'Your shape has a shadow.',
+        single: 'Shadow',
+        early: 'A moving shadow',
+        complex: 'The shadow moves when you roll.',
+        full: 'The shadow on the floor is a picture of your shape.',
+      },
+    },
+    {
+      id: 'circles-stay-circles',
+      lines: {
+        gestalt: 'The rings are still rings.',
+        single: 'Rings',
+        early: 'Still rings',
+        complex: 'The shadow stretched but the rings stayed rings.',
+        full: 'However far you roll it, every ring is still a ring.',
+      },
+    },
+    {
+      id: 'grows-huge',
+      lines: {
+        gestalt: 'It grows huge near the light.',
+        single: 'Huge',
+        early: 'Huge near light',
+        complex: 'Close to the lamp the shadow grows huge.',
+        full: 'A ring near the lamp casts a shadow that is huge.',
+      },
+    },
+    {
+      id: 'roll-it-back',
+      lines: {
+        gestalt: 'You rolled it back again.',
+        single: 'Back',
+        early: 'Rolled it back',
+        complex: 'You rolled it back and nothing was lost.',
+        full: 'Roll it back and the shadow comes back too.',
       },
     },
   ],

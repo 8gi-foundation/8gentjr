@@ -66,6 +66,13 @@ const activities = [
     desc: "Point a torch under water. Swing it until the light stops getting out.",
     icon: "\ud83c\udf08",
   },
+  {
+    id: "shadow-globe",
+    href: "/science/shadow-globe",
+    title: "Shadow Globe",
+    desc: "Roll a glass ball under a lamp. Watch its shadow stretch and swell.",
+    icon: "\ud83c\udf10",
+  },
 ];
 
 export default function SciencePage() {
