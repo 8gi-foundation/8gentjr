@@ -191,7 +191,11 @@ button, a, [role="button"] {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Extra bottom padding for dock */
+/* Bottom padding for the only fixed chrome left at the bottom of the screen:
+   the dock (72px). The install prompt used to be fixed above it and needed a
+   measured, published reserve on top of this; it is now an in-flow strip at the
+   end of <main>, so it takes its own space and nothing can be under it at any
+   scroll offset (#230 C5 / #229). One constant, nothing to keep in sync. */
 .pb-safe-dock {
   padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
 }

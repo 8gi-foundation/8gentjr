@@ -2,12 +2,14 @@
 
 /**
  * ReelCard — gradient card for SchoolTube content (video or game).
- * Shows thumbnail, overlay gradient, play/game icon, and category badge.
+ * Gradient art on top with the play/game icon and category badge; the title
+ * sits in a solid footer bar below the art, never underneath the artwork.
  * Ported from NickOS, adapted to Tailwind without framer-motion/shadcn deps.
  */
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Reel } from "@/lib/reels-data";
+import { cardStyleForId } from "@/lib/card-gradients";
 import GamePlayer from "./GamePlayer";
 
 /** Embedded video player overlay */
@@ -53,86 +55,52 @@ const CATEGORY_STYLES = {
   game: { bg: "bg-cyan-400", text: "text-white", label: "GAME" },
 } as const;
 
-/** Per-card emoji + gradient — matches NickOS vibrant card style */
-const CARD_THUMBNAILS: Record<number, { emoji: string; from: string; to: string }> = {
-  // Videos
-  1: { emoji: "\uD83D\uDD22", from: "#f97316", to: "#ec4899" },
-  5: { emoji: "\uD83D\uDD22", from: "#ef4444", to: "#f59e0b" },
-  2: { emoji: "\uD83D\uDD24", from: "#8b5cf6", to: "#3b82f6" },
-  6: { emoji: "\uD83D\uDD24", from: "#6366f1", to: "#ec4899" },
-  3: { emoji: "\uD83C\uDF08", from: "#ef4444", to: "#eab308" },
-  7: { emoji: "\uD83C\uDF08", from: "#f97316", to: "#eab308" },
-  4: { emoji: "\uD83D\uDD37", from: "#06b6d4", to: "#8b5cf6" },
-  9: { emoji: "\uD83D\uDD37", from: "#3b82f6", to: "#8b5cf6" },
-  // Academic games
-  10: { emoji: "\uD83C\uDFAF", from: "#f97316", to: "#ef4444" },
-  11: { emoji: "\uD83E\uDEE7", from: "#3b82f6", to: "#06b6d4" },
-  12: { emoji: "\u270F\uFE0F", from: "#f59e0b", to: "#ef4444" },
-  13: { emoji: "\uD83D\uDD22", from: "#22c55e", to: "#06b6d4" },
-  20: { emoji: "\uD83D\uDD36", from: "#8b5cf6", to: "#ec4899" },
-  21: { emoji: "\uD83C\uDFB4", from: "#6366f1", to: "#3b82f6" },
-  22: { emoji: "\uD83D\uDCCF", from: "#f97316", to: "#eab308" },
-  30: { emoji: "\uD83C\uDFA8", from: "#10b981", to: "#3b82f6" },
-  31: { emoji: "\uD83C\uDFA8", from: "#ef4444", to: "#f59e0b" },
-  40: { emoji: "\u270F\uFE0F", from: "#f59e0b", to: "#ef4444" },
-  50: { emoji: "\uD83E\uDDE9", from: "#a855f7", to: "#ec4899" },
-  // Sensory games
-  100: { emoji: "\uD83C\uDF27\uFE0F", from: "#6366f1", to: "#ec4899" },
-  101: { emoji: "\uD83C\uDF66", from: "#ec4899", to: "#f59e0b" },
-  102: { emoji: "\uD83E\uDDF4", from: "#3b82f6", to: "#6366f1" },
-  103: { emoji: "\uD83C\uDFD7\uFE0F", from: "#f97316", to: "#ef4444" },
-  104: { emoji: "\uD83C\uDF86", from: "#eab308", to: "#ef4444" },
-  105: { emoji: "\uD83C\uDFB5", from: "#8b5cf6", to: "#ec4899" },
-  106: { emoji: "\uD83D\uDD8C\uFE0F", from: "#22c55e", to: "#06b6d4" },
-  107: { emoji: "\uD83E\uDEE7", from: "#14b8a6", to: "#06b6d4" },
-  108: { emoji: "\uD83D\uDCA7", from: "#3b82f6", to: "#22c55e" },
-  109: { emoji: "\uD83C\uDF00", from: "#06b6d4", to: "#6366f1" },
-  110: { emoji: "\uD83D\uDD2E", from: "#a855f7", to: "#3b82f6" },
-  // Sensory 3D games
-  120: { emoji: "\u2728", from: "#6366f1", to: "#a855f7" },
-  121: { emoji: "\uD83E\uDEC1", from: "#0ea5e9", to: "#6366f1" },
-  122: { emoji: "\uD83D\uDC8E", from: "#a855f7", to: "#ec4899" },
-  123: { emoji: "\u2B50", from: "#1e1b4b", to: "#312e81" },
-  124: { emoji: "\uD83D\uDCA5", from: "#ef4444", to: "#f97316" },
-  125: { emoji: "\uD83C\uDFD7\uFE0F", from: "#6366f1", to: "#ec4899" },
-  126: { emoji: "\uD83D\uDD2E", from: "#7c3aed", to: "#4f46e5" },
-  127: { emoji: "\uD83C\uDFB2", from: "#f59e0b", to: "#ef4444" },
-  128: { emoji: "\uD83C\uDFB5", from: "#0f172a", to: "#1e1b4b" },
-  129: { emoji: "\uD83E\uDDF2", from: "#f59e0b", to: "#06b6d4" },
-  // Speech games
-  200: { emoji: "\uD83D\uDC3E", from: "#22c55e", to: "#10b981" },
-  201: { emoji: "\uD83D\uDE0A", from: "#f59e0b", to: "#f97316" },
-  202: { emoji: "\uD83D\uDDE3\uFE0F", from: "#3b82f6", to: "#8b5cf6" },
-  203: { emoji: "\uD83E\uDD38", from: "#22c55e", to: "#f59e0b" },
-  204: { emoji: "\uD83D\uDCDD", from: "#6366f1", to: "#ec4899" },
-  205: { emoji: "\uD83C\uDFB6", from: "#f59e0b", to: "#ef4444" },
-  206: { emoji: "\uD83C\uDF3F", from: "#22c55e", to: "#06b6d4" },
-  207: { emoji: "\uD83E\uDD98", from: "#f97316", to: "#22c55e" },
-};
-
-const FALLBACK_GRADIENT = "linear-gradient(135deg, #E0C3FC, #8EC5FC)";
-
 function getCardStyle(reel: Reel): { gradient: string; emoji: string } {
-  const thumb = CARD_THUMBNAILS[reel.id];
-  if (thumb) {
-    return {
-      gradient: `linear-gradient(135deg, ${thumb.from}, ${thumb.to})`,
-      emoji: thumb.emoji,
-    };
-  }
-  return { gradient: FALLBACK_GRADIENT, emoji: "\uD83C\uDFAE" };
+  return cardStyleForId(reel.id);
 }
 
 export default function ReelCard({ reel }: { reel: Reel }) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
 
   const category = reel.type === "game" ? getGameCategory(reel.topics) : null;
   const style = category
     ? CATEGORY_STYLES[category]
     : CATEGORY_STYLES.game;
 
-  const [isVideoOpen, setIsVideoOpen] = useState(false);
   const cardStyle = getCardStyle(reel);
+  const isOpen = isPlaying || isVideoOpen;
+
+  // Guards against popping the same history entry twice: the dialog's own
+  // `close` event also fires while we are unwinding from a popstate.
+  const closingRef = useRef(false);
+
+  /**
+   * Opening an overlay pushes a history entry, so system back and the iOS
+   * edge-swipe mean "back to the games list" instead of exiting to /talk
+   * (#230 C4). Closing pops that entry, keeping the stack clean.
+   */
+  useEffect(() => {
+    if (!isOpen) return;
+
+    closingRef.current = false;
+    window.history.pushState({ reelOverlay: reel.id }, "");
+
+    const onPopState = () => {
+      closingRef.current = true;
+      setIsPlaying(false);
+      setIsVideoOpen(false);
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [isOpen, reel.id]);
+
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    window.history.back();
+  }, []);
 
   const handleClick = () => {
     if (reel.type === "video" && reel.videoUrl) {
@@ -146,7 +114,7 @@ export default function ReelCard({ reel }: { reel: Reel }) {
     <>
       <button
         onClick={handleClick}
-        className="relative overflow-hidden rounded-2xl shadow-lg group cursor-pointer transition-all hover:ring-2 hover:ring-cyan-400 active:scale-[0.93] w-full text-left"
+        className="relative overflow-hidden rounded-2xl shadow-lg bg-white cursor-pointer transition-all hover:ring-2 hover:ring-cyan-400 active:scale-[0.93] w-full text-left"
         style={{ transition: 'transform 0.1s ease, box-shadow 0.15s ease' }}
       >
         <div
@@ -158,11 +126,10 @@ export default function ReelCard({ reel }: { reel: Reel }) {
             <span className="text-6xl opacity-90 drop-shadow-lg">{cardStyle.emoji}</span>
           </div>
 
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-
-          {/* Center play icon — visible on hover (desktop) always on touch */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 sm:group-hover:opacity-100 opacity-100 transition-opacity duration-150">
+          {/* Play affordance - one opacity state. The old class list ended in a
+              bare `opacity-100`, so the hover-only rules never applied and the
+              circle sat permanently on top of the title (#230 I1). */}
+          <div className="absolute inset-0 flex items-center justify-center">
             <div className="h-14 w-14 rounded-full bg-white/95 flex items-center justify-center shadow-xl">
               {reel.type === "video" ? (
                 <svg
@@ -187,18 +154,6 @@ export default function ReelCard({ reel }: { reel: Reel }) {
             </div>
           </div>
 
-          {/* Title + duration */}
-          <div className="absolute bottom-0 left-0 right-0 p-3">
-            <h3 className="text-white font-bold text-sm leading-snug line-clamp-2">
-              {reel.title}
-            </h3>
-            {reel.duration && (
-              <span className="text-white/90 text-xs font-semibold mt-1 inline-block bg-black/30 px-2 py-0.5 rounded-full">
-                {reel.duration}
-              </span>
-            )}
-          </div>
-
           {/* Category badge */}
           {reel.type === "game" && (
             <div className="absolute top-2 right-2">
@@ -210,21 +165,39 @@ export default function ReelCard({ reel }: { reel: Reel }) {
             </div>
           )}
         </div>
+
+        {/* Title footer - solid bar BELOW the art, so nothing is ever painted
+            over the title. 16px in the dark ink token. */}
+        <div className="bg-white px-3 py-2.5">
+          <h3
+            className="font-bold text-base leading-snug line-clamp-2"
+            style={{ color: "#1A1612" }}
+          >
+            {reel.title}
+          </h3>
+          {reel.duration && (
+            <span
+              className="mt-1 inline-block rounded-full bg-[#F4EDE3] px-2 py-0.5 text-xs font-semibold"
+              style={{ color: "#5C544A" }}
+            >
+              {reel.duration}
+            </span>
+          )}
+        </div>
       </button>
 
       {isPlaying && reel.type === "game" && (
         <GamePlayer
           reel={reel}
           open={isPlaying}
-          onOpenChange={setIsPlaying}
+          onOpenChange={(open) => {
+            if (!open) requestClose();
+          }}
         />
       )}
 
       {isVideoOpen && reel.type === "video" && reel.videoUrl && (
-        <VideoPlayer
-          url={reel.videoUrl}
-          onClose={() => setIsVideoOpen(false)}
-        />
+        <VideoPlayer url={reel.videoUrl} onClose={requestClose} />
       )}
     </>
   );

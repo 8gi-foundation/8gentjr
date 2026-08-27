@@ -260,7 +260,9 @@ export default function Dock({ primaryColor = '#E8610A' }: DockProps) {
             className="fixed inset-0 z-40 bg-black/30 animate-[fadeIn_0.15s_ease]"
             onClick={() => setMoreOpen(false)}
           />
-          <div className="fixed bottom-[80px] right-3 z-50 min-w-[160px] rounded-2xl bg-[var(--brand-bg-warm)] shadow-xl p-2 flex flex-col gap-1 animate-[slideUp_0.15s_ease]">
+          {/* max-height + scroll: at 664px and 556px tall the 740px panel used to
+              run off the top of the screen, putting Science out of reach (#230 C1). */}
+          <div className="fixed bottom-[80px] right-3 z-50 min-w-[160px] max-h-[calc(100dvh-160px)] overflow-y-auto overscroll-contain rounded-2xl bg-[var(--brand-bg-warm)] shadow-xl p-2 flex flex-col gap-1 animate-[slideUp_0.15s_ease]">
             {MORE_ITEMS.map((item) => {
               const active = isItemActive(item.href);
               return (
