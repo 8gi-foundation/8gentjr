@@ -40,6 +40,7 @@ import {
   detectOnsets,
   pitchStability,
   rangeOf,
+  rms,
   stability,
   centsBetween,
   type Onset,
@@ -189,6 +190,39 @@ export const EXERCISES: Record<ExerciseId, ExerciseSpec> = {
     shapeSeconds: 6,
   },
 };
+
+// ---------------------------------------------------------------------------
+// Loudness window
+// ---------------------------------------------------------------------------
+
+/**
+ * The loudness this exercise is entitled to read off one analyser buffer.
+ *
+ * This is the whole of `levelWindowSamples`, and it lives out here rather than
+ * inside the animation loop for one reason: while it lived in the loop, setting
+ * `levelWindowSamples` to 0 changed nothing that any test could see, and the
+ * measurement it exists to protect is the one that was already wrong once. The
+ * reducer is handed an rms that has already been computed, so the reducer can
+ * never check this; only a pure function taking the raw buffer can.
+ *
+ * A spec with no window reads the whole buffer. A spec with a window shorter
+ * than the buffer reads the tail of it, because the tail is the only part of a
+ * 43 ms window that can rise as fast as a glottal slam does.
+ *
+ * A window that is zero, negative, or at least as long as the buffer means the
+ * whole buffer, so a short first buffer degrades to a wider window rather than
+ * to an empty one.
+ */
+export function levelForSpec(
+  buffer: Float32Array,
+  spec: Pick<ExerciseSpec, 'levelWindowSamples'>,
+): number {
+  const window = spec.levelWindowSamples;
+  if (window > 0 && window < buffer.length) {
+    return rms(buffer.subarray(buffer.length - window));
+  }
+  return rms(buffer);
+}
 
 // ---------------------------------------------------------------------------
 // Thresholds
@@ -724,6 +758,69 @@ export const COPY: Record<ExerciseId, Record<CopyRegister, ExerciseCopy>> = {
       mouthNote: 'Open and unforced throughout.',
       watch: 'The pitch contour is drawn from the detected fundamental.',
     },
+  },
+};
+
+/**
+ * The lines that are not about any one exercise.
+ *
+ * These were hard-coded in the component until the gate on #241 pointed out
+ * what that meant: the microphone sentence, the privacy note, the line a child
+ * sees when permission is declined and the sentence said at the end of a drill
+ * are all read by a child, and none of them were passing the fence that every
+ * line in COPY above passes. A string a child reads belongs where the tests can
+ * reach it, and there is no second rule for strings that happen to sit outside
+ * a switch.
+ *
+ * The wording is unchanged from the component. Only its address moved.
+ */
+export interface ActivityCopy {
+  /** Above the list of six, before anything is chosen. */
+  intro: string;
+  /** The one plain line shown before the permission sheet can appear. */
+  micPrompt: string;
+  /** Shown instead, on the one exercise that never opens the microphone. */
+  noMicNote: string;
+  /** Shown when the microphone was declined. Never a scold, never a retry. */
+  micDenied: string;
+  /** The standing note, on the list and on every exercise. */
+  privacyNote: string;
+  /** Said after a held exercise. `{seconds}` is the time held. */
+  heldSummary: string;
+  /** Said after Silent Shapes. `{seconds}` is the time worked through. */
+  shapesSummary: string;
+}
+
+/**
+ * Said the same way in both registers.
+ *
+ * What the microphone does, and what the app does not do with it, is one fact
+ * with one plainest wording, and an adult reading the child's wording of it
+ * loses nothing. Written once rather than twice on purpose: two copies of a
+ * promise about a microphone are two copies that can drift apart, and the one
+ * that drifts is the one nobody reads.
+ */
+const SHARED_ACTIVITY_COPY: Omit<ActivityCopy, 'intro'> = {
+  micPrompt:
+    'Start opens the microphone so the screen can follow your sound. Your device will ask first. Nothing is recorded and nothing is sent anywhere.',
+  noMicNote: 'This one makes no sound, so the microphone stays closed.',
+  micDenied:
+    'The microphone stayed closed, so this exercise cannot draw your sound. Silent Shapes works without it.',
+  privacyNote:
+    'Your voice is listened to on this device only, while an exercise is running. Nothing is recorded, nothing is uploaded, and the camera is never used.',
+  heldSummary: 'You held it for {seconds} seconds.',
+  shapesSummary: 'You worked through the shapes for {seconds} seconds.',
+};
+
+export const ACTIVITY_COPY: Record<CopyRegister, ActivityCopy> = {
+  child: {
+    intro: 'Pick one. Make the shape, hold the sound, and watch what your voice does.',
+    ...SHARED_ACTIVITY_COPY,
+  },
+  adult: {
+    intro:
+      'Pick a drill. Set the mouth position, sustain the sound, and read what the screen measured.',
+    ...SHARED_ACTIVITY_COPY,
   },
 };
 

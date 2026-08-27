@@ -6,18 +6,15 @@ import NamingCard from '@/components/guided/NamingCard';
 import { useCalmMode } from '@/components/math/useCalmMode';
 import { useGuidedDiscovery } from '@/hooks/useGuidedDiscovery';
 import { useApp } from '@/context/AppContext';
+import { linearFromDecibels, pitchFromBuffer, spectralCentroid } from '@/lib/voice-analysis';
 import {
-  linearFromDecibels,
-  pitchFromBuffer,
-  rms as rmsOf,
-  spectralCentroid,
-} from '@/lib/voice-analysis';
-import {
+  ACTIVITY_COPY,
   COPY,
   EXERCISES,
   EXERCISE_IDS,
   hueForCentroid,
   initialState,
+  levelForSpec,
   measure,
   registerFor,
   shapeIndexFor,
@@ -240,6 +237,7 @@ function ExerciseRunner({
 }) {
   const spec = EXERCISES[exercise];
   const copy = COPY[exercise][register];
+  const activityCopy = ACTIVITY_COPY[register];
 
   const [calm] = useCalmMode();
   const [reduceMotion, setReduceMotion] = useState(false);
@@ -423,9 +421,9 @@ function ExerciseRunner({
         analyser.getFloatTimeDomainData(time);
         // Loudness over the window this exercise asked for. Soft Start reads a
         // short tail because the whole 43 ms buffer cannot rise faster than
-        // 43 ms and would call a slam gentle; see levelWindowSamples.
-        const win = EXERCISES[stateRef.current.exercise].levelWindowSamples;
-        level = win > 0 && win < time.length ? rmsOf(time.subarray(time.length - win)) : rmsOf(time);
+        // 43 ms and would call a slam gentle; see levelWindowSamples. The rule
+        // itself is levelForSpec, which the suite drives on synthesised bursts.
+        level = levelForSpec(time, EXERCISES[stateRef.current.exercise]);
 
         // The one analysis pass. Throttled, and never more than once per frame:
         // the pitch detector is the expensive thing on the page and running it
@@ -681,13 +679,12 @@ function ExerciseRunner({
       {/* The one plain line before the permission sheet appears. */}
       {phase === 'idle' && spec.needsMic && (
         <p style={{ margin: '12px 0 0', fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
-          Start opens the microphone so the screen can follow your sound. Your device will ask
-          first. Nothing is recorded and nothing is sent anywhere.
+          {activityCopy.micPrompt}
         </p>
       )}
       {phase === 'idle' && !spec.needsMic && (
         <p style={{ margin: '12px 0 0', fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
-          This one makes no sound, so the microphone stays closed.
+          {activityCopy.noMicNote}
         </p>
       )}
 
@@ -696,14 +693,13 @@ function ExerciseRunner({
           role="status"
           style={{ margin: '12px 0 0', fontSize: 14, color: INK, lineHeight: 1.5 }}
         >
-          The microphone stayed closed, so this exercise cannot draw your sound. Silent Shapes
-          works without it.
+          {activityCopy.micDenied}
         </p>
       )}
 
-      {summary && summaryLine(exercise, summary) && (
+      {summary && summaryLine(exercise, summary, register) && (
         <p style={{ margin: '12px 0 0', fontSize: 14, color: MUTED, lineHeight: 1.5 }}>
-          {summaryLine(exercise, summary)}
+          {summaryLine(exercise, summary, register)}
         </p>
       )}
 
@@ -718,16 +714,21 @@ function ExerciseRunner({
  * say about three separate ah sounds, and saying it anyway is how a screen
  * teaches a child that it is not really watching.
  */
-function summaryLine(exercise: ExerciseId, m: ReturnType<typeof measure>): string | null {
+function summaryLine(
+  exercise: ExerciseId,
+  m: ReturnType<typeof measure>,
+  register: CopyRegister,
+): string | null {
+  const copy = ACTIVITY_COPY[register];
   switch (exercise) {
     case 'silent-shapes':
-      return `You worked through the shapes for ${m.heldSeconds.toFixed(0)} seconds.`;
+      return copy.shapesSummary.replace('{seconds}', m.heldSeconds.toFixed(0));
     case 'soft-start':
       // The bumps above already say it, and a count would turn three sounds
       // into a score.
       return null;
     default:
-      return `You held it for ${m.heldSeconds.toFixed(1)} seconds.`;
+      return copy.heldSummary.replace('{seconds}', m.heldSeconds.toFixed(1));
   }
 }
 
@@ -988,7 +989,7 @@ export default function VoicePlay() {
           register={register}
           onBack={() => setSelected(null)}
         />
-        <PrivacyNote />
+        <PrivacyNote register={register} />
       </div>
     );
   }
@@ -996,9 +997,7 @@ export default function VoicePlay() {
   return (
     <div style={{ maxWidth: 520, margin: '0 auto', padding: '8px 16px 40px' }}>
       <p style={{ margin: '0 0 16px', fontSize: 15, color: MUTED, lineHeight: 1.5 }}>
-        {register === 'child'
-          ? 'Pick one. Make the shape, hold the sound, and watch what your voice does.'
-          : 'Pick a drill. Set the mouth position, sustain the sound, and read what the screen measured.'}
+        {ACTIVITY_COPY[register].intro}
       </p>
 
       <div
@@ -1053,12 +1052,12 @@ export default function VoicePlay() {
         })}
       </div>
 
-      <PrivacyNote />
+      <PrivacyNote register={register} />
     </div>
   );
 }
 
-function PrivacyNote() {
+function PrivacyNote({ register }: { register: CopyRegister }) {
   return (
     <p
       style={{
@@ -1069,8 +1068,7 @@ function PrivacyNote() {
         textAlign: 'center',
       }}
     >
-      Your voice is listened to on this device only, while an exercise is running. Nothing is
-      recorded, nothing is uploaded, and the camera is never used.
+      {ACTIVITY_COPY[register].privacyNote}
     </p>
   );
 }

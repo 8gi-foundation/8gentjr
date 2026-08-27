@@ -17,6 +17,7 @@
  */
 import { describe, expect, test } from 'bun:test';
 import {
+  ACTIVITY_COPY,
   BRIGHT_T,
   COLOUR_SPAN_HZ,
   COPY,
@@ -35,14 +36,17 @@ import {
   hueForCentroid,
   hueIsAllowed,
   initialState,
+  levelForSpec,
   measure,
   registerFor,
   shapeIndexFor,
   stepVoicePlay,
+  type CopyRegister,
   type ExerciseId,
   type VoicePlayEvent,
   type VoicePlayState,
 } from './voice-play';
+import { detectOnsets } from './voice-analysis';
 import { BANNED_TERMS, getDiscoveries, getNamingLine } from './guided-naming';
 
 const FRAME_MS = 1000 / 60;
@@ -383,6 +387,141 @@ describe('4. Soft Start', () => {
   });
 });
 
+describe('the Soft Start loudness window', () => {
+  /**
+   * Why this suite exists.
+   *
+   * `levelWindowSamples: 256` used to be applied inside the animation loop, so
+   * setting it to 0 broke nothing any test could see while, in the browser, a
+   * slammed onset at a quiet peak was named Soft. The reducer is handed an rms
+   * that has already been computed and can never check this. Only a pure
+   * function over the raw buffer can, which is what levelForSpec is.
+   *
+   * Everything below is at 48 kHz through a 2048 sample analyser buffer read
+   * once per animation frame, which is exactly what the component does.
+   */
+  const SR = 48_000;
+  /** The analyser buffer, fftSize 2048, about 43 ms of sound. */
+  const ANALYSER_SAMPLES = 2048;
+  /** One animation frame at 60 fps. */
+  const FRAME_SAMPLES = 800;
+  const FRAME_SECONDS = FRAME_SAMPLES / SR;
+  /**
+   * A quiet sound: rms about 0.09, well under a shout. Both test signals reach
+   * exactly this, so nothing below can be explained by one being louder.
+   */
+  const QUIET_PEAK = 0.09;
+  /**
+   * 480 Hz, which is 8 whole periods per animation frame. A tone that does not
+   * divide the frame lands each window on a different part of its cycle and the
+   * envelope creeps up by a percent or two for several frames after a step,
+   * which would flatten the measured slope for reasons that have nothing to do
+   * with the window under test.
+   */
+  const TONE_HZ = 480;
+
+  const SOFT = EXERCISES['soft-start'];
+  /** The same exercise with the override removed. The mutation, as a fixture. */
+  const WHOLE_BUFFER = { ...SOFT, levelWindowSamples: 0 };
+
+  /** Silence, then a tone that reaches QUIET_PEAK over `riseMs` and stays. */
+  function burst(riseMs: number): Float32Array {
+    const lead = FRAME_SAMPLES * 6;
+    const rise = Math.round((riseMs / 1000) * SR);
+    const sustain = FRAME_SAMPLES * 30;
+    const out = new Float32Array(lead + rise + sustain);
+    // The rms of a sine is its amplitude over root two.
+    const amplitude = QUIET_PEAK * Math.SQRT2;
+    for (let i = 0; i < out.length; i++) {
+      const into = i - lead;
+      const gain = into < 0 ? 0 : into >= rise ? 1 : into / rise;
+      out[i] = amplitude * gain * Math.sin((2 * Math.PI * TONE_HZ * i) / SR);
+    }
+    return out;
+  }
+
+  /** The loudness history the component would build from this signal. */
+  function envelopeOf(signal: Float32Array, spec: { levelWindowSamples: number }): number[] {
+    const out: number[] = [];
+    for (let end = ANALYSER_SAMPLES; end <= signal.length; end += FRAME_SAMPLES) {
+      out.push(levelForSpec(signal.subarray(end - ANALYSER_SAMPLES, end), spec));
+    }
+    return out;
+  }
+
+  /** And the onsets the reducer would then find in it. */
+  function onsetsOf(signal: Float32Array, spec: { levelWindowSamples: number }) {
+    return detectOnsets(envelopeOf(signal, spec), FRAME_SECONDS, { floor: SOFT.noiseFloor });
+  }
+
+  test('the window reads the tail, and a spec without one reads the whole buffer', () => {
+    const buf = new Float32Array(ANALYSER_SAMPLES);
+    buf.fill(QUIET_PEAK, ANALYSER_SAMPLES - 256);
+
+    expect(levelForSpec(buf, { levelWindowSamples: 256 })).toBeCloseTo(QUIET_PEAK, 6);
+    // The same sound spread over the whole 2048, which is the reading that
+    // cannot rise faster than the buffer is long.
+    expect(levelForSpec(buf, { levelWindowSamples: 0 })).toBeCloseTo(
+      QUIET_PEAK * Math.sqrt(256 / ANALYSER_SAMPLES),
+      6,
+    );
+  });
+
+  test('a window at least as long as the buffer is simply the whole buffer', () => {
+    const buf = new Float32Array(512);
+    buf.fill(QUIET_PEAK, 256);
+    const whole = levelForSpec(buf, { levelWindowSamples: 0 });
+    expect(levelForSpec(buf, { levelWindowSamples: 512 })).toBeCloseTo(whole, 6);
+    expect(levelForSpec(buf, { levelWindowSamples: 4096 })).toBeCloseTo(whole, 6);
+    expect(levelForSpec(buf, { levelWindowSamples: -8 })).toBeCloseTo(whole, 6);
+  });
+
+  test('the two signals reach the same quiet peak, so only the rise differs', () => {
+    for (const spec of [SOFT, WHOLE_BUFFER]) {
+      const slam = Math.max(...envelopeOf(burst(2), spec));
+      const swell = Math.max(...envelopeOf(burst(150), spec));
+      expect(slam).toBeCloseTo(swell, 3);
+      expect(slam).toBeGreaterThan(QUIET_PEAK * 0.95);
+      expect(slam).toBeLessThan(QUIET_PEAK * 1.05);
+    }
+  });
+
+  test('Soft Start tells a 2 ms slam from a 150 ms swell at that same peak', () => {
+    const slam = onsetsOf(burst(2), SOFT);
+    const swell = onsetsOf(burst(150), SOFT);
+
+    expect(slam.length).toBe(1);
+    expect(swell.length).toBe(1);
+    // A step inside one frame: about 5.4 units per second.
+    expect(slam[0].slope).toBeGreaterThan(SOFT_SLOPE_MAX);
+    // Nine frames to get there: about 0.57.
+    expect(swell[0].slope).toBeLessThan(SOFT_SLOPE_MAX);
+  });
+
+  test('the whole buffer cannot tell them apart, which is why the window exists', () => {
+    const slam = onsetsOf(burst(2), WHOLE_BUFFER);
+    const swell = onsetsOf(burst(150), WHOLE_BUFFER);
+
+    expect(slam.length).toBe(1);
+    expect(swell.length).toBe(1);
+    // 43 ms of buffer cannot rise faster than 43 ms, so the slam measures about
+    // 1.35 and lands on the gentle side of the same threshold the swell does.
+    // Both would be named Soft, and one of them was a slam.
+    expect(slam[0].slope).toBeLessThan(SOFT_SLOPE_MAX);
+    expect(swell[0].slope).toBeLessThan(SOFT_SLOPE_MAX);
+  });
+
+  test('the spec still carries the window the browser path reads', () => {
+    // Named here so the mutation that started all this is a one line change
+    // with a failing test attached to it.
+    expect(SOFT.levelWindowSamples).toBe(256);
+    for (const id of EXERCISE_IDS) {
+      if (id === 'soft-start') continue;
+      expect(EXERCISES[id].levelWindowSamples, `${id} should read the whole buffer`).toBe(0);
+    }
+  });
+});
+
 describe('5. Same Note, Three Colours', () => {
   /** One held pitch while the centroid walks from dark to bright. */
   function walkColour(spanHz: number, hzSeries?: (i: number) => number): VoicePlayEvent[] {
@@ -501,6 +640,30 @@ describe('colour fence', () => {
   });
 });
 
+/**
+ * Every child-visible line this activity can put on screen, labelled.
+ *
+ * The exercise cards AND the lines around them. The five fences below all
+ * iterate this one list, so a new string is fenced by being added here rather
+ * than by somebody remembering to extend five tests. The gate on #241 found
+ * six lines that had escaped all of them by being written in JSX instead of in
+ * COPY, which is the whole reason this function exists.
+ */
+function everyLine(register: CopyRegister): Array<[string, string]> {
+  const out: Array<[string, string]> = [];
+  for (const id of EXERCISE_IDS) {
+    for (const [field, value] of Object.entries(COPY[id][register])) {
+      out.push([`${id}/${register}/${field}`, value]);
+    }
+  }
+  for (const [field, value] of Object.entries(ACTIVITY_COPY[register])) {
+    out.push([`activity/${register}/${field}`, value]);
+  }
+  return out;
+}
+
+const REGISTERS = ['child', 'adult'] as const;
+
 describe('copy registers', () => {
   test('the age gate picks the register, and an ungated account reads as a child', () => {
     expect(registerFor({ accountType: null, isChild: false })).toBe('child');
@@ -515,7 +678,7 @@ describe('copy registers', () => {
 
   test('every exercise has both registers filled in', () => {
     for (const id of EXERCISE_IDS) {
-      for (const register of ['child', 'adult'] as const) {
+      for (const register of REGISTERS) {
         const copy = COPY[id][register];
         for (const [field, value] of Object.entries(copy)) {
           expect(value.trim().length, `${id}/${register}/${field} is empty`).toBeGreaterThan(0);
@@ -524,48 +687,63 @@ describe('copy registers', () => {
     }
   });
 
+  test('the lines around the exercises are filled in for both registers', () => {
+    for (const register of REGISTERS) {
+      const copy = ACTIVITY_COPY[register];
+      for (const [field, value] of Object.entries(copy)) {
+        expect(value.trim().length, `activity/${register}/${field} is empty`).toBeGreaterThan(0);
+      }
+      // The microphone sentence, the privacy note and the declined line say one
+      // fact each and say it the same way to everybody, so they are written
+      // once. The intro is the only line the two registers actually differ on.
+      expect(copy.micPrompt).toBe(ACTIVITY_COPY.child.micPrompt);
+      expect(copy.privacyNote).toBe(ACTIVITY_COPY.child.privacyNote);
+      expect(copy.micDenied).toBe(ACTIVITY_COPY.child.micDenied);
+    }
+    expect(ACTIVITY_COPY.child.intro).not.toBe(ACTIVITY_COPY.adult.intro);
+  });
+
+  test('both end-of-drill sentences carry the seconds they promise', () => {
+    for (const register of REGISTERS) {
+      expect(ACTIVITY_COPY[register].heldSummary).toContain('{seconds}');
+      expect(ACTIVITY_COPY[register].shapesSummary).toContain('{seconds}');
+    }
+  });
+
   test('no copy line contains a banned term', () => {
-    for (const id of EXERCISE_IDS) {
-      for (const register of ['child', 'adult'] as const) {
-        for (const [field, value] of Object.entries(COPY[id][register])) {
-          for (const term of BANNED_TERMS) {
-            const pattern = new RegExp(
-              `\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`,
-              'i',
-            );
-            expect(pattern.test(value), `${id}/${register}/${field}: "${value}"`).toBe(false);
-          }
+    for (const register of REGISTERS) {
+      for (const [label, value] of everyLine(register)) {
+        for (const term of BANNED_TERMS) {
+          const pattern = new RegExp(
+            `\\b${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`,
+            'i',
+          );
+          expect(pattern.test(value), `${label}: "${value}"`).toBe(false);
         }
       }
     }
   });
 
   test('no em dashes anywhere in the copy', () => {
-    for (const id of EXERCISE_IDS) {
-      for (const register of ['child', 'adult'] as const) {
-        for (const value of Object.values(COPY[id][register])) {
-          expect(value).not.toContain('—');
-        }
+    for (const register of REGISTERS) {
+      for (const [label, value] of everyLine(register)) {
+        expect(value, label).not.toContain('\u2014');
       }
     }
   });
 
   test('the child register asks no questions and shouts nothing', () => {
-    for (const id of EXERCISE_IDS) {
-      for (const value of Object.values(COPY[id].child)) {
-        expect(value, `${id}: "${value}"`).not.toContain('?');
-        expect(value, `${id}: "${value}"`).not.toContain('!');
-      }
+    for (const [label, value] of everyLine('child')) {
+      expect(value, `${label}: "${value}"`).not.toContain('?');
+      expect(value, `${label}: "${value}"`).not.toContain('!');
     }
   });
 
   test('no register praises a sound that has not happened yet', () => {
     const praise = /\b(amazing|brilliant|perfect|great job|well done|awesome|fantastic)\b/i;
-    for (const id of EXERCISE_IDS) {
-      for (const register of ['child', 'adult'] as const) {
-        for (const value of Object.values(COPY[id][register])) {
-          expect(praise.test(value), `${id}/${register}: "${value}"`).toBe(false);
-        }
+    for (const register of REGISTERS) {
+      for (const [label, value] of everyLine(register)) {
+        expect(praise.test(value), `${label}: "${value}"`).toBe(false);
       }
     }
   });
