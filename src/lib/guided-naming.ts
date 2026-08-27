@@ -34,7 +34,10 @@ export type GuidedActivityId =
   | 'water-sphere'
   | 'pattern-garden'
   | 'fractal'
-  | 'harmonograph';
+  | 'harmonograph'
+  | 'dimensions'
+  | 'light-bender'
+  | 'shadow-globe';
 
 /**
  * Stage bands. GLP stages 1-6 collapse to five phrasing shapes because stages 1
@@ -477,6 +480,258 @@ const DISCOVERIES: Record<GuidedActivityId, Discovery[]> = {
         early: 'It never joins',
         complex: 'In between, the line never joins up.',
         full: 'Between the simple numbers the line drifts and never joins up.',
+      },
+    },
+  ],
+
+  /**
+   * Shape Ladder. A point, dragged, leaves a line. The line, dragged, leaves a
+   * square. The square leaves a cube, and the cube leaves a shape whose shadow
+   * is all a screen can hold. One rule, run four times, and the child's own
+   * finger is what runs it.
+   *
+   * The four lines are the four things in front of the child, in the order a
+   * pair of hands finds them:
+   *
+   *   - a drag left a line behind it,
+   *   - and doing it again added another direction rather than a different
+   *     shape,
+   *   - the last shape casts a shadow that moves when it is turned in a
+   *     direction the screen has no room for,
+   *   - and the rule that made the line is the rule that made all of it.
+   *
+   * The last one is the one worth the activity, and it is not a flourish:
+   * `dimensions.test.ts` asserts structurally that the figure at every rung
+   * contains two exact copies of the figure below it, joined corner to corner,
+   * with no rung special-cased anywhere. The corner and edge counts are checked
+   * against 2^k and k*2^(k-1) rather than against a table, and the shadow
+   * sliding out is measured on the halves the builder produced.
+   *
+   * With the sound on, each rung adds one harmonic to a stack that never
+   * replaces anything, from the same table the rungs beside the shape are drawn
+   * from. Nothing here says that to a child. The activity plays it and draws it
+   * and lets them be one thing.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `dimensions-discovery.ts`, and the ids here are the ones it emits. The two
+   * files are held together by a test in both directions, so neither a rename
+   * nor a piece of dead copy can survive the suite.
+   */
+  dimensions: [
+    {
+      id: 'swept-a-line',
+      lines: {
+        gestalt: 'Your drag swept a line.',
+        single: 'Line',
+        early: 'Swept a line',
+        complex: 'Dragging the dot swept out a line.',
+        full: 'The dot moved, and the path it swept behind is a line.',
+      },
+    },
+    {
+      id: 'each-drag-a-direction',
+      lines: {
+        gestalt: 'Each drag adds a direction.',
+        single: 'Direction',
+        early: 'One more direction',
+        complex: 'Each drag adds one new direction.',
+        full: 'Every drag you make adds one more direction to the shape.',
+      },
+    },
+    {
+      id: 'cube-shadow',
+      lines: {
+        gestalt: "That is the cube's shadow.",
+        single: 'Shadow',
+        early: "The cube's shadow",
+        complex: "You are moving the cube's shadow.",
+        full: 'The cube turned a way you cannot see, so its shadow slid.',
+      },
+    },
+    {
+      id: 'same-rule-again',
+      lines: {
+        gestalt: 'Same rule made every shape.',
+        single: 'Same',
+        early: 'Same rule again',
+        complex: 'The same rule made every shape.',
+        full: 'One rule made the line, the square, the cube and this.',
+      },
+    },
+  ],
+
+  /**
+   * Light Bender. A torch under the water of a glass tank, on an arm the child
+   * swings. Light leaving the water leans further and further over as they
+   * swing it, and then, inside about half a degree, stops leaving at all: the
+   * surface has become a mirror and the beam is running along inside the tank.
+   * Nothing was switched on and nothing was unlocked. The child moved their
+   * finger and the world did something different.
+   *
+   * The second half is the same rule somewhere else. A slot opens in the side
+   * of the tank, the water arcs out, and light aimed into the slot goes with
+   * it: down the falling stream, bouncing off the inside of it, round a bend
+   * that light does not go round by itself. That is the demonstration John
+   * Tyndall gave in 1854 with a tank and a hole in it, and it is the reason a
+   * telephone call crosses an ocean today.
+   *
+   * The four lines are the four things in front of the child, in the order a
+   * pair of hands finds them:
+   *
+   *   - light coming out of water leans away from the way it went in,
+   *   - past a certain lean, none of it comes out at all,
+   *   - light put into the falling water stays in the falling water,
+   *   - and the rule that trapped it in the tank is the rule that is carrying
+   *     it down the stream.
+   *
+   * The last one is the one worth the activity, and it is not a flourish. Both
+   * places are computed by ONE function, `interfaceSplit`, and every single
+   * bounce in either of them turns on the same critical angle.
+   *
+   * What is NOT true, and is worth writing down because the obvious version of
+   * this sentence would be: the two places do not start holding the light at
+   * the same swing. The tank does it exactly at the critical angle, because its
+   * surface is flat. The falling stream needs about half a radian more, because
+   * it is bending and it turns its own walls under the beam as it goes, which
+   * is bend loss and is why a real fibre is not tied in knots.
+   * `light-bender.test.ts` measures both, and the naming line is careful to say
+   * that one rule holds the light in two places rather than that the two places
+   * behave identically. The reducer will not release the line until the child
+   * has been in both of them.
+   *
+   * With the sound on, the partials above the low note fade out as the light
+   * stops escaping, from `toneMix`, which takes the same escaped fraction the
+   * picture is drawn from. Trapped sounds closed. Nothing here says that to a
+   * child. The activity plays it and draws it and lets them be one thing.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `light-bender-discovery.ts`, and the ids here are the ones it emits. The
+   * two files are held together by a test in both directions, so neither a
+   * rename nor a piece of dead copy can survive the suite.
+   */
+  'light-bender': [
+    {
+      id: 'light-bends',
+      lines: {
+        gestalt: 'Your light bends in water.',
+        single: 'Bends',
+        early: 'Light bends',
+        complex: 'The light bends as it leaves the water.',
+        full: 'Light leaves the water at a wider angle than it went in.',
+      },
+    },
+    {
+      id: 'trapped',
+      lines: {
+        gestalt: 'Now none of it escapes.',
+        single: 'Trapped',
+        early: 'Trapped inside',
+        complex: 'You turned the top into a mirror.',
+        full: 'Past that angle the water keeps all of the light inside.',
+      },
+    },
+    {
+      id: 'follows-the-water',
+      lines: {
+        gestalt: 'The light follows the water.',
+        single: 'Follows',
+        early: 'It follows water',
+        complex: 'The light is riding the falling water down.',
+        full: 'The light bounces inside the stream and comes out at the bottom.',
+      },
+    },
+    {
+      id: 'the-same-rule',
+      lines: {
+        gestalt: 'One rule in both places.',
+        single: 'Same',
+        early: 'The same rule',
+        complex: 'The same rule holds the light both times.',
+        full: 'One rule traps the light in the tank and in the stream.',
+      },
+    },
+  ],
+
+  /**
+   * Shadow Globe. Four lines, and they are the four things stereographic
+   * projection does that nothing in a child's ordinary experience of shadows
+   * does.
+   *
+   * A shadow you can move is the first one and it is the plainest: the shadow
+   * on the floor is a PICTURE of the pattern on the glass and not the pattern
+   * itself, which is not obvious to anybody until they have watched one thing
+   * make several shadows.
+   *
+   * The second is the theorem. Roll the globe far enough and the shadow is
+   * unrecognisable, stretched five times harder on one side than the other, and
+   * every ring in it is still exactly a ring. `shadow-globe.test.ts` fits a
+   * circle to the points that are actually drawn and requires the residual to
+   * be within a part in a billion of the radius, at many orientations, so the
+   * sentence is a measurement rather than a claim.
+   *
+   * The third is what makes it wild rather than merely true. The scale of the
+   * map is 1 / (1 - z), so a ring creeping toward the lamp is thrown outward
+   * without bound, and a speck under the ball becomes an arc running off the
+   * floor. The naming line says the nearer the lamp, the bigger, and the suite
+   * measures that the relation is monotone rather than only large.
+   *
+   * The fourth is the one worth the activity, and it is a claim about
+   * information rather than about pictures. Nothing that happened to the shadow
+   * was destructive: the map has an inverse, checked to twelve places, so the
+   * shape was recoverable from its shadow at every moment however mangled it
+   * looked. A child cannot be told that. They can roll it back and see it.
+   *
+   * What is NOT claimed, and is worth writing down because the tempting version
+   * of the second sentence would be: circles do not ALWAYS stay circles. A
+   * circle whose plane contains the lamp projects to a straight LINE, which is
+   * a circle only in the sense a mathematician means it. The activity draws
+   * that case, the pure module has a separate branch for it, and the line the
+   * child gets is careful to be about the rings they are looking at.
+   *
+   * Which line fires when is decided by a pure reducer in
+   * `shadow-globe-discovery.ts`, and the ids here are the ones it emits. The
+   * two files are held together by a test in both directions, so neither a
+   * rename nor a piece of dead copy can survive the suite.
+   */
+  'shadow-globe': [
+    {
+      id: 'a-shadow',
+      lines: {
+        gestalt: 'Your shape has a shadow.',
+        single: 'Shadow',
+        early: 'A moving shadow',
+        complex: 'The shadow moves when you roll.',
+        full: 'The shadow on the floor is a picture of your shape.',
+      },
+    },
+    {
+      id: 'circles-stay-circles',
+      lines: {
+        gestalt: 'The rings are still rings.',
+        single: 'Rings',
+        early: 'Still rings',
+        complex: 'The shadow stretched but the rings stayed rings.',
+        full: 'However far you roll it, every ring is still a ring.',
+      },
+    },
+    {
+      id: 'grows-huge',
+      lines: {
+        gestalt: 'It grows huge near the light.',
+        single: 'Huge',
+        early: 'Huge near light',
+        complex: 'Close to the lamp the shadow grows huge.',
+        full: 'A ring near the lamp casts a shadow that is huge.',
+      },
+    },
+    {
+      id: 'roll-it-back',
+      lines: {
+        gestalt: 'You rolled it back again.',
+        single: 'Back',
+        early: 'Rolled it back',
+        complex: 'You rolled it back and nothing was lost.',
+        full: 'Roll it back and the shadow comes back too.',
       },
     },
   ],

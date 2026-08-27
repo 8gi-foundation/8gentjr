@@ -68,11 +68,14 @@ describe('activity catalogue', () => {
   test('ships every activity built against issue #225', () => {
     expect(getActivityIds().sort()).toEqual([
       'cymatics',
+      'dimensions',
       'fractal',
       'harmonograph',
       'interference',
+      'light-bender',
       'light-mix',
       'pattern-garden',
+      'shadow-globe',
       'water-sphere',
     ]);
   });
