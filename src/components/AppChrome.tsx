@@ -4,7 +4,7 @@
  * AppChrome — conditional shell that hides Dock + LockScreen during onboarding.
  *
  * During onboarding, we show a clean full-screen experience.
- * After onboarding, the full app shell (lock screen, dock, install prompt) appears.
+ * After onboarding, the full app shell (lock screen, dock, install strip) appears.
  */
 
 import { usePathname } from 'next/navigation';
@@ -46,8 +46,12 @@ export function AppChrome({ children }: { children: ReactNode }) {
     <ParentalGate>
       <LockScreenGate>
         {showAuthBadge && <AuthBadge />}
-        <InstallPrompt />
-        <main className="pb-safe-dock">{children}</main>
+        <main className="pb-safe-dock">
+          {children}
+          {/* In the flow, after the page, above the dock's reserved space -
+              so no card can ever sit underneath it (#230 C5). */}
+          <InstallPrompt />
+        </main>
         <Dock />
       </LockScreenGate>
     </ParentalGate>

@@ -10,8 +10,10 @@
 import ReelsFeed from "@/components/schooltube/ReelsFeed";
 
 export default function GamesPage() {
-  // Warm/teal page ramp: hues 270-350 are banned brand-wide (CLAUDE.md),
-  // which the old `via-purple-400 to-pink-400` broke.
+  // Warm/teal page ramp: hues 270-350 are banned brand-wide (CLAUDE.md), which
+  // the ramp this replaced broke. Do not name the offending utilities even in a
+  // comment - Tailwind scans the whole file as text and emits any class string
+  // it finds, so a comment alone would put the banned rules back in the bundle.
   return (
     <div className="min-h-dvh bg-gradient-to-b from-cyan-400 via-teal-400 to-amber-300">
       {/* Header */}

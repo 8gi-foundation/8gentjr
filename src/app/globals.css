@@ -191,15 +191,13 @@ button, a, [role="button"] {
   padding-right: env(safe-area-inset-right, 0px);
 }
 
-/* Extra bottom padding for whatever fixed chrome sits at the bottom: the dock
-   (72px) at minimum, more while the install banner is showing. InstallPrompt
-   measures how far up the screen it actually reaches and publishes it as
-   --bottom-chrome-h, so the banner can never end up as the hit-target over a
-   card the way it did on /science and /games (#230 C5 / #229). */
+/* Bottom padding for the only fixed chrome left at the bottom of the screen:
+   the dock (72px). The install prompt used to be fixed above it and needed a
+   measured, published reserve on top of this; it is now an in-flow strip at the
+   end of <main>, so it takes its own space and nothing can be under it at any
+   scroll offset (#230 C5 / #229). One constant, nothing to keep in sync. */
 .pb-safe-dock {
-  padding-bottom: calc(
-    max(72px, var(--bottom-chrome-h, 0px)) + env(safe-area-inset-bottom, 0px)
-  );
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
 }
 
 /* AAC Card specific styles */

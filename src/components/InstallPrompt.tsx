@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   initPwaInstall,
   subscribePwaInstall,
@@ -15,12 +15,26 @@ import {
  * PWA install prompt with platform-specific handling.
  *
  * Android/Chrome: uses the app-wide deferred `beforeinstallprompt` (captured in
- *   `@/lib/pwa-install`) → one-tap native install.
- * iOS/Safari: shows manual instructions (Share → Add to Home Screen).
+ *   `@/lib/pwa-install`) -> one-tap native install.
+ * iOS/Safari: shows manual instructions (Share -> Add to Home Screen).
  * Hides itself if already running in standalone mode or the user dismissed it.
  *
  * The same install plumbing also powers the always-available entry in Settings,
- * so this banner is just the proactive nudge, not the only way in.
+ * so this strip is just the proactive nudge, not the only way in.
+ *
+ * IN-FLOW BY CONSTRUCTION (#230 C5). This used to be a fixed overlay pinned
+ * above the dock, which made it the hit-target over whatever list happened to
+ * be underneath: on /science at 390x844 the Pattern Garden and Fractal Grower
+ * card centres (y=698) landed inside the banner's card (y 626-764) and a real
+ * tap did not navigate. Reserving padding on <main> did not fix that - padding
+ * only lets a child scroll the cards clear, and at scrollY=0, which is where a
+ * child starts, they were still underneath.
+ *
+ * So the strip is now an ordinary block at the end of the document flow. It
+ * takes its own space in the page, nothing is ever painted under it, and that
+ * holds at every scroll offset and every viewport height without any measuring,
+ * publishing or observing. The only fixed chrome left at the bottom is the
+ * dock, which `.pb-safe-dock` on <main> reserves a flat 72px for.
  */
 
 const DISMISS_KEY = "8gentjr_install_dismissed";
@@ -28,13 +42,12 @@ const DISMISS_KEY = "8gentjr_install_dismissed";
 export function InstallPrompt() {
   const [platform, setPlatform] = useState<InstallPlatform | null>(null);
   const [show, setShow] = useState(false);
-  const bannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Start capturing the deferred prompt app-wide (idempotent).
     initPwaInstall();
 
-    // Already installed as standalone - never show the banner.
+    // Already installed as standalone - never show the strip.
     if (isStandalone()) return;
 
     // User previously dismissed.
@@ -68,59 +81,15 @@ export function InstallPrompt() {
     localStorage.setItem(DISMISS_KEY, "1");
   }, []);
 
-  /**
-   * The banner is fixed above the dock, so it used to be the hit-target over
-   * whatever list happened to be underneath it - Pattern Garden and Fractal
-   * Grower on /science, two cards on /games (#230 C5 / #229). Measure how far
-   * up the viewport the banner actually reaches and publish that as
-   * --bottom-chrome-h; `.pb-safe-dock` on <main> reserves exactly that much,
-   * so the last cards scroll clear of it instead of sitting underneath.
-   */
-  useEffect(() => {
-    const root = document.documentElement;
-
-    const clearReserve = () => {
-      root.style.setProperty("--bottom-chrome-h", "0px");
-    };
-
-    if (!show) {
-      clearReserve();
-      return;
-    }
-
-    const publishReserve = () => {
-      const el = bannerRef.current;
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      // Distance from the top of the banner to the bottom of the viewport,
-      // plus a small gap so the last card is not flush against it.
-      const reserve = Math.max(0, window.innerHeight - rect.top) + 12;
-      root.style.setProperty("--bottom-chrome-h", `${Math.round(reserve)}px`);
-    };
-
-    publishReserve();
-
-    const observer = new ResizeObserver(publishReserve);
-    if (bannerRef.current) observer.observe(bannerRef.current);
-    window.addEventListener("resize", publishReserve);
-
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", publishReserve);
-      clearReserve();
-    };
-  }, [show]);
-
   if (!show) return null;
 
   return (
-    <div
-      ref={bannerRef}
-      role="dialog"
+    <section
       aria-label="Install 8gent Jr as an app"
-      className="fixed bottom-20 inset-x-0 z-[9990] flex justify-center px-4 animate-slide-up pointer-events-none"
+      data-install-strip=""
+      className="relative w-full flex justify-center px-4 pt-6 animate-fade-in"
     >
-      <div className="pointer-events-auto w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-[#f0e6d6] p-4">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow-lg border border-[#f0e6d6] p-4">
         {/* Header */}
         <div className="flex items-start gap-3">
           <div className="w-11 h-11 shrink-0 rounded-xl bg-[#0E0F0F] flex items-center justify-center">
@@ -180,22 +149,29 @@ export function InstallPrompt() {
         </div>
       </div>
 
-      {/* Slide-up animation */}
+      {/*
+        Fade only. A translate would paint the strip outside its own box for the
+        length of the animation, which is the class of bug this rewrite exists
+        to remove.
+      */}
       <style jsx>{`
-        @keyframes slide-up {
+        @keyframes fade-in {
           from {
             opacity: 0;
-            transform: translateY(20px);
           }
           to {
             opacity: 1;
-            transform: translateY(0);
           }
         }
-        .animate-slide-up {
-          animation: slide-up 0.3s ease-out;
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animate-fade-in {
+            animation: none;
+          }
         }
       `}</style>
-    </div>
+    </section>
   );
 }
