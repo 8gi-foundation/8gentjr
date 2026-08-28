@@ -16,10 +16,10 @@ function nextId() {
 }
 
 const SUGGESTIONS = [
-  "My child has ADHD — which words should I prioritise first?",
-  "How do I encourage my child to use their AAC board more?",
-  "What's the difference between core and fringe vocabulary?",
-  "My child is autistic and a gestalt language processor — how does that change things?",
+  "What is AAC and what kinds of strategies exist?",
+  "What is the difference between core and fringe vocabulary?",
+  "What public resources can I read about gestalt language processing?",
+  "What kinds of questions are good to bring to a speech-language therapist?",
 ];
 
 export default function ParentChat() {
@@ -85,8 +85,17 @@ export default function ParentChat() {
         </a>
         <div>
           <div className="text-[1.1rem] font-bold text-gray-800">Parent Chat</div>
-          <div className="text-xs text-gray-400">AAC specialist · evidence-informed</div>
+          <div className="text-xs text-gray-400">AAC education for parents</div>
         </div>
+      </div>
+
+      {/* Non-clinical disclaimer banner. Persistent. EU MDR + AI Act guard. */}
+      <div
+        role="note"
+        aria-label="Non-clinical disclaimer"
+        className="px-4 py-2 bg-amber-50 border-b border-amber-200 text-[0.78rem] leading-snug text-amber-900"
+      >
+        AAC education, not medical advice. For clinical guidance about your child, consult a qualified speech-language therapist.
       </div>
 
       {/* Messages */}
@@ -96,7 +105,7 @@ export default function ParentChat() {
             <div className="text-5xl">&#x1F4AC;</div>
             <div className="text-xl font-bold text-gray-700">Ask anything</div>
             <div className="text-sm text-gray-400 text-center leading-relaxed max-w-[340px]">
-              Get evidence-informed answers about your child&apos;s AAC, vocabulary, and communication strategy.
+              General AAC education for parents. For questions about a specific child, please consult a qualified speech-language therapist.
             </div>
             <div className="flex flex-col gap-2 mt-2 w-full max-w-sm">
               {SUGGESTIONS.map((s) => (
