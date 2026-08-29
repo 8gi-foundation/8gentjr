@@ -47,7 +47,7 @@ export const TOOLS: Tool[] = [
   { id: 'draw', name: 'Draw', icon: '\uD83C\uDFA8', color: '#FF9800', category: 'create', route: '/draw', unlocked: true, stars: 0, description: 'Drawing canvas' },
   { id: 'music', name: 'Music', icon: '\uD83C\uDFB5', color: '#E91E63', category: 'create', route: '/music', unlocked: true, stars: 0, description: 'Music & beats' },
   // Learn
-  { id: 'speech', name: 'Speech', icon: '\uD83D\uDC44', color: '#FF5722', category: 'learn', route: '/speech', unlocked: true, stars: 0, description: 'Speech therapy' },
+  { id: 'speech', name: 'Speech', icon: '\uD83D\uDC44', color: '#FF5722', category: 'learn', route: '/speech', unlocked: true, stars: 0, description: 'Speech games' },
   { id: 'intuition', name: 'Game', icon: '\uD83C\uDFAE', color: '#9C27B0', category: 'learn', route: '/intuition', unlocked: true, stars: 0, description: 'Intuition game' },
   { id: 'vsd', name: 'Scenes', icon: '\uD83D\uDDBC\uFE0F', color: '#2196F3', category: 'learn', route: '/vsd', unlocked: true, stars: 0, description: 'Visual scene displays' },
   { id: 'science', name: 'Science', icon: '\uD83E\uDDEA', color: '#4ECDC4', category: 'learn', route: '/science', unlocked: true, stars: 0, description: 'Science experiments' },
