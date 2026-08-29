@@ -34,7 +34,8 @@ export type GuidedActivityId =
   | 'water-sphere'
   | 'pattern-garden'
   | 'fractal'
-  | 'harmonograph';
+  | 'harmonograph'
+  | 'voice-play';
 
 /**
  * Stage bands. GLP stages 1-6 collapse to five phrasing shapes because stages 1
@@ -477,6 +478,88 @@ const DISCOVERIES: Record<GuidedActivityId, Discovery[]> = {
         early: 'It never joins',
         complex: 'In between, the line never joins up.',
         full: 'Between the simple numbers the line drifts and never joins up.',
+      },
+    },
+  ],
+
+  /**
+   * Voice Play. Six drills in the Speech area: a mouth position is shown, the
+   * child (or the adult, the mechanics are the same) holds one sound for about
+   * ten seconds, and the screen draws what their voice actually did.
+   *
+   * Every line here describes something a microphone measured. The ring
+   * steadied because pitch variance fell; the bump is round because the rise
+   * rate was low; the colour moved because the spectral centroid moved while
+   * the fundamental did not. Which line fires when is decided by a pure reducer
+   * in `voice-play.ts`, and the ids here are the ones it emits. The two files
+   * are held together by a test in both directions, so neither a rename nor a
+   * piece of dead copy can survive the suite.
+   *
+   * One line is deliberately absent: nothing here says a voice got stronger,
+   * healthier or better. That is a claim about a body over weeks, and this
+   * screen has only ever seen ten seconds.
+   *
+   * Issue: #238
+   */
+  'voice-play': [
+    {
+      id: 'steady',
+      lines: {
+        gestalt: 'You held one steady note.',
+        single: 'Steady',
+        early: 'You held steady',
+        complex: 'You held one note steady.',
+        full: 'The ring settled because your voice stayed on one note.',
+      },
+    },
+    {
+      id: 'shapes',
+      lines: {
+        gestalt: 'You made every mouth shape.',
+        single: 'Shapes',
+        early: 'You made shapes',
+        complex: 'You made each shape with no sound.',
+        full: 'You moved through every mouth shape without making any sound.',
+      },
+    },
+    {
+      id: 'long-and-low',
+      lines: {
+        gestalt: 'You held a long low note.',
+        single: 'Long',
+        early: 'Long low note',
+        complex: 'You held a low note a long time.',
+        full: 'Your note lasted a long time because your air stayed even.',
+      },
+    },
+    {
+      id: 'soft-start',
+      lines: {
+        gestalt: 'Your sounds started softly.',
+        single: 'Soft',
+        early: 'You started soft',
+        complex: 'Each sound started soft, not sharp.',
+        full: 'Each bump is round because your voice started gently every time.',
+      },
+    },
+    {
+      id: 'new-colour',
+      lines: {
+        gestalt: 'Same note, new colour.',
+        single: 'Colour',
+        early: 'New colour here',
+        complex: 'You changed the colour, not the note.',
+        full: 'You stayed on one note and the colour changed all by itself.',
+      },
+    },
+    {
+      id: 'slide',
+      lines: {
+        gestalt: 'Your voice slid up and down.',
+        single: 'Slide',
+        early: 'You slid up',
+        complex: 'Your voice slid up and back down.',
+        full: 'The line drew your voice sliding up and then back down again.',
       },
     },
   ],

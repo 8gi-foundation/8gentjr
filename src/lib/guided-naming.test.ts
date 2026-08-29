@@ -73,6 +73,7 @@ describe('activity catalogue', () => {
       'interference',
       'light-mix',
       'pattern-garden',
+      'voice-play',
       'water-sphere',
     ]);
   });

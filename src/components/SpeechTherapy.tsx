@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useCallback, useMemo } from "react";
 
 /* ──────────────────────────────────────────────
@@ -143,6 +144,48 @@ export default function SpeechTherapy() {
     <div className="max-w-[800px] mx-auto p-6 font-sans text-[#1a1a2e]">
       <h1 className="text-[28px] font-extrabold text-center mb-2">Speech Therapy</h1>
       <p className="text-base text-gray-500 text-center mb-6">Tap a sound to hear it and see the mouth position</p>
+
+      {/* ── Voice Play (issue #238) ──
+          The phoneme cards below are single sounds, modelled by the device.
+          Voice Play is the other half: hold one sound yourself and watch what
+          your voice did. It lives on its own route because it opens a
+          microphone, and nothing on this page should open one. */}
+      <Link
+        href="/speech/play"
+        className="flex items-center gap-4 p-4 mb-6 rounded-2xl no-underline min-h-[56px] shadow-[0_2px_12px_rgba(232,97,10,0.08)]"
+        style={{ background: "#FFF1E6", border: "2px solid #F0DECA" }}
+      >
+        <span
+          aria-hidden="true"
+          className="grid place-items-center rounded-full shrink-0"
+          style={{ width: 56, height: 56, background: "#FFFFFF" }}
+        >
+          <svg viewBox="0 0 120 120" width={44} height={44} aria-hidden="true">
+            <ellipse cx={60} cy={60} rx={32} ry={26} fill="#3B2A22" />
+            <path
+              d="M 34 39 Q 60 46 86 39"
+              stroke="#FFFFFF"
+              strokeWidth={7}
+              strokeLinecap="round"
+              fill="none"
+            />
+            <path
+              d="M 38 79 Q 60 70 82 79"
+              stroke="#D98C7A"
+              strokeWidth={10}
+              strokeLinecap="round"
+              fill="none"
+            />
+            <ellipse cx={60} cy={60} rx={32} ry={26} fill="none" stroke="#C2705C" strokeWidth={5} />
+          </svg>
+        </span>
+        <span className="flex flex-col gap-1">
+          <span className="text-[17px] font-bold text-[#1a1a2e]">Voice Play</span>
+          <span className="text-[13px] text-gray-500 leading-tight">
+            Make the mouth shape, hold the sound, and watch what your voice does.
+          </span>
+        </span>
+      </Link>
 
       {/* ── Category Tabs ── */}
       <div className="flex gap-2 justify-center mb-6 flex-wrap">
