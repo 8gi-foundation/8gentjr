@@ -182,9 +182,25 @@ Games are presented in a TikTok-style reels feed with topic filters and daily ac
 
 ### Learning
 
+Four multimodal maths lessons. Every lesson shows the number, plays it, lets a
+finger move it, and guides the child through doing rather than reading. Sound
+is synthesised on device with the Web Audio API, and both sound and motion can
+be switched off from the lesson header without losing the lesson.
+
 | Feature | Route | Description |
 |---------|-------|-------------|
-| **Maths** | `/math` | Number and arithmetic practice activities |
+| **Maths** | `/math` | Lesson index with per-lesson progress, calm mode and sound toggles |
+| **Wave** | `/math/wave` | One sine curve, two knobs. The wiggle count is also the pitch |
+| **Tall and Small** | `/math/amplitude` | Height is loudness, wiggles are pitch. Finger pad drives both at once |
+| **Layers** | `/math/layers` | Stack whole number harmonics and hear a shape turn into an instrument |
+| **Garden** | `/math/garden` | Two rules draw a pattern and sound an interval. Trace the curve by hand |
+
+**How the guided lessons work.** A step completes when the child reaches the
+state it describes, not when they press next. There is no score, no wrong
+answer and no locked control: every knob stays live at every step, any step can
+be skipped, and progress is saved per device under `8gentjr-guided-*`. Guided
+step logic lives in `src/lib/guided-learning.ts`, the sonification mapping in
+`src/lib/math-audio.ts`, both unit tested under `bun test`.
 
 ### Parent & Setup
 
