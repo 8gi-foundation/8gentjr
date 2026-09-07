@@ -15,7 +15,7 @@ interface Lesson {
   href: string;
   title: string;
   subtitle: string;
-  preview: 'wave' | 'amplitude' | 'layered' | 'garden';
+  preview: 'wave' | 'amplitude' | 'layered' | 'garden' | 'beat' | 'skips';
   /** Key the lesson saves its guided progress under. */
   lessonId: string;
   /** How many guided steps the lesson ships with. */
@@ -57,6 +57,24 @@ const LESSONS: Lesson[] = [
     subtitle: 'Two small rules, one whole pattern',
     preview: 'garden',
     lessonId: 'math-garden',
+    stepCount: 5,
+  },
+  {
+    id: 'beat',
+    href: '/math/beat',
+    title: 'Beat',
+    subtitle: 'Split one whole into parts and tap them out',
+    preview: 'beat',
+    lessonId: 'math-beat',
+    stepCount: 5,
+  },
+  {
+    id: 'skips',
+    href: '/math/skips',
+    title: 'Skips',
+    subtitle: 'Counting in steps makes a shape and a tune',
+    preview: 'skips',
+    lessonId: 'math-skips',
     stepCount: 5,
   },
 ];
@@ -104,6 +122,47 @@ function previewDraw(kind: Lesson['preview'], calm: boolean) {
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
       }
+    } else if (kind === 'beat') {
+      // A ring cut into three, with the playhead going round it.
+      const cx = w / 2;
+      const cy = h / 2;
+      const r = Math.min(w, h) * 0.34;
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      for (let i = 0; i < 3; i++) {
+        const a = (i / 3) * Math.PI * 2 - Math.PI / 2;
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      }
+      ctx.stroke();
+      const head = (t * 0.35) % 1;
+      const ha = head * Math.PI * 2 - Math.PI / 2;
+      ctx.beginPath();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.arc(cx + Math.cos(ha) * r, cy + Math.sin(ha) * r, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      return;
+    } else if (kind === 'skips') {
+      // Every second square of a six wide grid, lighting in turn.
+      ctx.shadowBlur = 0;
+      const cols = 6;
+      const rows = 3;
+      const cw = w / (cols + 1);
+      const ch = h / (rows + 1);
+      const step = Math.floor((t * 1.6) % (cols * rows));
+      for (let i = 0; i < cols * rows; i++) {
+        const x = (i % cols) * cw + cw * 0.75;
+        const y = Math.floor(i / cols) * ch + ch * 0.75;
+        const lit = i % 2 === 1 && i <= step;
+        ctx.fillStyle = lit ? PRIMARY : '#FFFFFF22';
+        ctx.beginPath();
+        ctx.roundRect(x, y, cw * 0.62, ch * 0.62, 4);
+        ctx.fill();
+      }
+      ctx.restore();
+      return;
     } else {
       ctx.shadowBlur = 0;
       ctx.fillStyle = PRIMARY;

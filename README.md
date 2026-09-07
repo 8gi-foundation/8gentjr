@@ -182,7 +182,7 @@ Games are presented in a TikTok-style reels feed with topic filters and daily ac
 
 ### Learning
 
-Four multimodal maths lessons. Every lesson shows the number, plays it, lets a
+Six multimodal maths lessons. Every lesson shows the number, plays it, lets a
 finger move it, and guides the child through doing rather than reading. Sound
 is synthesised on device with the Web Audio API, and both sound and motion can
 be switched off from the lesson header without losing the lesson.
@@ -194,13 +194,21 @@ be switched off from the lesson header without losing the lesson.
 | **Tall and Small** | `/math/amplitude` | Height is loudness, wiggles are pitch. Finger pad drives both at once |
 | **Layers** | `/math/layers` | Stack whole number harmonics and hear a shape turn into an instrument |
 | **Garden** | `/math/garden` | Two rules draw a pattern and sound an interval. Trace the curve by hand |
+| **Beat** | `/math/beat` | Split one ring into 2, 3, 4 or 6 and tap the parts out. Fractions as rhythm |
+| **Skips** | `/math/skips` | Skip counting on a six wide grid, where each step plays the next note up |
 
 **How the guided lessons work.** A step completes when the child reaches the
 state it describes, not when they press next. There is no score, no wrong
 answer and no locked control: every knob stays live at every step, any step can
 be skipped, and progress is saved per device under `8gentjr-guided-*`. Guided
 step logic lives in `src/lib/guided-learning.ts`, the sonification mapping in
-`src/lib/math-audio.ts`, both unit tested under `bun test`.
+`src/lib/math-audio.ts`, the rhythm maths in `src/lib/rhythm.ts` and the skip
+counting in `src/lib/skip-counting.ts`, all unit tested under `bun test`.
+
+**Why six squares to a row in Skips.** Six is the smallest row width where the
+twos, threes and sixes stack into straight columns while the fours and fives
+lean across the grid, so a child can see which tables share a factor with six
+before anyone uses the word factor.
 
 ### Parent & Setup
 
