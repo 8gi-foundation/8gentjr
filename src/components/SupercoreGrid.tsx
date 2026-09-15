@@ -25,7 +25,15 @@
  */
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
+import {
+  SUPERCORE_50,
+  ARASAAC_IMG,
+  FITZGERALD_CLASSES,
+  getGridCategoryColor,
+  performCoreTap,
+  type SupercoreWord as CoreWord,
+  type FitzgeraldCategory,
+} from '@/lib/core-vocab';
 import { logWord } from '@/lib/session-logger';
 import { speak as elevenLabsSpeak, preloadAudio } from '@/lib/tts';
 import { SharedSentenceBar } from '@/components/SharedSentenceBar';
@@ -39,133 +47,11 @@ import { getPersonalVocab } from '@/lib/personal-vocab';
 import { predictNext, PREDICTIVE_CARD_COUNT } from '@/lib/predictive';
 import { CARD_SIZE_TOKENS, type CardSize } from '@/lib/layout-presets';
 
-// =============================================================================
-// Fitzgerald Key Color Definitions (mapped from shared vocabulary system)
-// =============================================================================
-
-type FitzgeraldCategory =
-  | 'people'
-  | 'verbs'
-  | 'descriptors'
-  | 'prepositions'
-  | 'social'
-  | 'questions'
-  | 'determiners'
-  | 'negation';
-
-/** Map grid categories to canonical Fitzgerald Key word categories */
-const CATEGORY_TO_WORD_TYPE: Record<FitzgeraldCategory, WordCategory> = {
-  people: 'pronoun',
-  verbs: 'verb',
-  descriptors: 'adjective',
-  prepositions: 'preposition',
-  social: 'social',
-  questions: 'question',
-  determiners: 'determiner',
-  negation: 'negation',
-};
-
-/**
- * Maps each Fitzgerald category to Tailwind class strings using CSS variables.
- * bg = background, text = text color, border = border color, chip = sentence strip chip
- */
-const FITZGERALD_CLASSES: Record<FitzgeraldCategory, { bg: string; text: string; border: string }> = {
-  people:       { bg: 'bg-fitzgerald-yellow', text: 'text-fitzgerald-yellow-text', border: 'border-fitzgerald-yellow-border' },
-  verbs:        { bg: 'bg-fitzgerald-green',  text: 'text-fitzgerald-green-text',  border: 'border-fitzgerald-green-border' },
-  descriptors:  { bg: 'bg-fitzgerald-blue',   text: 'text-fitzgerald-blue-text',   border: 'border-fitzgerald-blue-border' },
-  prepositions: { bg: 'bg-fitzgerald-purple', text: 'text-fitzgerald-purple-text', border: 'border-fitzgerald-purple-border' },
-  social:       { bg: 'bg-fitzgerald-pink',   text: 'text-fitzgerald-pink-text',   border: 'border-fitzgerald-pink-border' },
-  questions:    { bg: 'bg-fitzgerald-orange',  text: 'text-fitzgerald-orange-text', border: 'border-fitzgerald-orange-border' },
-  determiners:  { bg: 'bg-fitzgerald-white',   text: 'text-fitzgerald-white-text',  border: 'border-fitzgerald-white-border' },
-  negation:     { bg: 'bg-fitzgerald-red',    text: 'text-fitzgerald-red-text',    border: 'border-fitzgerald-red-border' },
-};
-
-/** Get inline Fitzgerald Key color for a grid category (used by non-Tailwind contexts) */
-export function getGridCategoryColor(category: FitzgeraldCategory) {
-  return FITZGERALD_COLORS[CATEGORY_TO_WORD_TYPE[category]];
-}
-
-// =============================================================================
-// Core Word Data - FIXED positions, NEVER reorder
-// =============================================================================
-
-interface CoreWord {
-  id: string;
-  label: string;
-  category: FitzgeraldCategory;
-  arasaacId?: number;
-}
-
-const ARASAAC_IMG = (id: number) => `https://static.arasaac.org/pictograms/${id}/${id}_500.png`;
-
-/**
- * THE SUPERCORE 50 GRID
- *
- * Layout: 10 columns x 5 rows = 50 cells
- * Words are ordered LEFT-TO-RIGHT, TOP-TO-BOTTOM.
- * THIS ORDER IS PERMANENT. NEVER CHANGE IT.
- */
-const SUPERCORE_50: CoreWord[] = [
-  // Row 1
-  { id: 'w01', label: 'I',         category: 'people',      arasaacId: 6632 },
-  { id: 'w02', label: 'you',       category: 'people',      arasaacId: 6625 },
-  { id: 'w03', label: 'want',      category: 'verbs',       arasaacId: 5441 },
-  { id: 'w04', label: 'need',      category: 'verbs',       arasaacId: 37160 },
-  { id: 'w05', label: 'like',      category: 'verbs',       arasaacId: 37826 },
-  { id: 'w06', label: "don't",     category: 'negation',    arasaacId: 5525 },
-  { id: 'w07', label: 'help',      category: 'social',      arasaacId: 32648 },
-  { id: 'w08', label: 'more',      category: 'determiners', arasaacId: 5508 },
-  { id: 'w09', label: 'stop',      category: 'negation',    arasaacId: 7196 },
-  { id: 'w10', label: 'go',        category: 'verbs',       arasaacId: 8142 },
-
-  // Row 2
-  { id: 'w11', label: 'come',      category: 'verbs',       arasaacId: 32669 },
-  { id: 'w12', label: 'look',      category: 'verbs',       arasaacId: 6564 },
-  { id: 'w13', label: 'eat',       category: 'verbs',       arasaacId: 6456 },
-  { id: 'w14', label: 'drink',     category: 'verbs',       arasaacId: 6061 },
-  { id: 'w15', label: 'play',      category: 'verbs',       arasaacId: 23392 },
-  { id: 'w16', label: 'yes',       category: 'social',      arasaacId: 5584 },
-  { id: 'w17', label: 'no',        category: 'negation',    arasaacId: 5526 },
-  { id: 'w18', label: 'please',    category: 'social',      arasaacId: 8195 },
-  { id: 'w19', label: 'thank you', category: 'social',      arasaacId: 8129 },
-  { id: 'w20', label: 'sorry',     category: 'social',      arasaacId: 11625 },
-
-  // Row 3
-  { id: 'w21', label: 'happy',     category: 'descriptors', arasaacId: 35533 },
-  { id: 'w22', label: 'sad',       category: 'descriptors', arasaacId: 35545 },
-  { id: 'w23', label: 'angry',     category: 'descriptors', arasaacId: 35539 },
-  { id: 'w24', label: 'tired',     category: 'descriptors', arasaacId: 35537 },
-  { id: 'w25', label: 'hot',       category: 'descriptors', arasaacId: 2300 },
-  { id: 'w26', label: 'cold',      category: 'descriptors', arasaacId: 4652 },
-  { id: 'w27', label: 'big',       category: 'descriptors', arasaacId: 4658 },
-  { id: 'w28', label: 'small',     category: 'descriptors', arasaacId: 4716 },
-  { id: 'w29', label: 'up',        category: 'prepositions', arasaacId: 5388 },
-  { id: 'w30', label: 'down',      category: 'prepositions', arasaacId: 37428 },
-
-  // Row 4
-  { id: 'w31', label: 'in',        category: 'prepositions', arasaacId: 7034 },
-  { id: 'w32', label: 'out',       category: 'prepositions', arasaacId: 6606 },
-  { id: 'w33', label: 'on',        category: 'prepositions', arasaacId: 7814 },
-  { id: 'w34', label: 'off',       category: 'prepositions', arasaacId: 27518 },
-  { id: 'w35', label: 'open',      category: 'verbs',       arasaacId: 24825 },
-  { id: 'w36', label: 'close',     category: 'verbs',       arasaacId: 30383 },
-  { id: 'w37', label: 'give',      category: 'verbs',       arasaacId: 28431 },
-  { id: 'w38', label: 'take',      category: 'verbs',       arasaacId: 10148 },
-  { id: 'w39', label: 'put',       category: 'verbs',       arasaacId: 32757 },
-  { id: 'w40', label: 'make',      category: 'verbs',       arasaacId: 32751 },
-
-  // Row 5
-  { id: 'w41', label: 'do',        category: 'verbs',       arasaacId: 6624 },
-  { id: 'w42', label: 'have',      category: 'verbs',       arasaacId: 32761 },
-  { id: 'w43', label: 'is',        category: 'verbs',       arasaacId: 8115 },
-  { id: 'w44', label: 'it',        category: 'determiners', arasaacId: 31670 },
-  { id: 'w45', label: 'that',      category: 'determiners', arasaacId: 6906 },
-  { id: 'w46', label: 'this',      category: 'determiners', arasaacId: 7095 },
-  { id: 'w47', label: 'what',      category: 'questions',   arasaacId: 22620 },
-  { id: 'w48', label: 'where',     category: 'questions',   arasaacId: 7764 },
-  { id: 'w49', label: 'who',       category: 'questions',   arasaacId: 9853 },
-  { id: 'w50', label: 'why',       category: 'questions',   arasaacId: 36719 },
-];
+// Core vocabulary, Fitzgerald Key colours, the pictogram URL helper and the
+// shared "tap a core word" action now live in @/lib/core-vocab so every Layout
+// Primitive surface reads the SAME data and writes through the SAME pipeline.
+// getGridCategoryColor is re-exported for backward compatibility.
+export { getGridCategoryColor };
 
 // =============================================================================
 // TTS Helper - ElevenLabs via tts.ts
@@ -361,13 +247,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
   }, [onSpeak, settings.selectedVoiceId, settings.ttsRate]);
 
   const handleWordTap = useCallback((word: CoreWord) => {
-    speakText(word.label);
-    addWord({
-      label: word.label,
-      imageUrl: word.arasaacId ? ARASAAC_IMG(word.arasaacId) : undefined,
-      className: `${FITZGERALD_CLASSES[word.category].bg} ${FITZGERALD_CLASSES[word.category].text} ${FITZGERALD_CLASSES[word.category].border}`,
-    });
-    logWord(word.label);
+    performCoreTap(word, { speak: speakText, add: addWord, log: logWord });
   }, [speakText, addWord]);
 
   const handleSpeakAll = useCallback(() => {
