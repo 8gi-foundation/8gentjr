@@ -142,7 +142,7 @@ export default function SpeechTherapy() {
 
   return (
     <div className="max-w-[800px] mx-auto p-6 font-sans text-[#1a1a2e]">
-      <h1 className="text-[28px] font-extrabold text-center mb-2">Speech Therapy</h1>
+      <h1 className="text-[28px] font-extrabold text-center mb-2">Speech Games</h1>
       <p className="text-base text-gray-500 text-center mb-6">Tap a sound to hear it and see the mouth position</p>
 
       {/* ── Voice Play (issue #238) ──
