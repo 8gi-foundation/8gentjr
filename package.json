@@ -9,7 +9,6 @@
     "start": "next start",
     "lint": "next lint",
     "lint:banned-imports": "bun run scripts/check-banned-imports.ts",
-    "prewarm": "node scripts/prewarm-tts.mjs",
     "test": "bun test",
     "privacy:pending": "node scripts/privacy-admin.mjs pending"
   },
@@ -23,9 +22,6 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "remotion": "^4.0.448"
-  },
-  "optionalDependencies": {
-    "groq-sdk": "^1.1.2"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

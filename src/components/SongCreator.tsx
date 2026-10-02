@@ -138,7 +138,7 @@ export default function SongCreator() {
         return;
       }
 
-      // Path B: direct audio (ElevenLabs fallback)
+      // Path B: direct audio, if a future local/self-hosted generator returns one
       if (data.audioUrl) {
         const title = data.title || prompt.trim().slice(0, 40) || 'My Song';
         setAudioUrl(data.audioUrl);

@@ -8,7 +8,8 @@ import { createAIProviderWithFallback } from '@/lib/ai-provider';
  * their child's communication, vocabulary, and AAC strategy using
  * specialist knowledge. Not generalised — grounded in AAC research.
  *
- * Stack: Ollama (local) → Groq / llama-3.3-70b-versatile (cloud fallback)
+ * Stack: local/self-hosted Ollama only. If it is unavailable, return a
+ * practical offline answer instead of calling a hosted LLM fallback.
  */
 
 const SYSTEM_PROMPT = `You are an expert AAC (Augmentative and Alternative Communication) specialist and speech-language pathologist advisor embedded in 8gent Jr, a communication app for children.
@@ -62,13 +63,13 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const provider = await createAIProviderWithFallback('llama-3.3-70b-versatile');
+    const provider = await createAIProviderWithFallback();
 
     if (!provider) {
       return new Response(
         JSON.stringify({
           reply:
-            'AI unavailable offline — check AAC resources at aac.8gentjr.com',
+            'Parent chat is offline on this device right now. For AAC board changes, start with core words for daily needs, keep motor positions stable, and add one or two personal phrases at a time.',
         }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );

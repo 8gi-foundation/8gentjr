@@ -4,21 +4,20 @@
  * 8gent Jr — Sentence Builder Component
  *
  * Sentence strip with word suggestion chips powered by a local sentence engine.
- * Uses ElevenLabs TTS (via tts.ts) for all speech output.
+ * Uses local device/browser speech (via tts.ts) for all speech output.
  *
  * Two speak modes:
  *   Speak  — speaks the raw words as-is
- *   ✨ Magic — calls /api/improve-sentence (Groq LLM), shows & speaks the
- *             grammatically corrected version
+ *   Magic — runs local grammar cleanup, shows & speaks the corrected version
  *
  * Issue: #22
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
+  improveSentence,
   suggestNextWord,
   getWordColor,
-  getAllWords,
 } from '@/lib/sentence-engine';
 import { speak } from '@/lib/tts';
 import { useApp } from '@/context/AppContext';
@@ -46,36 +45,9 @@ export default function SentenceBuilder() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isMagicking, setIsMagicking] = useState(false);
   const [magicPreview, setMagicPreview] = useState<string | null>(null);
-  const [aiSuggestions, setAiSuggestions] = useState<string[] | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Local suggestions as baseline (always available)
-  const localSuggestions = suggestNextWord(selectedWords);
-  const suggestions = aiSuggestions ?? localSuggestions;
-
-  // Fetch AI autocomplete suggestions (with debounce + local fallback)
-  useEffect(() => {
-    setAiSuggestions(null);
-    if (selectedWords.length === 0) return;
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const lastWord = selectedWords[selectedWords.length - 1];
-        const res = await fetch('/api/autocomplete', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ input: lastWord, existingWords: getAllWords() }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.suggestions?.length > 0) setAiSuggestions(data.suggestions);
-        }
-      } catch {
-        // Fall back to local suggestions silently
-      }
-    }, 300);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [selectedWords]);
+  const suggestions = suggestNextWord(selectedWords);
 
   // Encouragement on milestones
   useEffect(() => {
@@ -105,7 +77,7 @@ export default function SentenceBuilder() {
     setMagicPreview(null);
   }, []);
 
-  // Speak raw words via ElevenLabs
+  // Speak raw words via local device speech
   const handleSpeak = useCallback(async () => {
     if (selectedWords.length === 0 || isSpeaking) return;
     setIsSpeaking(true);
@@ -116,19 +88,12 @@ export default function SentenceBuilder() {
     }
   }, [selectedWords, isSpeaking, settings.ttsRate, settings.selectedVoiceId]);
 
-  // Magic: AI-improve the sentence, then speak it via ElevenLabs
+  // Magic: locally improve the sentence, then speak it
   const handleMagic = useCallback(async () => {
     if (selectedWords.length === 0 || isMagicking) return;
     setIsMagicking(true);
     try {
-      const res = await fetch('/api/improve-sentence', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cards: selectedWords }),
-      });
-      const improved = res.ok
-        ? (await res.json()).improved ?? selectedWords.join(' ')
-        : selectedWords.join(' ');
+      const improved = improveSentence(selectedWords);
       setMagicPreview(improved);
       await speak({ text: improved, rate: settings.ttsRate, voiceId: settings.selectedVoiceId ?? undefined });
     } catch {

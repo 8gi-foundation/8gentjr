@@ -20,7 +20,7 @@ export interface SentenceWord {
    * GLP T2.6 - gestalt flag. `true` means this chip is a whole-language script
    * (parent-captured via VoiceCardCreator, or a multi-word phrase from vocab).
    * Any sentence containing a gestalt chip forces mirror mode regardless of
-   * glpStage and skips /api/improve-sentence. Undefined is treated as `false`.
+   * glpStage and skips analytic sentence cleanup. Undefined is treated as `false`.
    */
   isGestalt?: boolean;
 }

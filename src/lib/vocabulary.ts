@@ -40,7 +40,7 @@ export interface AACPhrase {
   /**
    * GLP gestalt flag. When `true`, this entry represents a whole-language
    * script (Marge Blanc NLA Stage 1-2 gestalt) and the sentence containing it
-   * must NOT be sent to /api/improve-sentence. Defaults to `false` (analytic).
+   * must NOT be rewritten by sentence cleanup. Defaults to `false` (analytic).
    *
    * Auto-set to `true` for phrases of 3+ words OR captured via VoiceCardCreator
    * (parent-recorded phrases are gestalts by definition).

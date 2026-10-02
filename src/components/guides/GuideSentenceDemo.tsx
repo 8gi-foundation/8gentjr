@@ -5,7 +5,7 @@
  *
  * Maintains its own local sentence state so taps in /guides/talk don't
  * pollute the production sentence-store. Real ▶ Speak / 🪞 Mirror /
- * ✨ Magic / Blend buttons are wired to /api/tts via the same speak()
+ * Magic / Blend buttons are wired to local speech via the same speak()
  * helper used in production.
  */
 

@@ -19,7 +19,7 @@ Not a generic kids' app. A personalised system that learns YOUR child's patterns
 
 - Next.js 15.1 / React 19 on Vercel (8gentjr.com)
 - Auth via 8gent.app (Clerk)
-- AI via 8gent-code kernel (local-first, privacy-first)
+- Local/browser speech for AAC output; optional self-hosted Ollama for parent helpers
 - ARASAAC symbol library (46,000+ CC BY 4.0 pictograms)
 - Web Audio API for music synthesis and sound feedback
 - PWA with offline support
@@ -190,7 +190,7 @@ Games are presented in a TikTok-style reels feed with topic filters and daily ac
 
 | Feature | Route | Description |
 |---------|-------|-------------|
-| **Parent Chat** | `/parent-chat` | Customise your child's AAC board through AI-powered conversation |
+| **Parent Chat** | `/parent-chat` | Customise your child's AAC board through local/self-hosted guidance when configured |
 | **Onboarding** | `/onboarding` | Problem-first onboarding flow: learns about your child before configuring the system |
 | **Settings** | `/settings` | App preferences and child profile configuration |
 | **Add Card** | `/add` | Create an AAC card from an ARASAAC symbol search or an upload |
@@ -222,8 +222,8 @@ Child-path accounts (under 13) are gated behind COPPA email-plus Verifiable Pare
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in GROQ, ELEVENLABS, VPC, AGENTMAIL keys as needed
+cp .env.example .env.local   # fill in OLLAMA, VPC, AGENTMAIL, and Clerk keys as needed
 npm run dev
 ```
 
-Most keys are optional for local dev - the app gracefully falls back (log-only email sender, browser Web Speech TTS, Groq-less autocomplete). `VPC_TOKEN_SECRET` is required whenever you exercise the parental consent flow.
+Most keys are optional for local dev - the app gracefully falls back to local AAC suggestions, local browser/device speech, and log-only email sending. `VPC_TOKEN_SECRET` is required whenever you exercise the parental consent flow.

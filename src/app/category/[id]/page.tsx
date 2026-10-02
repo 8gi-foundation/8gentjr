@@ -4,7 +4,7 @@
  * Category Detail Page — shows ARASAAC word grid for a specific category.
  *
  * Uses getPhrasesByCategory() from vocabulary.ts (correct per-category vocab).
- * TTS via speak() from tts.ts (ElevenLabs).
+ * TTS via local device/browser speech from tts.ts.
  *
  * Issue #71: Each category opens to a full word grid with pictograms.
  */

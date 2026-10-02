@@ -3,7 +3,7 @@
 /**
  * GuideTapDemo - small mini-grid of TapCards for /guides/talk walkthrough.
  *
- * Each tap calls real /api/tts via speak(). Words are preloaded on mount so
+ * Each tap calls local device speech via speak(). Words are warmed on mount so
  * the first tap returns audio instantly. No global sentence state is touched.
  */
 
