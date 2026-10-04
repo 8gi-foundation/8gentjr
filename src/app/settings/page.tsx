@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useApp, type AppSettings } from '@/context/AppContext';
-import { VOICES, DEFAULT_VOICE_ID, VOICE_SAMPLE_TEXT } from '@/lib/voices';
+import { VOICES, VOICE_SAMPLE_TEXT, resolveVoice } from '@/lib/voices';
 import { speak } from '@/lib/tts';
 import { GLP_STAGES, getStage } from '@/lib/glp/stages';
 import SmartSuggestionsToggle from '@/components/SmartSuggestionsToggle';
@@ -396,7 +396,7 @@ function StageEstimateBanner({ estimate }: { estimate: StageEstimate | null }) {
 /* ── Voice picker ── */
 function VoicePicker({ accent }: { accent: string }) {
   const { settings, updateSettings } = useApp();
-  const activeId = settings.selectedVoiceId ?? DEFAULT_VOICE_ID;
+  const activeId = resolveVoice(settings.selectedVoiceId).id;
   const [previewing, setPreviewing] = useState<string | null>(null);
 
   const playSample = async (id: string) => {

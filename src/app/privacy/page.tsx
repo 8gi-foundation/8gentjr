@@ -131,15 +131,10 @@ export default function PrivacyPolicy() {
           </h3>
           <ul className="list-disc pl-6 space-y-1">
             <li>
-              <strong>AI text requests:</strong> When your child uses
-              autocomplete, sentence improvement, or the parent chat, the text
-              is sent to Groq (our AI provider) for processing. Groq does not
-              store this data after processing. We do not log or store these
-              requests.
-            </li>
-            <li>
-              <strong>Text-to-speech requests:</strong> Text is sent to our
-              server to generate speech audio. We do not log or store the text.
+              <strong>AAC speech and suggestions:</strong> Text-to-speech,
+              autocomplete, and sentence improvement run locally in the browser
+              or on the device. They are not sent to a hosted speech or LLM
+              provider.
             </li>
             <li>
               <strong>Song generation:</strong> Prompts are sent to generate
@@ -198,9 +193,8 @@ export default function PrivacyPolicy() {
               logs are automatically pruned after 30 days.
             </li>
             <li>
-              <strong>AI processing:</strong> Text sent to Groq for AI features
-              is processed in real-time and not stored by Groq or by us after
-              the response is generated.
+              <strong>AAC speech and suggestions:</strong> Local browser/device
+              processing only; nothing is retained by us.
             </li>
             <li>
               <strong>Account data:</strong> Retained while the account is
@@ -221,11 +215,6 @@ export default function PrivacyPolicy() {
             Third-Party Services
           </h2>
           <ul className="list-disc pl-6 space-y-1">
-            <li>
-              <strong>Groq</strong> (AI inference): processes text for
-              autocomplete, sentence improvement, and chat features. No data is
-              stored.
-            </li>
             <li>
               <strong>Clerk</strong> (authentication): handles account creation
               and login. Stores email and basic profile data.

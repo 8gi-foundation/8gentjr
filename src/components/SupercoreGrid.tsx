@@ -27,7 +27,8 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { FITZGERALD_COLORS, type WordCategory } from '@/lib/fitzgerald-key';
 import { logWord } from '@/lib/session-logger';
-import { speak as elevenLabsSpeak, preloadAudio } from '@/lib/tts';
+import { speak as localSpeak, preloadAudio } from '@/lib/tts';
+import { improveSentence } from '@/lib/sentence-engine';
 import { SharedSentenceBar } from '@/components/SharedSentenceBar';
 import { SuggestedRow } from '@/components/SuggestedRow';
 import { PredictiveStrip } from '@/components/PredictiveStrip';
@@ -168,7 +169,7 @@ const SUPERCORE_50: CoreWord[] = [
 ];
 
 // =============================================================================
-// TTS Helper - ElevenLabs via tts.ts
+// TTS Helper - local device/browser speech via tts.ts
 // =============================================================================
 
 // =============================================================================
@@ -352,12 +353,12 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
 
   const speakText = useCallback(async (text: string) => {
     if (onSpeak) { onSpeak(text); return; }
-    const engine = await elevenLabsSpeak({
+    const engine = await localSpeak({
       text,
       voiceId: settings.selectedVoiceId ?? undefined,
       rate: settings.ttsRate,
     });
-    setEngineFallback(engine === 'browser');
+    setEngineFallback(engine === 'none');
   }, [onSpeak, settings.selectedVoiceId, settings.ttsRate]);
 
   const handleWordTap = useCallback((word: CoreWord) => {
@@ -380,18 +381,7 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
     setIsMagicLoading(true);
     try {
       const words = sentence.map(w => w.label);
-      const res = await fetch('/api/improve-sentence', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cards: words }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const improved = data.improved || data.sentence || words.join(' ');
-        speakText(improved);
-      } else {
-        speakText(sentence.map(w => w.label).join(' '));
-      }
+      speakText(improveSentence(words));
     } catch {
       speakText(sentence.map(w => w.label).join(' '));
     } finally {
@@ -478,25 +468,13 @@ export function SupercoreGrid({ onSpeak }: SupercoreGridProps) {
     speakText(sentence.map(w => w.label).join(' '));
   }, [sentence, speakText]);
 
-  // T3.8 - Blend handler. Calls /api/improve-sentence in 'blend' mode and
-  // speaks the fused gestalt. Falls back to plain concatenation on error.
+  // T3.8 - Blend handler. Local blend preserves the selected gestalts in order.
   const handleBlendSpeak = useCallback(async () => {
     if (sentence.length < 2) return;
     setIsBlendLoading(true);
     const words = sentence.map(w => w.label);
     try {
-      const res = await fetch('/api/improve-sentence', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode: 'blend', words }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const blended = (data.blended as string | undefined) || words.join(' ');
-        speakText(blended);
-      } else {
-        speakText(words.join(' '));
-      }
+      speakText(words.join(' '));
     } catch {
       speakText(words.join(' '));
     } finally {

@@ -51,7 +51,7 @@ interface GeneratedCard {
    * GLP T2.6 - parent-captured cards are gestalts by definition (Marge Blanc NLA).
    * Always `true` for VoiceCardCreator output. Downstream surfaces that render
    * this card into the sentence bar must propagate this flag onto the chip so
-   * the speak button cascades to mirror mode and skips /api/improve-sentence.
+   * the speak button cascades to mirror mode and skips analytic sentence cleanup.
    */
   isGestalt: true;
 }

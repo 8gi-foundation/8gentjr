@@ -8,7 +8,7 @@
  * - ▶ speak (emerald), ✨ magic (purple, optional), ✕ clear (red)
  * - Scrollable chips area; chips accept optional custom className/style for
  *   Fitzgerald Key colours (SupercoreGrid) or category colours (category pages).
- * - engineFallback: shows a subtle amber glow when browser TTS fallback is active
+ * - engineFallback: shows a subtle amber glow when local speech is unavailable
  */
 
 import { useRef, useEffect, useState } from 'react';
@@ -47,14 +47,14 @@ export interface SharedSentenceBarProps {
   /**
    * Optional blend button. Replaces magic AND mirror at GLP stage 2 when the
    * sentence contains 2+ gestalt chips. Fuses the gestalts into one coherent
-   * script via /api/improve-sentence (mode='blend'). Mutually exclusive with
-   * onMagic and onMirror - if onBlend is provided, it wins.
+   * script locally. Mutually exclusive with onMagic and onMirror - if onBlend
+   * is provided, it wins.
    */
   onBlend?: () => void;
   isBlendLoading?: boolean;
   placeholder?: string;
   /**
-   * Set to true briefly when browser TTS fallback fired (ElevenLabs was unavailable).
+   * Set to true briefly when local speech is unavailable.
    * Shows a subtle amber glow on the bar for 3 seconds.
    */
   engineFallback?: boolean;
@@ -97,7 +97,7 @@ export function SharedSentenceBar({
       className={`flex items-center gap-1.5 px-2 py-1.5 min-h-[56px] bg-gray-800 rounded-xl mx-2 mt-2 shrink-0 transition-shadow duration-500 ${
         showFallbackGlow ? 'ring-2 ring-amber-400/70 shadow-[0_0_12px_2px_rgba(251,191,36,0.35)]' : ''
       }`}
-      title={showFallbackGlow ? 'Using backup voice (ElevenLabs unavailable)' : undefined}
+      title={showFallbackGlow ? 'Local speech is unavailable on this device' : undefined}
     >
       {/* ▶ Speak */}
       <button

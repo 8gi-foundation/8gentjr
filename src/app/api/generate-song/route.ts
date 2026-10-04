@@ -4,10 +4,10 @@ import { NextRequest, NextResponse } from 'next/server';
  * POST /api/generate-song
  *
  * Music generation for 8gent Jr.
- * Dual-provider: Suno (polling) -> ElevenLabs (direct audio) fallback.
+ * Local lyric shaping, with optional Suno polling for audio generation.
  *
  * Body: { sentences: string[], style?: string, tempo?: string }
- * Returns: { taskId, title, lyrics } (Suno) or { audioUrl, title, lyrics } (ElevenLabs)
+ * Returns: { taskId, title, lyrics } when audio generation is configured.
  *
  * Issue: #10
  */
@@ -50,51 +50,19 @@ export async function POST(request: NextRequest) {
       return jsonResponse({ error: 'No prompt provided' }, 400);
     }
 
-    const groqKey = process.env.GROQ_API_KEY;
     const openaiKey = process.env.OPENAI_API_KEY;
 
-    if (!groqKey && !openaiKey) {
-      return jsonResponse({ error: 'Music creation not configured' }, 500);
-    }
-
-    // ── Step 1: LLM generates song structure from prompt ──────────
+    // ── Step 1: Create song structure from prompt ──────────
     const styleHint = body.style ? `\n\nThe song should feel: ${body.style}.` : '';
     const tempoHint = body.tempo ? ` Tempo: ${body.tempo}.` : '';
     const userMessage = `Here are things the child has been saying:\n\n${body.sentences.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n\nCreate a fun children's song using these themes and words.${styleHint}${tempoHint}`;
 
-    let songData: { title: string; style: string; lyrics: string } | null = null;
+    let songData: { title: string; style: string; lyrics: string } | null =
+      buildLocalSongData(body.sentences, body.style, body.tempo);
 
-    // Try Groq first (fast + free)
-    if (groqKey) {
-      try {
-        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${groqKey}`,
-          },
-          body: JSON.stringify({
-            model: 'llama-3.1-8b-instant',
-            max_tokens: 1024,
-            messages: [
-              { role: 'system', content: SONG_PROMPT_SYSTEM },
-              { role: 'user', content: userMessage },
-            ],
-          }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          const content = data.choices?.[0]?.message?.content;
-          if (content) songData = parseSongData(content);
-        }
-      } catch (err) {
-        console.error('[generate-song] Groq error:', err);
-      }
-    }
-
-    // Fallback to OpenAI
-    if (!songData && openaiKey) {
+    // Optional: self-owned configured lyric enhancer. Local template remains
+    // the fallback, so this route no longer depends on a hosted LLM to work.
+    if (openaiKey) {
       try {
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
@@ -115,7 +83,7 @@ export async function POST(request: NextRequest) {
         if (res.ok) {
           const data = await res.json();
           const content = data.choices?.[0]?.message?.content;
-          if (content) songData = parseSongData(content);
+          if (content) songData = parseSongData(content) ?? songData;
         }
       } catch (err) {
         console.error('[generate-song] OpenAI error:', err);
@@ -163,50 +131,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ── Step 3: Fallback to ElevenLabs (direct audio) ─────────────
-    const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
-    if (elevenLabsKey) {
-      try {
-        const musicPrompt = `A children's song called "${songData.title}".
-Style: ${body.style || songData.style}${body.tempo ? `, ${body.tempo}` : ''}.
-For kids ages 4-10, fun and singable.
-
-${songData.lyrics}`;
-
-        const elRes = await fetch('https://api.elevenlabs.io/v1/music', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'xi-api-key': elevenLabsKey,
-          },
-          body: JSON.stringify({
-            prompt: musicPrompt,
-            music_length_ms: 60000,
-            model_id: 'music_v1',
-          }),
-        });
-
-        if (elRes.ok) {
-          const audioBuffer = await elRes.arrayBuffer();
-          const base64 = Buffer.from(audioBuffer).toString('base64');
-          const dataUrl = `data:audio/mpeg;base64,${base64}`;
-
-          return jsonResponse({
-            audioUrl: dataUrl,
-            title: songData.title,
-            lyrics: songData.lyrics,
-            duration: 60,
-          });
-        }
-
-        console.error('[generate-song] ElevenLabs failed:', elRes.status);
-      } catch (err) {
-        console.error('[generate-song] ElevenLabs error:', err);
-      }
-    }
-
-    // Both providers failed
-    return jsonResponse({ error: 'Music generation unavailable' }, 500);
+    return jsonResponse(
+      {
+        error: 'Music audio generation unavailable',
+        title: songData.title,
+        lyrics: songData.lyrics,
+      },
+      503
+    );
   } catch (error) {
     console.error('[generate-song] Unexpected error:', error);
     return jsonResponse({ error: 'Internal server error' }, 500);
@@ -228,4 +160,44 @@ function parseSongData(content: string): { title: string; style: string; lyrics:
   } catch {
     return null;
   }
+}
+
+function buildLocalSongData(
+  sentences: string[],
+  style?: string,
+  tempo?: string
+): { title: string; style: string; lyrics: string } {
+  const clean = sentences.map((s) => s.trim()).filter(Boolean);
+  const first = clean[0] || 'my words';
+  const titleWord = first.split(/\s+/).slice(0, 3).join(' ');
+  const title = `${capitalize(titleWord)} Song`;
+  const styleText = style || `children's pop, happy, playful, simple melody${tempo ? `, ${tempo}` : ''}`;
+  const lines = clean.length > 0 ? clean.slice(0, 4) : ['I have something to say'];
+  const chorus = lines.slice(0, 2);
+
+  return {
+    title,
+    style: styleText,
+    lyrics: [
+      '[Verse]',
+      ...lines.map((line) => shortenLine(line)),
+      '',
+      '[Chorus]',
+      ...(chorus.length > 0 ? chorus : ['Listen to my words']).map((line) => `${shortenLine(line)} again`),
+      '',
+      '[Verse]',
+      ...lines.map((line) => `I say ${shortenLine(line)}`),
+      '',
+      '[Chorus]',
+      ...(chorus.length > 0 ? chorus : ['Listen to my words']).map((line) => `${shortenLine(line)} again`),
+    ].join('\n'),
+  };
+}
+
+function shortenLine(line: string): string {
+  return line.split(/\s+/).slice(0, 8).join(' ');
+}
+
+function capitalize(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }

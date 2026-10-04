@@ -5,7 +5,7 @@ _Living roadmap. Generated 2026-06-14 from repo state. Edit freely — the glass
 ## Now / In progress
 - [ ] **Math route** — finish `feat/math-route`: the Wave lesson, calm-mode sketches, and Dock entry are built but uncommitted-to-main and not yet merged.
 - [ ] **Fix the broken build** — `bun run build` exits 1 prerendering `/talk/core` and `/math/wave`; add `dynamic = 'force-dynamic'` and a build CI job.
-- [ ] **Truthful onboarding copy** — onboarding claims "all data stays on this device", but prod TTS and autocomplete go to ElevenLabs and Groq; soften to match `/privacy`.
+- [x] **Truthful onboarding copy** — AAC speech, autocomplete, and sentence cleanup are local/browser-first with no hosted speech or cloud LLM fallback.
 
 ## Next
 - [ ] **Wire consent to the real VPC engine** — default path skips the email-plus flow; route onboarding through `/api/consent/initiate` and gate egress on `parentEmailConfirmed`.
