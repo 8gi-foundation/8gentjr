@@ -1,0 +1,101 @@
+/* Generated from tokens.ts by `bun run wk:css`. Do not edit by hand. */
+
+:root {
+  --wk-bg0: #FFFDF9;
+  --wk-bg1: #FFF8F0;
+  --wk-bg2: #FFF1E6;
+  --wk-bg3: #F7EBDD;
+  --wk-text1: #1A1612;
+  --wk-text2: #4A4238;
+  --wk-text3: #524A40;
+  --wk-border: #E8E0D6;
+  --wk-border-strong: #7D7266;
+  --wk-accent: #E8610A;
+  --wk-accent-ink: #7F3307;
+  --wk-on-accent: #FFFDF9;
+  --wk-focus: #7F3307;
+  --wk-success: #155B2B;
+  --wk-alert: #6E4300;
+
+  --wk-font-display: var(--font-fraunces), 'Fraunces', Georgia, serif;
+  --wk-font-body: var(--font-inter), 'Inter', system-ui, -apple-system, sans-serif;
+  --wk-font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --wk-size-n2: 0.75rem;
+  --wk-size-n1: 0.875rem;
+  --wk-size-0: 1rem;
+  --wk-size-1: 1.25rem;
+  --wk-size-2: 1.5625rem;
+  --wk-size-3: 1.9375rem;
+  --wk-size-4: 2.4375rem;
+  --wk-size-5: 3.0625rem;
+  --wk-size-6: 3.8125rem;
+  --wk-body-size: 1.125rem;
+  --wk-body-line: 1.6;
+  --wk-heading-line: 1.15;
+  --wk-measure: 68ch;
+
+  --wk-space-0_5: 0.25rem;
+  --wk-space-1: 0.5rem;
+  --wk-space-1_5: 0.75rem;
+  --wk-space-2: 1rem;
+  --wk-space-3: 1.5rem;
+  --wk-space-4: 2rem;
+  --wk-space-5: 2.5rem;
+  --wk-space-6: 3rem;
+  --wk-space-8: 4rem;
+  --wk-space-12: 6rem;
+  --wk-container: 75rem;
+  --wk-section: 6rem;
+  --wk-target: 3rem;
+  --wk-radius-sm: 8px;
+  --wk-radius-md: 16px;
+  --wk-radius-lg: 24px;
+  --wk-radius-pill: 9999px;
+
+  --wk-motion-fast: 300ms;
+  --wk-motion-base: 400ms;
+  --wk-motion-slow: 500ms;
+  --wk-ease: cubic-bezier(0.2, 0, 0, 1);
+  --wk-focus-width: 2px;
+  --wk-focus-offset: 2px;
+}
+
+@media (max-width: 74.9375rem) {
+  :root { --wk-section: 4rem; }
+}
+@media (max-width: 45rem) {
+  :root { --wk-section: 2.5rem; }
+}
+
+[data-wk-theme="dark"] {
+  --wk-bg0: #14110E;
+  --wk-bg1: #1C1814;
+  --wk-bg2: #25201A;
+  --wk-bg3: #2E2820;
+  --wk-text1: #F5EFE8;
+  --wk-text2: #D6CCC0;
+  --wk-text3: #C4B9AC;
+  --wk-border: #2E2820;
+  --wk-border-strong: #857869;
+  --wk-accent: #F07A28;
+  --wk-accent-ink: #F7A866;
+  --wk-on-accent: #14110E;
+  --wk-focus: #F7A866;
+  --wk-success: #6FD08C;
+  --wk-alert: #E8B04A;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --wk-motion-fast: 0ms;
+    --wk-motion-base: 0ms;
+    --wk-motion-slow: 0ms;
+  }
+}
+
+/* Jr sets this on its root: no movement by default. */
+[data-wk-motion="none"] {
+  --wk-motion-fast: 0ms;
+  --wk-motion-base: 0ms;
+  --wk-motion-slow: 0ms;
+}
