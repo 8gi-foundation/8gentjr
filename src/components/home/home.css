@@ -1,0 +1,56 @@
+/* 8gentjr.com home layout. Tokens only; no raw colours. */
+
+.jr-hero {
+  display: grid;
+  gap: var(--wk-space-6);
+  align-items: center;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 45.0625rem) {
+  .jr-hero {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: var(--wk-space-8);
+  }
+}
+.jr-hero__action {
+  margin: var(--wk-space-4) 0 var(--wk-space-2);
+}
+.jr-proof {
+  margin: 0;
+  justify-self: center;
+  max-width: 22.5rem;
+  width: 100%;
+}
+.jr-proof__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--wk-border);
+  border-radius: var(--wk-radius-lg);
+  background: var(--wk-bg1);
+}
+.jr-proof__caption {
+  margin-top: var(--wk-space-1_5);
+  text-align: center;
+}
+.jr-how {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--wk-space-4);
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+.jr-how__item {
+  background: var(--wk-bg0);
+  border: 1px solid var(--wk-border);
+  border-radius: var(--wk-radius-md);
+  padding: var(--wk-space-4);
+}
+.jr-how__item p {
+  margin: 0;
+  color: var(--wk-text2);
+}
+#main:focus {
+  outline: none;
+}
