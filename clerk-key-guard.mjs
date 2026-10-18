@@ -3,6 +3,14 @@
 // `next build` loads the config (phase-production-build only). It fails the BUILD only: the running site never
 // evaluates this, so the current production deployment stays up and only a new
 // deploy is blocked.
+//
+// Limits (do not describe this as "production can never carry pk_test"):
+//  - Vercel promote and Instant Rollback do not run a build, so they can re-serve a
+//    deployment that was built with a pk_test key.
+//  - Builds without VERCEL_ENV (Docker, self-host, CI build then upload) are not covered.
+//  - It only inspects NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY and CLERK_SECRET_KEY.
+//  - Once merged, every Vercel Production build fails until the live keys are set, so
+//    merge only in the same window as the pk_live/sk_live swap.
 
 export const PK_MESSAGE =
   "Production cannot use a Clerk development key (pk_test). Set the live pk_live key in Vercel Production.";
