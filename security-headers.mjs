@@ -20,6 +20,7 @@ const csp = [
   // The on-device model runs in a blob/self Web Worker.
   "worker-src 'self' blob:",
   // YouTube embeds (help page, SchoolTube) and the Clerk/Cloudflare challenge frame.
+  // SchoolTube uses youtube.com, not youtube-nocookie with click-to-load: tracked in 8gentjr#259.
   "frame-src https://www.youtube.com https://www.youtube-nocookie.com https://challenges.cloudflare.com",
   "object-src 'none'",
   "base-uri 'self'",
@@ -33,8 +34,11 @@ export const securityHeaders = [
   { key: 'X-Frame-Options', value: 'DENY' },
   // Enforced and minimal: nobody may embed this site. Redundant with X-Frame-Options on purpose.
   { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
-  // microphone=(self): VoicePlay, ChladniVisualizer (getUserMedia) and VoiceCardCreator (SpeechRecognition)
-  // use the mic on-device. Camera and geolocation are not used anywhere in src.
+  // microphone=(self): VoicePlay and ChladniVisualizer (getUserMedia, analysed locally) and
+  // VoiceCardCreator / useVoiceInput (browser Web Speech API) use the mic. The Web Speech API is NOT
+  // on-device: Chrome and Edge stream the audio to Google, Safari to Apple. The privacy page
+  // (src/app/privacy/page.tsx:134-137) currently says otherwise; tracked in 8gentjr#258.
+  // Camera and geolocation are not used anywhere in src.
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(self), geolocation=()' },
   { key: 'Content-Security-Policy-Report-Only', value: csp },
 ];
