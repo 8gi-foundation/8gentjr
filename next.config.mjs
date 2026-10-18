@@ -1,5 +1,10 @@
+import { securityHeaders } from './security-headers.mjs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async headers() {
+    return [{ source: '/:path*', headers: securityHeaders }];
+  },
   images: {
     remotePatterns: [
       {
