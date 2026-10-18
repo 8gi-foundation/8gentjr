@@ -1,3 +1,5 @@
+import { assertNoDevClerkKeyInProduction } from "./clerk-key-guard.mjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -15,4 +17,7 @@ const nextConfig = {
     ],
   },
 };
-export default nextConfig;
+export default (phase) => {
+  assertNoDevClerkKeyInProduction(phase);
+  return nextConfig;
+};
