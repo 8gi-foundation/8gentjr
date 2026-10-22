@@ -18,12 +18,19 @@ import { AuthBadge } from './AuthBadge';
 const CHROMELESS_ROUTES = ['/onboarding', '/parent-email-verification'];
 const UNGATED_ROUTES = ['/privacy', '/terms', '/help', '/feedback', '/sign-in', '/sign-up', '/consent', '/guides'];
 const ADULT_AUTH_SURFACES = ['/privacy', '/terms', '/help', '/feedback', '/settings'];
+// The parent landing at "/" renders its own header, main and footer (#251).
+// Exact match only: every other route keeps its gate.
+const PUBLIC_LANDING = '/';
 
 export function AppChrome({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isChromeless = CHROMELESS_ROUTES.some((r) => pathname?.startsWith(r));
   const isUngated = UNGATED_ROUTES.some((r) => pathname?.startsWith(r));
   const showAuthBadge = ADULT_AUTH_SURFACES.some((r) => pathname?.startsWith(r));
+
+  if (pathname === PUBLIC_LANDING) {
+    return <>{children}</>;
+  }
 
   if (isUngated) {
     return (

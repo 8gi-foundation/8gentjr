@@ -10,6 +10,7 @@
     "lint": "next lint",
     "lint:banned-imports": "bun run scripts/check-banned-imports.ts",
     "test": "bun test",
+    "wk:css": "bun run src/warm-kernel/write-css.ts",
     "privacy:pending": "node scripts/privacy-admin.mjs pending"
   },
   "dependencies": {
