@@ -148,11 +148,11 @@ Games are presented in a TikTok-style reels feed with topic filters and daily ac
 | **Shape World** | `/science/shapes` | Isometric world builder: paint 3D terrain with colours mapped to musical tones. Synesthetic learning, every colour plays a note (C4 to C5). Procedural terrain generation, "Play Song" sweeps painted colours as melody |
 | **Physics Lab** | `/science/physics` | Launch particles, swing pendulums, splash colours: interactive physics sandbox |
 
-### Speech Therapy
+### Speech Games
 
 | Feature | Route | Description |
 |---------|-------|-------------|
-| **Speech Therapy** | `/speech` | Interactive phoneme practice with mouth position visualisation and speech synthesis |
+| **Speech Games** | `/speech` | Interactive phoneme practice with mouth position visualisation and speech synthesis |
 
 ### Social & Emotional
 
