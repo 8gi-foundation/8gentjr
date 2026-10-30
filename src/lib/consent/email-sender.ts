@@ -7,7 +7,7 @@
  *      (best-effort: swallows fs errors so it works on read-only runtimes).
  *
  * From inbox is controlled by AGENTMAIL_FROM_INBOX (default
- * 'aijames@jamesspalding.org'). The inbox must already exist in AgentMail.
+ * 'privacy@8gentjr.com'). The inbox must already exist in AgentMail.
  */
 
 import { promises as fs } from 'node:fs';
@@ -87,7 +87,7 @@ export function getEmailSender(): EmailSender {
   if (singleton) return singleton;
   const key = process.env.AGENTMAIL_API_KEY;
   if (key) {
-    const from = process.env.AGENTMAIL_FROM_INBOX || 'aijames@jamesspalding.org';
+    const from = process.env.AGENTMAIL_FROM_INBOX || 'privacy@8gentjr.com';
     singleton = new AgentMailSender(key, from);
   } else {
     singleton = new LogOnlySender();
