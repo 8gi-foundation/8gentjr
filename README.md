@@ -7,6 +7,8 @@ with them.
 Run it: `npm install`, `cp .env.example .env.local`, `npm run dev`. Every key is
 optional for a first look. Tests run under Bun: `bun test`.
 
+Project wiki: [docs/wiki/Home.md](docs/wiki/Home.md)
+
 - **Domain:** 8gentjr.com
 - **Parent:** [8GI Foundation](https://8gi.org)
 - **License:** Apache 2.0
